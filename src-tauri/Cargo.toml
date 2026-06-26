@@ -1,0 +1,32 @@
+[package]
+name = "quota"
+version = "1.0.0"
+description = "Track your AI usage in one place."
+authors = ["Pink Pixel <admin@pinkpixel.dev>"]
+license = "Apache-2.0"
+repository = "https://github.com/pinkpixel-dev/quota"
+edition = "2021"
+
+[lib]
+name = "quota_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+chrono = "0.4"
+dirs = "5.0"
+md5 = "0.7"
+rand = "0.8"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+sha2 = "0.10"
+tokio = { version = "1", features = ["time"] }
+urlencoding = "2"
+tiny_http = "0.12"
+rusqlite = { version = "0.31", features = ["bundled"] }

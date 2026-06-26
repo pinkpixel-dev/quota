@@ -1,0 +1,32 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default app capability for the clean rebuild.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://github.com/login/device*"
+        },
+        {
+          "url": "https://auth.openai.com/oauth/authorize*"
+        },
+        {
+          "url": "https://accounts.google.com/o/oauth2/v2/auth*"
+        },
+        {
+          "url": "https://claude.com/cai/oauth/authorize*"
+        },
+        {
+          "url": "https://app.kiro.dev/signin*"
+        },
+        {
+          "url": "https://cursor.com/loginDeepControl*"
+        }
+      ]
+    }
+  ]
+}
