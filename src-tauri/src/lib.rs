@@ -19,7 +19,7 @@ struct AppStatus {
 fn get_app_status() -> AppStatus {
     AppStatus {
         app_name: "Quota",
-        reference_directory: "ORIGINAL/",
+        reference_directory: "quota",
         sidecar_enabled: false,
         electron_helper_enabled: false,
     }

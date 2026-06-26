@@ -13,7 +13,7 @@ export const integrations: IntegrationSummary[] = [
     name: 'GitHub Copilot',
     description: 'Developer account status for Copilot-capable environments.',
     status: 'reference',
-    referenceHint: 'First port target because it is testable locally and worked in the original app.',
+    referenceHint: 'First port target because it is testable locally and has a well-defined OAuth flow.',
     iconPath: '/brand-icons/githubcopilot.svg',
   },
   {
