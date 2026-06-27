@@ -81,7 +81,7 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 
 - [Open VSX Registry](https://open-vsx.org/extension/pinkpixel/quota-ai-usage-tracker/)
 
-- [Github](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.2.vsix)
+- [Github](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.3.vsix)
 
 Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
 
