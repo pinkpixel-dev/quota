@@ -6,7 +6,7 @@ Track AI usage from the editor you already have open. Quota adds a compact statu
 
 Quota is built for developers who use more than one AI coding tool and want one place to check usage before a limit surprises them. Connect the providers you use, pin the tracks you care about, and open the panel whenever you want the full picture.
 
-![Quota dashboard panel](screenshots/dashboard.png)
+![Quota dashboard panel](https://res.cloudinary.com/dlbyddfav/image/upload/v1782548917/dashboard_n7iext.png)
 
 ## What Quota does
 
@@ -36,7 +36,7 @@ Cursor is not included in the extension because modern Cursor is its own standal
 
 Keep Quota visible without crowding your editor. The main `Quota` button opens the panel, and optional pinned tracks can show specific quotas beside it.
 
-![Quota status bar](screenshots/statusbar.png)
+![Quota status bar](https://res.cloudinary.com/dlbyddfav/image/upload/v1782548917/statusbar_gakrw0.png)
 
 Example pinned tracks:
 
