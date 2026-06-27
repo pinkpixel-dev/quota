@@ -1,0 +1,217 @@
+{
+  "name": "quota-vscode",
+  "displayName": "Quota",
+  "description": "AI quota tracking for VS Code and compatible IDEs.",
+  "version": "1.0.0",
+  "publisher": "pinkpixel",
+  "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pinkpixel-dev/quota.git",
+    "directory": "quota-vscode"
+  },
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:quota.openPanel",
+    "onCommand:quota.refresh",
+    "onCommand:quota.openSettings",
+    "onCommand:quota.connectGitHubCopilot",
+    "onCommand:quota.refreshGitHubCopilot",
+    "onCommand:quota.disconnectGitHubCopilot",
+    "onCommand:quota.connectCodex",
+    "onCommand:quota.refreshCodex",
+    "onCommand:quota.disconnectCodex",
+    "onCommand:quota.connectClaude",
+    "onCommand:quota.refreshClaude",
+    "onCommand:quota.disconnectClaude",
+    "onCommand:quota.connectAntigravity",
+    "onCommand:quota.refreshAntigravity",
+    "onCommand:quota.disconnectAntigravity",
+    "onCommand:quota.connectKiro",
+    "onCommand:quota.refreshKiro",
+    "onCommand:quota.disconnectKiro"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "quota.openPanel",
+        "title": "Quota: Open Quota Panel"
+      },
+      {
+        "command": "quota.refresh",
+        "title": "Quota: Refresh Summary"
+      },
+      {
+        "command": "quota.openSettings",
+        "title": "Quota: Open Settings"
+      },
+      {
+        "command": "quota.connectGitHubCopilot",
+        "title": "Quota: Connect GitHub Copilot"
+      },
+      {
+        "command": "quota.refreshGitHubCopilot",
+        "title": "Quota: Refresh GitHub Copilot"
+      },
+      {
+        "command": "quota.disconnectGitHubCopilot",
+        "title": "Quota: Disconnect GitHub Copilot"
+      },
+      {
+        "command": "quota.connectCodex",
+        "title": "Quota: Connect Codex"
+      },
+      {
+        "command": "quota.refreshCodex",
+        "title": "Quota: Refresh Codex"
+      },
+      {
+        "command": "quota.disconnectCodex",
+        "title": "Quota: Disconnect Codex"
+      },
+      {
+        "command": "quota.connectClaude",
+        "title": "Quota: Connect Claude Code"
+      },
+      {
+        "command": "quota.refreshClaude",
+        "title": "Quota: Refresh Claude Code"
+      },
+      {
+        "command": "quota.disconnectClaude",
+        "title": "Quota: Disconnect Claude Code"
+      },
+      {
+        "command": "quota.connectAntigravity",
+        "title": "Quota: Connect Antigravity"
+      },
+      {
+        "command": "quota.refreshAntigravity",
+        "title": "Quota: Refresh Antigravity"
+      },
+      {
+        "command": "quota.disconnectAntigravity",
+        "title": "Quota: Disconnect Antigravity"
+      },
+      {
+        "command": "quota.connectKiro",
+        "title": "Quota: Connect Kiro"
+      },
+      {
+        "command": "quota.refreshKiro",
+        "title": "Quota: Refresh Kiro"
+      },
+      {
+        "command": "quota.disconnectKiro",
+        "title": "Quota: Disconnect Kiro"
+      }
+    ],
+    "configuration": {
+      "title": "Quota",
+      "properties": {
+        "quota.dataSource": {
+          "type": "string",
+          "default": "extensionAccounts",
+          "enum": [
+            "extensionAccounts",
+            "desktopSummary"
+          ],
+          "markdownDescription": "Where Quota reads provider data from. Direct extension accounts are the primary path; desktop summary reads a safe exported JSON file."
+        },
+        "quota.refresh.intervalSeconds": {
+          "type": "number",
+          "default": 120,
+          "minimum": 30,
+          "maximum": 3600,
+          "markdownDescription": "Auto-refresh interval for extension-owned provider accounts."
+        },
+        "quota.providers.enabled": {
+          "type": "array",
+          "default": [
+            "githubCopilot",
+            "codex",
+            "claude",
+            "antigravity",
+            "kiro"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "githubCopilot",
+              "codex",
+              "claude",
+              "antigravity",
+              "kiro"
+            ]
+          },
+          "markdownDescription": "Providers shown in the Quota panel. Cursor is intentionally excluded from the VSIX scope."
+        },
+        "quota.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the main Quota status bar button."
+        },
+        "quota.statusBar.items": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string",
+            "enum": [
+              "githubCopilot.premium",
+              "githubCopilot.chat",
+              "githubCopilot.inline",
+              "codex.primary",
+              "codex.weekly",
+              "claude.fiveHour",
+              "claude.weekly",
+              "claude.weeklySonnet",
+              "claude.extraUsage",
+              "antigravity.gemini",
+              "antigravity.geminiWeekly",
+              "antigravity.claude",
+              "antigravity.claudeWeekly",
+              "kiro.promptCredits"
+            ]
+          },
+          "markdownDescription": "Quota tracks shown directly in the status bar. Leave empty to show only the small Quota button."
+        },
+        "quota.statusBar.display": {
+          "type": "string",
+          "default": "percentUsed",
+          "enum": [
+            "percentUsed",
+            "percentRemaining"
+          ],
+          "markdownDescription": "How percentage tracks are displayed in the status bar."
+        },
+        "quota.statusBar.maxItems": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 8,
+          "markdownDescription": "Maximum number of configured quota tracks shown beside the Quota button."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "test": "npm run compile && node --test test/*.test.js",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.92.0",
+    "@vscode/vsce": "^2.32.0",
+    "typescript": "^5.6.0"
+  }
+}

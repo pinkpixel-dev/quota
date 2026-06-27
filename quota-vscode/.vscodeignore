@@ -1,0 +1,11 @@
+src/**
+test/**
+.vscode/**
+node_modules/**
+package-lock.json
+tsconfig.json
+*.vsix
+*.log
+screenshots/**
+VSIX_PLAN.md
+VSIX_DIRECT_AUTH_PLAN.md

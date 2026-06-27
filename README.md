@@ -54,6 +54,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Safe JSON Export for account summaries
 - Account Pages for providers with refresh and delete buttons
 - Tauri desktop shell
+- Separate VS Code/OpenVSX extension scaffold in `quota-vscode/`
 
 ## Installation
 
@@ -76,6 +77,14 @@ npm run tauri dev
 - Rust
 - Vite
 - CSS variables
+
+## VS Code Extension
+
+The experimental Quota VSIX lives in `quota-vscode/`. It is a separate TypeScript extension package with a small status bar button, optional configured quota percentages, and a compact webview panel for enabled providers.
+
+The extension reads safe account-summary JSON only. It does not read raw tokens, refresh tokens, API keys, cookies, or provider credential stores.
+
+For extension development, open `quota-vscode/` directly in VS Code and press `F5`. The nested folder includes its own launch/tasks config for the Extension Development Host.
 
 ## Contributing
 

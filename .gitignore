@@ -22,6 +22,8 @@ pnpm-debug.log*
 .DS_Store
 .idea/
 .vscode/
+!quota-vscode/.vscode/
+!quota-vscode/.vscode/*.json
 
 # Tauri
 src-tauri/gen/
@@ -39,3 +41,7 @@ OVERVIEW.md
 RELEASE_NOTES.md
 ROADMAP.md
 SECURITY.md
+quota-vscode/VSIX_PLAN.md
+quota-vscode/VSIX_DIRECT_AUTH_PLAN.md
+antigravity_credits.png
+
