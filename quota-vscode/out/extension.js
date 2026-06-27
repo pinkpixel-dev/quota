@@ -143,7 +143,7 @@ async function activate(context) {
             return;
         await refresh(true, { refreshProviders: true });
     }), vscode.commands.registerCommand('quota.openSettings', async () => {
-        await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:pinkpixel.quota-vscode');
+        await vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${context.extension.id}`);
     }), vscode.commands.registerCommand('quota.connectGitHubCopilot', async () => {
         try {
             await githubCopilotProvider.connect();
