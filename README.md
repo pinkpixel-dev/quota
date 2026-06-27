@@ -80,11 +80,19 @@ npm run tauri dev
 
 ## VS Code Extension
 
-The experimental Quota VSIX lives in `quota-vscode/`. It is a separate TypeScript extension package with a small status bar button, optional configured quota percentages, and a compact webview panel for enabled providers.
+The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extension package with a small status bar button, optional configured quota percentages, and a compact webview panel for enabled providers. See the VSIX [README.md](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/README.md) for details.
 
-The extension reads safe account-summary JSON only. It does not read raw tokens, refresh tokens, API keys, cookies, or provider credential stores.
+### Extension Installation Options
 
-For extension development, open `quota-vscode/` directly in VS Code and press `F5`. The nested folder includes its own launch/tasks config for the Extension Development Host.
+1. Install from within VSCode, Antigravity or Kiro through the marketplace
+
+2. Download and install from VSIX
+
+- [Open VSX Registry](insert-open-vsx-link-here)
+
+- [Github](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-vscode-1.0.0.vsix)
+
+Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
 
 ## Contributing
 

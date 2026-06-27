@@ -1,6 +1,6 @@
-# Quota VS Code Extension
+# Quota for VSCode
 
-Quota is a small IDE AI quota monitor for VS Code and OpenVSX-compatible IDEs. It focuses on glanceable quota status while you are coding.
+Quota's extension is a small IDE AI quota monitor for VS Code and OpenVSX-compatible IDEs. It focuses on glanceable quota status while you are coding.
 
 ## Supported Providers
 
@@ -11,6 +11,16 @@ The VSIX focuses on tools that are useful inside VS Code or VS Code-derived IDEs
 - Claude Code
 - Antigravity
 - Kiro
+
+## Screenshots
+
+### Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+### Status Bar
+
+![Compact dashboard](screenshots/statusbar.png)
 
 ## Settings
 
@@ -70,3 +80,7 @@ Available track IDs:
 - `antigravity.claude`
 - `antigravity.claudeWeekly`
 - `kiro.promptCredits`
+
+## Desktop App
+
+Download the Quota desktop application from the [Github repo](https://github.com/pinkpixel-dev/quota/releases).
