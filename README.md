@@ -69,15 +69,6 @@ npm install
 npm run tauri dev
 ```
 
-## Tech Stack
-
-- Tauri 2
-- React
-- TypeScript
-- Rust
-- Vite
-- CSS variables
-
 ## VS Code Extension
 
 The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extension package with a small status bar button, optional configured quota percentages, and a compact webview panel for enabled providers. See the VSIX [README.md](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/README.md) for details.
@@ -88,7 +79,7 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 
 2. Download and install from VSIX
 
-- [Open VSX Registry](insert-open-vsx-link-here)
+- [Open VSX Registry](https://open-vsx.org/extension/pinkpixel/quota-ai-usage-tracker/)
 
 - [Github](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-vscode-1.0.0.vsix)
 

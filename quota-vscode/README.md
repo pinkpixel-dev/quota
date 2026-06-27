@@ -1,4 +1,4 @@
-# Quota for VS Code
+# Quota: AI Usage Tracker
 
 Track AI usage from the editor you already have open. Quota adds a compact status bar button and a resize-friendly quota panel for GitHub Copilot, Codex, Claude Code, Antigravity, and Kiro.
 
