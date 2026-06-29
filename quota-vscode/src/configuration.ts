@@ -18,6 +18,7 @@ const TRACK_IDS: TrackId[] = [
   'antigravity.geminiWeekly',
   'antigravity.claude',
   'antigravity.claudeWeekly',
+  'antigravity.credits',
   'kiro.promptCredits',
 ];
 

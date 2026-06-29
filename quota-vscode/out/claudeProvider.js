@@ -37,6 +37,7 @@ exports.ClaudeProvider = void 0;
 // @env node
 const crypto = __importStar(require("node:crypto"));
 const vscode = __importStar(require("vscode"));
+const claudeUsage_1 = require("./claudeUsage");
 const constants_1 = require("./constants");
 const CLAUDE_OAUTH_AUTHORIZE_URL = 'https://claude.com/cai/oauth/authorize';
 const CLAUDE_OAUTH_CALLBACK_URL = 'https://platform.claude.com/oauth/code/callback';
@@ -403,6 +404,14 @@ class ClaudeProvider {
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
+            if ((0, claudeUsage_1.shouldSuppressClaudeError)(message)) {
+                return await this.saveAccount({
+                    ...account,
+                    quotaQueryLastError: null,
+                    quotaQueryLastErrorAt: null,
+                    lastUsed: now(),
+                });
+            }
             return await this.saveAccount({
                 ...account,
                 quotaQueryLastError: message,

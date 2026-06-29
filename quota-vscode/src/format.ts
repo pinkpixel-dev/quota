@@ -11,8 +11,9 @@ export function displayPercent(track: QuotaTrack, mode: StatusBarDisplayMode): n
 }
 
 export function statusBarLabel(track: QuotaTrack, mode: StatusBarDisplayMode): string {
-  const suffix = mode === 'percentRemaining' ? 'left' : 'used';
   const label = TRACK_STATUS_BAR_LABEL[track.id as TrackId] ?? track.providerLabel;
+  if (track.valueLabel) return `${label} ${track.valueLabel}`;
+  const suffix = mode === 'percentRemaining' ? 'left' : 'used';
   return `${label} ${formatPercent(displayPercent(track, mode))} ${suffix}`;
 }
 

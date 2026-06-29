@@ -51,6 +51,7 @@ const TRACK_IDS = [
     'antigravity.geminiWeekly',
     'antigravity.claude',
     'antigravity.claudeWeekly',
+    'antigravity.credits',
     'kiro.promptCredits',
 ];
 function isProviderId(value) {

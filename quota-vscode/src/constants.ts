@@ -34,6 +34,7 @@ export const CANONICAL_TRACK_ORDER: TrackId[] = [
   'antigravity.geminiWeekly',
   'antigravity.claude',
   'antigravity.claudeWeekly',
+  'antigravity.credits',
   'kiro.promptCredits',
 ];
 
@@ -51,6 +52,7 @@ export const TRACK_LABELS: Record<TrackId, string> = {
   'antigravity.geminiWeekly': 'Gemini models weekly',
   'antigravity.claude': 'Claude/GPT models',
   'antigravity.claudeWeekly': 'Claude/GPT models weekly',
+  'antigravity.credits': 'Available AI Credits',
   'kiro.promptCredits': 'Prompt credits',
 };
 
@@ -68,5 +70,6 @@ export const TRACK_STATUS_BAR_LABEL: Record<TrackId, string> = {
   'antigravity.geminiWeekly': 'Agy:Gemini:Wk',
   'antigravity.claude': 'Agy:Claude:5h',
   'antigravity.claudeWeekly': 'Agy:Claude:Wk',
+  'antigravity.credits': 'Agy:Credits',
   'kiro.promptCredits': 'Kiro:Credits',
 };

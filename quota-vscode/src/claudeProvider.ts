@@ -3,6 +3,7 @@ import * as crypto from 'node:crypto';
 
 import * as vscode from 'vscode';
 
+import { shouldSuppressClaudeError } from './claudeUsage';
 import { PROVIDER_LABELS } from './constants';
 import type { QuotaTrack, TrackId } from './types';
 
@@ -454,6 +455,14 @@ export class ClaudeProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      if (shouldSuppressClaudeError(message)) {
+        return await this.saveAccount({
+          ...account,
+          quotaQueryLastError: null,
+          quotaQueryLastErrorAt: null,
+          lastUsed: now(),
+        });
+      }
       return await this.saveAccount({
         ...account,
         quotaQueryLastError: message,

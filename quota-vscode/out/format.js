@@ -15,8 +15,10 @@ function displayPercent(track, mode) {
     return track.percentUsed ?? (track.percentRemaining == null ? undefined : 100 - track.percentRemaining);
 }
 function statusBarLabel(track, mode) {
-    const suffix = mode === 'percentRemaining' ? 'left' : 'used';
     const label = constants_1.TRACK_STATUS_BAR_LABEL[track.id] ?? track.providerLabel;
+    if (track.valueLabel)
+        return `${label} ${track.valueLabel}`;
+    const suffix = mode === 'percentRemaining' ? 'left' : 'used';
     return `${label} ${formatPercent(displayPercent(track, mode))} ${suffix}`;
 }
 function formatReset(resetAt) {

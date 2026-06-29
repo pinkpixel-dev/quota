@@ -94,7 +94,10 @@ struct CursorAccountIndex {
 
 impl CursorAccountIndex {
     fn new() -> Self {
-        Self { version: "1.0".to_string(), account_ids: Vec::new() }
+        Self {
+            version: "1.0".to_string(),
+            account_ids: Vec::new(),
+        }
     }
 }
 
@@ -211,13 +214,21 @@ fn build_account_id(email: &str, access_token: &str) -> String {
 
 fn normalize_email(email: &str) -> String {
     let trimmed = email.trim().to_lowercase();
-    if trimmed.contains('@') { trimmed } else { String::new() }
+    if trimmed.contains('@') {
+        trimmed
+    } else {
+        String::new()
+    }
 }
 
 fn normalize_str(s: Option<&str>) -> Option<String> {
     s.and_then(|v| {
         let t = v.trim();
-        if t.is_empty() { None } else { Some(t.to_string()) }
+        if t.is_empty() {
+            None
+        } else {
+            Some(t.to_string())
+        }
     })
 }
 
@@ -279,7 +290,10 @@ fn extract_workos_user_id(access_token: &str) -> Option<String> {
 
 fn build_session_cookie(access_token: &str) -> Option<String> {
     let user_id = extract_workos_user_id(access_token)?;
-    Some(format!("WorkosCursorSessionToken={}%3A%3A{}", user_id, access_token))
+    Some(format!(
+        "WorkosCursorSessionToken={}%3A%3A{}",
+        user_id, access_token
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -351,15 +365,30 @@ fn apply_usage(account: &mut StoredCursorAccount, raw: &serde_json::Value) {
 
     account.on_demand_used = pick_f64(
         on_demand,
-        &["used", "totalSpend", "total_spend", "individualUsed", "individual_used"],
+        &[
+            "used",
+            "totalSpend",
+            "total_spend",
+            "individualUsed",
+            "individual_used",
+        ],
     );
     account.on_demand_limit = pick_f64(
         on_demand,
-        &["limit", "individualLimit", "individual_limit", "pooledLimit", "pooled_limit"],
+        &[
+            "limit",
+            "individualLimit",
+            "individual_limit",
+            "pooledLimit",
+            "pooled_limit",
+        ],
     );
     account.on_demand_enabled = pick_bool_field(on_demand, &["enabled"]);
 
-    if let Some(end_raw) = raw.get("billingCycleEnd").or_else(|| raw.get("billing_cycle_end")) {
+    if let Some(end_raw) = raw
+        .get("billingCycleEnd")
+        .or_else(|| raw.get("billing_cycle_end"))
+    {
         if let Some(s) = end_raw.as_str() {
             if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
                 account.billing_cycle_end = Some(dt.timestamp());
@@ -394,7 +423,8 @@ fn resolve_membership(profile: &StripeProfileResponse) -> Option<String> {
 fn quota_storage_dir() -> Result<PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not locate home directory".to_string())?;
     let dir = home.join(DATA_DIR);
-    fs::create_dir_all(&dir).map_err(|e| format!("Could not create Quota data directory: {}", e))?;
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("Could not create Quota data directory: {}", e))?;
     Ok(dir)
 }
 
@@ -411,11 +441,15 @@ fn account_path_in(storage_dir: &Path, id: &str) -> PathBuf {
 }
 
 fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
-    let parent = path.parent().ok_or_else(|| "No parent directory".to_string())?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| "No parent directory".to_string())?;
     fs::create_dir_all(parent).map_err(|e| format!("Could not create directory: {}", e))?;
     let tmp = parent.join(format!(
         ".{}.{}.tmp",
-        path.file_name().and_then(|n| n.to_str()).unwrap_or("cursor"),
+        path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("cursor"),
         std::process::id()
     ));
     fs::write(&tmp, content).map_err(|e| format!("Could not write temp file: {}", e))?;
@@ -433,7 +467,8 @@ fn load_index_in(storage_dir: &Path) -> Result<CursorAccountIndex, String> {
     if content.trim().is_empty() {
         return Ok(CursorAccountIndex::new());
     }
-    serde_json::from_str(&content).map_err(|e| format!("Could not parse Cursor account index: {}", e))
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Could not parse Cursor account index: {}", e))
 }
 
 fn save_index_in(storage_dir: &Path, index: &CursorAccountIndex) -> Result<(), String> {
@@ -454,7 +489,10 @@ fn save_account_in(storage_dir: &Path, account: &StoredCursorAccount) -> Result<
     write_atomic(&account_path_in(storage_dir, &account.id), &content)
 }
 
-fn upsert_account_in(storage_dir: &Path, mut account: StoredCursorAccount) -> Result<CursorAccountSummary, String> {
+fn upsert_account_in(
+    storage_dir: &Path,
+    mut account: StoredCursorAccount,
+) -> Result<CursorAccountSummary, String> {
     let mut index = load_index_in(storage_dir)?;
     if let Ok(existing) = load_account_in(storage_dir, &account.id) {
         account.created_at = existing.created_at;
@@ -520,7 +558,10 @@ fn build_http_client() -> Result<reqwest::Client, String> {
 // API calls
 // ---------------------------------------------------------------------------
 
-async fn fetch_user_meta(client: &reqwest::Client, access_token: &str) -> Result<UserMetaResponse, String> {
+async fn fetch_user_meta(
+    client: &reqwest::Client,
+    access_token: &str,
+) -> Result<UserMetaResponse, String> {
     let resp = client
         .post(CURSOR_USER_META_URL)
         .header("Authorization", format!("Bearer {}", access_token))
@@ -539,12 +580,18 @@ async fn fetch_user_meta(client: &reqwest::Client, access_token: &str) -> Result
         return Err(format!("Cursor user meta returned status {}", status));
     }
 
-    let body = resp.text().await.map_err(|e| format!("Failed to read user meta response: {}", e))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read user meta response: {}", e))?;
     serde_json::from_str::<UserMetaResponse>(&body)
         .map_err(|e| format!("Failed to parse user meta JSON: {}", e))
 }
 
-async fn fetch_stripe_profile(client: &reqwest::Client, access_token: &str) -> Option<StripeProfileResponse> {
+async fn fetch_stripe_profile(
+    client: &reqwest::Client,
+    access_token: &str,
+) -> Option<StripeProfileResponse> {
     // Try full profile first, fall back to basic profile
     for url in [CURSOR_FULL_STRIPE_URL, CURSOR_STRIPE_URL] {
         let resp = client
@@ -562,7 +609,9 @@ async fn fetch_stripe_profile(client: &reqwest::Client, access_token: &str) -> O
                 return Some(profile);
             }
             // If it's a non-empty string, treat as pro
-            if let Ok(serde_json::Value::String(s)) = serde_json::from_str::<serde_json::Value>(&body) {
+            if let Ok(serde_json::Value::String(s)) =
+                serde_json::from_str::<serde_json::Value>(&body)
+            {
                 if !s.trim().is_empty() {
                     return Some(StripeProfileResponse {
                         membership_type: Some("pro".to_string()),
@@ -576,7 +625,10 @@ async fn fetch_stripe_profile(client: &reqwest::Client, access_token: &str) -> O
     None
 }
 
-async fn exchange_refresh_token(client: &reqwest::Client, refresh_token: &str) -> Result<RefreshTokenResponse, String> {
+async fn exchange_refresh_token(
+    client: &reqwest::Client,
+    refresh_token: &str,
+) -> Result<RefreshTokenResponse, String> {
     let resp = client
         .post(CURSOR_OAUTH_TOKEN_URL)
         .header("Content-Type", "application/json")
@@ -597,20 +649,29 @@ async fn exchange_refresh_token(client: &reqwest::Client, refresh_token: &str) -
         return Err(format!("Cursor token refresh returned status {}", status));
     }
 
-    let body = resp.text().await.map_err(|e| format!("Failed to read token refresh response: {}", e))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read token refresh response: {}", e))?;
     serde_json::from_str::<RefreshTokenResponse>(&body)
         .map_err(|e| format!("Failed to parse token refresh JSON: {}", e))
 }
 
-async fn fetch_usage_raw(client: &reqwest::Client, access_token: &str) -> Result<serde_json::Value, String> {
-    let cookie = build_session_cookie(access_token)
-        .ok_or_else(|| "cursor_auth_expired".to_string())?;
+async fn fetch_usage_raw(
+    client: &reqwest::Client,
+    access_token: &str,
+) -> Result<serde_json::Value, String> {
+    let cookie =
+        build_session_cookie(access_token).ok_or_else(|| "cursor_auth_expired".to_string())?;
 
     let resp = client
         .get(CURSOR_USAGE_URL)
         .header("Accept", "application/json")
         .header("Cookie", &cookie)
-        .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+        )
         .send()
         .await
         .map_err(|e| format!("Cursor usage request failed: {}", e))?;
@@ -623,7 +684,10 @@ async fn fetch_usage_raw(client: &reqwest::Client, access_token: &str) -> Result
         return Err(format!("Cursor usage API returned status {}", status));
     }
 
-    let body = resp.text().await.map_err(|e| format!("Failed to read usage response: {}", e))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read usage response: {}", e))?;
     serde_json::from_str::<serde_json::Value>(&body)
         .map_err(|e| format!("Failed to parse usage JSON: {}", e))
 }
@@ -683,7 +747,9 @@ async fn do_refresh_account(mut account: StoredCursorAccount) -> StoredCursorAcc
             let refreshed = if let Some(ref rt) = account.refresh_token.clone() {
                 match exchange_refresh_token(&client, rt).await {
                     Ok(tokens) if !tokens.should_logout => {
-                        if let (Some(new_at), Some(new_rt)) = (tokens.access_token, tokens.refresh_token) {
+                        if let (Some(new_at), Some(new_rt)) =
+                            (tokens.access_token, tokens.refresh_token)
+                        {
                             account.access_token = new_at.clone();
                             account.refresh_token = Some(new_rt);
                             true
@@ -709,8 +775,9 @@ async fn do_refresh_account(mut account: StoredCursorAccount) -> StoredCursorAcc
                     }
                 }
             } else {
-                account.quota_query_last_error =
-                    Some("Cursor session expired. Re-import or reconnect your account.".to_string());
+                account.quota_query_last_error = Some(
+                    "Cursor session expired. Re-import or reconnect your account.".to_string(),
+                );
             }
         }
         Err(e) => {
@@ -743,49 +810,54 @@ pub async fn import_cursor_from_local() -> Result<CursorAccountSummary, String> 
         ));
     }
 
-    let (access_token, refresh_token, email, auth_id, membership_type) = tokio::task::spawn_blocking(move || {
-        let conn = rusqlite::Connection::open_with_flags(
-            &db_path,
-            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-        )
-        .map_err(|e| format!("Failed to open Cursor database: {}", e))?;
+    let (access_token, refresh_token, email, auth_id, membership_type) =
+        tokio::task::spawn_blocking(move || {
+            let conn = rusqlite::Connection::open_with_flags(
+                &db_path,
+                rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+            )
+            .map_err(|e| format!("Failed to open Cursor database: {}", e))?;
 
-        let mut stmt = conn
-            .prepare("SELECT key, value FROM ItemTable WHERE key LIKE 'cursorAuth/%'")
-            .map_err(|e| format!("Failed to prepare SQLite query: {}", e))?;
+            let mut stmt = conn
+                .prepare("SELECT key, value FROM ItemTable WHERE key LIKE 'cursorAuth/%'")
+                .map_err(|e| format!("Failed to prepare SQLite query: {}", e))?;
 
-        let rows: Vec<(String, String)> = stmt
-            .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
-            .map_err(|e| format!("Failed to query Cursor database: {}", e))?
-            .filter_map(|r| r.ok())
-            .collect();
+            let rows: Vec<(String, String)> = stmt
+                .query_map([], |row| {
+                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                })
+                .map_err(|e| format!("Failed to query Cursor database: {}", e))?
+                .filter_map(|r| r.ok())
+                .collect();
 
-        let mut access_token = String::new();
-        let mut refresh_token: Option<String> = None;
-        let mut email = String::new();
-        let mut auth_id: Option<String> = None;
-        let mut membership_type: Option<String> = None;
+            let mut access_token = String::new();
+            let mut refresh_token: Option<String> = None;
+            let mut email = String::new();
+            let mut auth_id: Option<String> = None;
+            let mut membership_type: Option<String> = None;
 
-        for (key, value) in &rows {
-            let v = value.trim().to_string();
-            match key.as_str() {
-                "cursorAuth/accessToken" => access_token = v,
-                "cursorAuth/refreshToken" => refresh_token = Some(v).filter(|s| !s.is_empty()),
-                "cursorAuth/cachedEmail" => email = normalize_email(&v),
-                "cursorAuth/authId" => auth_id = Some(v).filter(|s| !s.is_empty()),
-                "cursorAuth/stripeMembershipType" => membership_type = Some(v).filter(|s| !s.is_empty()),
-                _ => {}
+            for (key, value) in &rows {
+                let v = value.trim().to_string();
+                match key.as_str() {
+                    "cursorAuth/accessToken" => access_token = v,
+                    "cursorAuth/refreshToken" => refresh_token = Some(v).filter(|s| !s.is_empty()),
+                    "cursorAuth/cachedEmail" => email = normalize_email(&v),
+                    "cursorAuth/authId" => auth_id = Some(v).filter(|s| !s.is_empty()),
+                    "cursorAuth/stripeMembershipType" => {
+                        membership_type = Some(v).filter(|s| !s.is_empty())
+                    }
+                    _ => {}
+                }
             }
-        }
 
-        Ok::<_, String>((access_token, refresh_token, email, auth_id, membership_type))
-    })
-    .await
-    .map_err(|e| format!("Database task panicked: {}", e))??;
+            Ok::<_, String>((access_token, refresh_token, email, auth_id, membership_type))
+        })
+        .await
+        .map_err(|e| format!("Database task panicked: {}", e))??;
 
     if access_token.is_empty() {
         return Err(
-            "No Cursor access token found in local database. Sign in to Cursor first.".to_string()
+            "No Cursor access token found in local database. Sign in to Cursor first.".to_string(),
         );
     }
 
@@ -889,7 +961,10 @@ pub async fn cursor_oauth_login_complete(login_id: String) -> Result<CursorAccou
     };
 
     let client = build_http_client()?;
-    let poll_url = format!("{}?uuid={}&verifier={}", CURSOR_POLL_URL, uuid, code_verifier);
+    let poll_url = format!(
+        "{}?uuid={}&verifier={}",
+        CURSOR_POLL_URL, uuid, code_verifier
+    );
 
     for attempt in 0..POLL_MAX_ATTEMPTS {
         {
@@ -928,11 +1003,16 @@ pub async fn cursor_oauth_login_complete(login_id: String) -> Result<CursorAccou
                     continue;
                 }
 
-                let body = r.text().await.map_err(|e| format!("Failed to read poll response: {}", e))?;
-                let poll: PollResponse =
-                    serde_json::from_str(&body).map_err(|e| format!("Failed to parse poll response: {}", e))?;
+                let body = r
+                    .text()
+                    .await
+                    .map_err(|e| format!("Failed to read poll response: {}", e))?;
+                let poll: PollResponse = serde_json::from_str(&body)
+                    .map_err(|e| format!("Failed to parse poll response: {}", e))?;
 
-                if let (Some(access_token), Some(refresh_token)) = (poll.access_token, poll.refresh_token) {
+                if let (Some(access_token), Some(refresh_token)) =
+                    (poll.access_token, poll.refresh_token)
+                {
                     if let Ok(mut guard) = PENDING_CURSOR_OAUTH.lock() {
                         *guard = None;
                     }

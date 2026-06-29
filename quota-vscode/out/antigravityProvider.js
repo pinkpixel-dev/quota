@@ -39,6 +39,7 @@ const crypto = __importStar(require("node:crypto"));
 const http = __importStar(require("node:http"));
 const os = __importStar(require("node:os"));
 const vscode = __importStar(require("vscode"));
+const antigravityUsage_1 = require("./antigravityUsage");
 const constants_1 = require("./constants");
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v2/userinfo';
@@ -273,20 +274,7 @@ async function postCodeAssist(accessToken, endpoint, payload) {
 }
 async function loadCodeAssistStatus(accessToken) {
     const raw = await postCodeAssist(accessToken, codeAssistUrl(CODE_ASSIST_LOAD_ENDPOINT), loadCodeAssistPayload());
-    const tierId = firstString([
-        readString(raw, ['paidTier', 'id']),
-        readString(raw, ['currentTier', 'id']),
-        readString(readArray(raw, ['allowedTiers'])[0], ['id']),
-    ]);
-    const tierName = firstString([
-        readString(raw, ['paidTier', 'name']),
-        readString(raw, ['currentTier', 'name']),
-    ]);
-    const projectValue = readPath(raw, ['cloudaicompanionProject']);
-    const projectId = normalize(projectValue)
-        ?? readString(projectValue, ['id'])
-        ?? readString(projectValue, ['projectId']);
-    return { tierId, tierName, projectId };
+    return (0, antigravityUsage_1.parseAntigravityLoadStatus)(raw);
 }
 async function retrieveUserQuota(accessToken, projectId) {
     const projectPayload = { project: projectId };
@@ -408,6 +396,7 @@ function accountFromTokenResponse(response, profile, existing) {
             projectId: existing?.projectId,
             tierId: existing?.tierId,
             planName: existing?.planName,
+            credits: existing?.credits ?? [],
             quota: existing?.quota ?? emptyQuota(),
             quotaQueryLastError: existing?.quotaQueryLastError ?? null,
             quotaQueryLastErrorAt: existing?.quotaQueryLastErrorAt ?? null,
@@ -487,6 +476,7 @@ class AntigravityProvider {
                 projectId: loadStatus.projectId,
                 tierId: loadStatus.tierId,
                 planName: loadStatus.tierName ?? parseTierPlanName(loadStatus.tierId) ?? account.planName,
+                credits: loadStatus.credits,
                 lastUsed: now(),
             };
             if (!nextAccount.projectId) {
@@ -543,7 +533,9 @@ class AntigravityProvider {
             trackFromAccount(account, 'antigravity.geminiWeekly', 'Gemini Models weekly', account.quota.geminiWeekly),
             trackFromAccount(account, 'antigravity.claude', 'Claude/GPT models', account.quota.thirdPartyFiveHour),
             trackFromAccount(account, 'antigravity.claudeWeekly', 'Claude/GPT models weekly', account.quota.thirdPartyWeekly),
-        ]).filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
+            (0, antigravityUsage_1.buildAntigravityCreditsTrack)(account),
+        ]).filter((track) => (track != null
+            && (track.percentUsed != null || track.percentRemaining != null || track.valueLabel != null || track.error != null)));
     }
     async hasAccounts() {
         return (await this.getAccounts()).length > 0;

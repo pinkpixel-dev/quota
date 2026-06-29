@@ -32,6 +32,7 @@ import {
   refreshAntigravityAccount,
   startAntigravityOAuthLogin,
   type AntigravityAccountSummary,
+  type AntigravityCreditInfo,
   type AntigravityOAuthStartResponse,
   type AntigravityQuotaWindow,
 } from './data/antigravity';
@@ -3273,6 +3274,7 @@ function AntigravityUsageCard({ account, busy, pinned, dashboardMode = false, on
           weekly={account.quota.thirdPartyWeekly}
           fiveHour={account.quota.thirdPartyFiveHour}
         />
+        <AntigravityCreditsGroup credits={account.credits} />
       </div>
 
       {errors.map((error) => (
@@ -3281,6 +3283,27 @@ function AntigravityUsageCard({ account, busy, pinned, dashboardMode = false, on
         </p>
       ))}
     </article>
+  );
+}
+
+interface AntigravityCreditsGroupProps {
+  credits: AntigravityCreditInfo[];
+}
+
+function AntigravityCreditsGroup({ credits }: AntigravityCreditsGroupProps) {
+  const display = formatAntigravityCredits(credits);
+  if (!display) return null;
+
+  return (
+    <section className="usage-card__group usage-card__group--credits" aria-label="Antigravity AI credits">
+      <h3>Model Credits</h3>
+      <div className="usage-metric usage-metric--credits">
+        <div className="usage-metric__line">
+          <span>Available AI Credits</span>
+          <strong>{display}</strong>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -3606,6 +3629,22 @@ function formatAntigravityTier(tierId?: string | null) {
   if (lower.includes('pro') || lower.includes('premium')) return 'Pro';
   if (lower.includes('free') || lower === 'standard-tier') return 'Free';
   return tierId.replace(/-/g, ' ');
+}
+
+function formatAntigravityCredits(credits: AntigravityCreditInfo[]) {
+  let total = 0;
+  let hasValidAmount = false;
+
+  for (const credit of credits) {
+    if (credit.creditAmount == null) continue;
+    const parsed = Number.parseFloat(String(credit.creditAmount).replace(/,/g, '').trim());
+    if (!Number.isFinite(parsed)) continue;
+    total += parsed;
+    hasValidAmount = true;
+  }
+
+  if (!hasValidAmount) return '';
+  return total.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 function formatWindowMinutes(minutes: number) {

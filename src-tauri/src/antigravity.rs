@@ -71,6 +71,8 @@ struct StoredAntigravityAccount {
     project_id: Option<String>,
     tier_id: Option<String>,
     plan_name: Option<String>,
+    #[serde(default)]
+    credits: Vec<AntigravityCreditInfo>,
     quota: AntigravityQuotaSummary,
     quota_query_last_error: Option<String>,
     quota_query_last_error_at: Option<i64>,
@@ -93,6 +95,7 @@ pub struct AntigravityAccountSummary {
     pub project_id: Option<String>,
     pub tier_id: Option<String>,
     pub plan_name: Option<String>,
+    pub credits: Vec<AntigravityCreditInfo>,
     pub quota: AntigravityQuotaSummary,
     pub quota_query_last_error: Option<String>,
     pub quota_query_last_error_at: Option<i64>,
@@ -117,6 +120,14 @@ pub struct AntigravityQuotaSummary {
 pub struct AntigravityQuotaWindow {
     pub remaining_percent: Option<i32>,
     pub reset_at: Option<i64>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AntigravityCreditInfo {
+    pub credit_type: String,
+    pub credit_amount: Option<String>,
+    pub minimum_credit_amount_for_usage: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -174,11 +185,12 @@ struct TokenRefreshResponse {
     error_description: Option<String>,
 }
 
-#[derive(Debug)]
-struct CodeAssistStatus {
-    tier_id: Option<String>,
-    tier_name: Option<String>,
-    project_id: Option<String>,
+#[derive(Debug, Clone, PartialEq)]
+pub struct CodeAssistStatus {
+    pub tier_id: Option<String>,
+    pub tier_name: Option<String>,
+    pub project_id: Option<String>,
+    pub credits: Vec<AntigravityCreditInfo>,
 }
 
 struct CallbackListener {
@@ -317,6 +329,10 @@ pub fn build_antigravity_code_assist_headers_for_test(endpoint: &str) -> Vec<(St
 
 pub fn build_antigravity_load_code_assist_payload_for_test() -> Value {
     build_load_code_assist_payload()
+}
+
+pub fn parse_antigravity_load_status_for_test(raw: &Value) -> CodeAssistStatus {
+    parse_load_code_assist_status(raw)
 }
 
 pub fn build_antigravity_oauth_start_for_test(
@@ -498,6 +514,7 @@ fn import_from_gemini_home(
         project_id: None,
         tier_id: None,
         plan_name: None,
+        credits: Vec::new(),
         quota: AntigravityQuotaSummary::default(),
         quota_query_last_error: None,
         quota_query_last_error_at: None,
@@ -526,6 +543,9 @@ fn upsert_account_in(
         }
         if account.plan_name.is_none() {
             account.plan_name = existing.plan_name;
+        }
+        if account.credits.is_empty() {
+            account.credits = existing.credits;
         }
         if account.quota == AntigravityQuotaSummary::default() {
             account.quota = existing.quota;
@@ -608,6 +628,7 @@ fn upsert_token_response_in(
         project_id: None,
         tier_id: None,
         plan_name: None,
+        credits: Vec::new(),
         quota: AntigravityQuotaSummary::default(),
         quota_query_last_error: None,
         quota_query_last_error_at: None,
@@ -850,6 +871,7 @@ async fn refresh_account_in(
     account.plan_name = load_status
         .tier_name
         .or_else(|| account.tier_id.as_deref().and_then(parse_tier_plan_name));
+    account.credits = load_status.credits;
     account.last_used = now_timestamp();
 
     if let Some(project_id) = account.project_id.as_deref() {
@@ -979,6 +1001,10 @@ async fn load_code_assist_status(access_token: &str) -> Result<CodeAssistStatus,
         &build_load_code_assist_payload(),
     )
     .await?;
+    Ok(parse_load_code_assist_status(&raw))
+}
+
+fn parse_load_code_assist_status(raw: &Value) -> CodeAssistStatus {
     let current_tier = raw.get("currentTier");
     let paid_tier = raw.get("paidTier");
     let tier_id = first_non_empty([
@@ -1011,12 +1037,43 @@ async fn load_code_assist_status(access_token: &str) -> Result<CodeAssistStatus,
             .and_then(|item| item.get("projectId"))
             .and_then(Value::as_str),
     ]);
+    let credits = paid_tier
+        .and_then(|tier| tier.get("availableCredits"))
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| {
+                    let credit_type = item
+                        .get("creditType")
+                        .and_then(Value::as_str)
+                        .and_then(|value| normalize_optional(value.to_string()))?;
+                    let credit_amount = item
+                        .get("creditAmount")
+                        .and_then(Value::as_str)
+                        .and_then(|value| normalize_optional(value.to_string()));
+                    if credit_amount.is_none() {
+                        return None;
+                    }
+                    Some(AntigravityCreditInfo {
+                        credit_type,
+                        credit_amount,
+                        minimum_credit_amount_for_usage: item
+                            .get("minimumCreditAmountForUsage")
+                            .and_then(Value::as_str)
+                            .and_then(|value| normalize_optional(value.to_string())),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
-    Ok(CodeAssistStatus {
+    CodeAssistStatus {
         tier_id,
         tier_name,
         project_id,
-    })
+        credits,
+    }
 }
 
 async fn retrieve_user_quota(access_token: &str, project_id: &str) -> Result<Value, String> {
@@ -1358,6 +1415,7 @@ impl StoredAntigravityAccount {
             project_id: self.project_id.clone(),
             tier_id: self.tier_id.clone(),
             plan_name: self.plan_name.clone(),
+            credits: self.credits.clone(),
             quota: self.quota.clone(),
             quota_query_last_error: self.quota_query_last_error.clone(),
             quota_query_last_error_at: self.quota_query_last_error_at,

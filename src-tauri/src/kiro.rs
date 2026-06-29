@@ -211,13 +211,18 @@ pub async fn kiro_oauth_login_complete(login_id: String) -> Result<KiroAccountSu
                         let guard = PENDING_KIRO_OAUTH
                             .lock()
                             .map_err(|_| "Kiro OAuth state lock unavailable".to_string())?;
-                        guard.clone().ok_or_else(|| "Kiro OAuth login was cancelled.".to_string())?
+                        guard
+                            .clone()
+                            .ok_or_else(|| "Kiro OAuth login was cancelled.".to_string())?
                     };
                     // Use the actual path Kiro redirected to (varies by login provider).
                     // Strip any path from callback_url to get just the base URL.
                     let base_url = {
                         let raw = &pending.callback_url;
-                        if let Some(pos) = raw.find("://").and_then(|p| raw[p+3..].find('/').map(|q| p + 3 + q)) {
+                        if let Some(pos) = raw
+                            .find("://")
+                            .and_then(|p| raw[p + 3..].find('/').map(|q| p + 3 + q))
+                        {
                             &raw[..pos]
                         } else {
                             raw.trim_end_matches('/')
@@ -282,7 +287,10 @@ pub fn kiro_oauth_login_cancel(login_id: Option<String>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn kiro_oauth_submit_callback_url(login_id: String, callback_url: String) -> Result<(), String> {
+pub fn kiro_oauth_submit_callback_url(
+    login_id: String,
+    callback_url: String,
+) -> Result<(), String> {
     let parsed = parse_callback_url(&callback_url);
     match parsed {
         Err(msg) => Err(msg),
@@ -376,26 +384,39 @@ fn spawn_callback_server(port: u16, expected_login_id: String, expected_state: S
         let server = match tiny_http::Server::http(format!("127.0.0.1:{}", port)) {
             Ok(s) => s,
             Err(e) => {
-                set_callback_error(&expected_login_id, &expected_state, format!("Callback server failed to start: {}", e));
+                set_callback_error(
+                    &expected_login_id,
+                    &expected_state,
+                    format!("Callback server failed to start: {}", e),
+                );
                 return;
             }
         };
 
-        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(OAUTH_TIMEOUT_SECONDS as u64);
+        let deadline = std::time::Instant::now()
+            + std::time::Duration::from_secs(OAUTH_TIMEOUT_SECONDS as u64);
 
         loop {
             if std::time::Instant::now() > deadline {
-                set_callback_error(&expected_login_id, &expected_state, "OAuth login timed out.".to_string());
+                set_callback_error(
+                    &expected_login_id,
+                    &expected_state,
+                    "OAuth login timed out.".to_string(),
+                );
                 break;
             }
 
             let is_done = {
                 let guard = PENDING_KIRO_OAUTH.lock().ok();
-                guard.as_ref().and_then(|g| g.as_ref()).map(|p| {
-                    p.login_id != expected_login_id || p.callback_result.is_some()
-                }).unwrap_or(true)
+                guard
+                    .as_ref()
+                    .and_then(|g| g.as_ref())
+                    .map(|p| p.login_id != expected_login_id || p.callback_result.is_some())
+                    .unwrap_or(true)
             };
-            if is_done { break; }
+            if is_done {
+                break;
+            }
 
             if let Ok(Some(request)) = server.try_recv() {
                 let raw_url = request.url().to_string();
@@ -403,8 +424,15 @@ fn spawn_callback_server(port: u16, expected_login_id: String, expected_state: S
                 let path = path.to_string();
 
                 if path == "/cancel" {
-                    set_callback_error(&expected_login_id, &expected_state, "Login cancelled.".to_string());
-                    let _ = request.respond(html_response(200, "<h2>Cancelled</h2><p>Return to Quota.</p>"));
+                    set_callback_error(
+                        &expected_login_id,
+                        &expected_state,
+                        "Login cancelled.".to_string(),
+                    );
+                    let _ = request.respond(html_response(
+                        200,
+                        "<h2>Cancelled</h2><p>Return to Quota.</p>",
+                    ));
                     break;
                 }
 
@@ -438,27 +466,38 @@ fn spawn_callback_server(port: u16, expected_login_id: String, expected_state: S
 
                 let callback_state = params.get("state").cloned().unwrap_or_default();
                 if callback_state.is_empty() || callback_state != expected_state {
-                    set_callback_error(&expected_login_id, &expected_state, "State mismatch in OAuth callback.".to_string());
+                    set_callback_error(
+                        &expected_login_id,
+                        &expected_state,
+                        "State mismatch in OAuth callback.".to_string(),
+                    );
                     let _ = request.respond(html_response(400,
                         "<h2>State mismatch</h2><p>Close this tab and try connecting again from Quota.</p>"
                     ));
                     break;
                 }
 
-                let code = params.get("code").filter(|c| !c.is_empty()).cloned().unwrap();
+                let code = params
+                    .get("code")
+                    .filter(|c| !c.is_empty())
+                    .cloned()
+                    .unwrap();
 
-                let login_option = params.get("login_option")
+                let login_option = params
+                    .get("login_option")
                     .or_else(|| params.get("loginOption"))
                     .cloned()
                     .unwrap_or_default()
                     .to_ascii_lowercase();
 
-                let issuer_url = params.get("issuer_url")
+                let issuer_url = params
+                    .get("issuer_url")
                     .or_else(|| params.get("issuerUrl"))
                     .filter(|v| !v.is_empty())
                     .cloned();
 
-                let idc_region = params.get("idc_region")
+                let idc_region = params
+                    .get("idc_region")
                     .or_else(|| params.get("idcRegion"))
                     .filter(|v| !v.is_empty())
                     .cloned();
@@ -498,7 +537,10 @@ fn set_callback_error(expected_login_id: &str, expected_state: &str, message: St
     }
 }
 
-fn html_response(status: u16, body_fragment: &str) -> tiny_http::Response<std::io::Cursor<Vec<u8>>> {
+fn html_response(
+    status: u16,
+    body_fragment: &str,
+) -> tiny_http::Response<std::io::Cursor<Vec<u8>>> {
     let html = format!(
         "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Quota – Kiro</title>\
         <style>body{{font-family:sans-serif;background:#111;color:#eee;text-align:center;padding:60px}}\
@@ -507,7 +549,8 @@ fn html_response(status: u16, body_fragment: &str) -> tiny_http::Response<std::i
         body_fragment
     );
     let bytes = html.into_bytes();
-    let content_type = tiny_http::Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8").unwrap();
+    let content_type =
+        tiny_http::Header::from_bytes(b"Content-Type", b"text/html; charset=utf-8").unwrap();
     tiny_http::Response::new(
         tiny_http::StatusCode(status),
         vec![content_type],
@@ -516,7 +559,6 @@ fn html_response(status: u16, body_fragment: &str) -> tiny_http::Response<std::i
         None,
     )
 }
-
 
 fn parse_query_params(query: &str) -> std::collections::HashMap<String, String> {
     query
@@ -545,11 +587,13 @@ fn parse_callback_url(raw: &str) -> Result<(String, Option<String>, Option<Strin
     };
 
     let params = parse_query_params(query);
-    let code = params.get("code")
+    let code = params
+        .get("code")
         .filter(|c| !c.is_empty())
         .cloned()
         .ok_or_else(|| "No code parameter in callback URL.".to_string())?;
-    let login_option = params.get("login_option")
+    let login_option = params
+        .get("login_option")
         .or_else(|| params.get("loginOption"))
         .cloned();
     let state = params.get("state").cloned();
@@ -579,32 +623,46 @@ async fn exchange_code_for_token(
     let status = response.status();
     let body = response.text().await.unwrap_or_default();
     if !status.is_success() {
-        return Err(format!("Kiro token exchange error: status={} body_len={}", status, body.len()));
+        return Err(format!(
+            "Kiro token exchange error: status={} body_len={}",
+            status,
+            body.len()
+        ));
     }
 
     let mut token: Value = serde_json::from_str(&body)
         .map_err(|e| format!("Could not parse Kiro token response: {}", e))?;
 
     // Unwrap { "data": { ... } } if present
-    if let Some(data) = token.as_object_mut().and_then(|obj| obj.remove("data")).filter(|v| v.is_object()) {
+    if let Some(data) = token
+        .as_object_mut()
+        .and_then(|obj| obj.remove("data"))
+        .filter(|v| v.is_object())
+    {
         token = data;
     }
 
     if let Some(obj) = token.as_object_mut() {
         // Inject login_option and provider so we can recover them later
         if !login_option.is_empty() {
-            obj.entry("login_option").or_insert_with(|| Value::String(login_option.to_string()));
+            obj.entry("login_option")
+                .or_insert_with(|| Value::String(login_option.to_string()));
             let provider = provider_from_login_option(login_option);
-            obj.entry("provider").or_insert_with(|| Value::String(provider.clone()));
-            obj.entry("loginProvider").or_insert_with(|| Value::String(provider));
+            obj.entry("provider")
+                .or_insert_with(|| Value::String(provider.clone()));
+            obj.entry("loginProvider")
+                .or_insert_with(|| Value::String(provider));
         }
         // Inject IDC/issuer fields for AWS Builder ID accounts
         if let Some(iu) = issuer_url {
-            obj.entry("issuer_url").or_insert_with(|| Value::String(iu.to_string()));
+            obj.entry("issuer_url")
+                .or_insert_with(|| Value::String(iu.to_string()));
         }
         if let Some(ir) = idc_region {
-            obj.entry("idc_region").or_insert_with(|| Value::String(ir.to_string()));
-            obj.entry("idcRegion").or_insert_with(|| Value::String(ir.to_string()));
+            obj.entry("idc_region")
+                .or_insert_with(|| Value::String(ir.to_string()));
+            obj.entry("idcRegion")
+                .or_insert_with(|| Value::String(ir.to_string()));
         }
     }
 
@@ -621,7 +679,8 @@ fn ensure_expires_at(token: &mut Value) {
     if obj.contains_key("expiresAt") || obj.contains_key("expires_at") {
         return;
     }
-    let expires_in = obj.get("expiresIn")
+    let expires_in = obj
+        .get("expiresIn")
         .or_else(|| obj.get("expires_in"))
         .and_then(|v| v.as_i64())
         .unwrap_or(0);
@@ -653,11 +712,17 @@ fn runtime_endpoint_for_region(region: Option<&str>) -> String {
 fn parse_profile_arn_region(arn: &str) -> Option<String> {
     let mut parts = arn.split(':');
     let prefix = parts.next()?.trim();
-    if !prefix.eq_ignore_ascii_case("arn") { return None; }
+    if !prefix.eq_ignore_ascii_case("arn") {
+        return None;
+    }
     parts.next()?; // partition
     parts.next()?; // service
     let region = parts.next()?.trim();
-    if region.is_empty() { None } else { Some(region.to_string()) }
+    if region.is_empty() {
+        None
+    } else {
+        Some(region.to_string())
+    }
 }
 
 fn extract_profile_arn(auth_token: Option<&Value>, profile: Option<&Value>) -> Option<String> {
@@ -687,7 +752,10 @@ async fn fetch_runtime_usage(access_token: &str, profile_arn: &str) -> Result<Va
     if !status.is_success() {
         // 403 typically means the account is banned/disabled
         if status == reqwest::StatusCode::FORBIDDEN {
-            return Err(format!("BANNED:{}", parse_runtime_error(&body).unwrap_or(body)));
+            return Err(format!(
+                "BANNED:{}",
+                parse_runtime_error(&body).unwrap_or(body)
+            ));
         }
         return Err(format!("Kiro runtime usage error: status={}", status));
     }
@@ -697,9 +765,16 @@ async fn fetch_runtime_usage(access_token: &str, profile_arn: &str) -> Result<Va
 
 fn parse_runtime_error(body: &str) -> Option<String> {
     let parsed: Value = serde_json::from_str(body).ok()?;
-    pick_string(Some(&parsed), &[
-        &["reason"], &["message"], &["errorMessage"], &["error", "message"], &["detail"],
-    ])
+    pick_string(
+        Some(&parsed),
+        &[
+            &["reason"],
+            &["message"],
+            &["errorMessage"],
+            &["error", "message"],
+            &["detail"],
+        ],
+    )
 }
 
 async fn try_refresh_token(refresh_token: &str) -> Result<Value, String> {
@@ -719,7 +794,11 @@ async fn try_refresh_token(refresh_token: &str) -> Result<Value, String> {
 
     let mut token: Value = serde_json::from_str(&body)
         .map_err(|e| format!("Could not parse Kiro refresh response: {}", e))?;
-    if let Some(data) = token.as_object_mut().and_then(|o| o.remove("data")).filter(|v| v.is_object()) {
+    if let Some(data) = token
+        .as_object_mut()
+        .and_then(|o| o.remove("data"))
+        .filter(|v| v.is_object())
+    {
         token = data;
     }
     ensure_expires_at(&mut token);
@@ -738,7 +817,10 @@ struct ParsedUsage {
 }
 
 fn resolve_usage_root(usage: &Value) -> &Value {
-    if let Some(state) = usage.as_object().and_then(|o| o.get("kiro.resourceNotifications.usageState")) {
+    if let Some(state) = usage
+        .as_object()
+        .and_then(|o| o.get("kiro.resourceNotifications.usageState"))
+    {
         return state;
     }
     if let Some(state) = usage.get("usageState") {
@@ -754,69 +836,128 @@ fn parse_usage(raw: &Value) -> ParsedUsage {
     let email = pick_string(Some(raw), &[&["userInfo", "email"], &["email"]]);
 
     // Plan name
-    let plan_name = pick_string(Some(root), &[
-        &["planName"],
-        &["currentPlanName"],
-        &["subscriptionInfo", "subscriptionName"],
-        &["subscriptionInfo", "subscriptionTitle"],
-        &["subscriptionInfo", "type"],
-        &["usageBreakdowns", "planName"],
-        &["plan", "name"],
-    ]);
+    let plan_name = pick_string(
+        Some(root),
+        &[
+            &["planName"],
+            &["currentPlanName"],
+            &["subscriptionInfo", "subscriptionName"],
+            &["subscriptionInfo", "subscriptionTitle"],
+            &["subscriptionInfo", "type"],
+            &["usageBreakdowns", "planName"],
+            &["plan", "name"],
+        ],
+    );
 
     // Find the primary breakdown (prefer type == "credit")
     let breakdown = find_primary_breakdown(root);
 
-    let plan_name = plan_name.or_else(|| pick_string(breakdown, &[
-        &["displayName"], &["displayNamePlural"], &["type"], &["unit"],
-    ]));
-
-    // Credits total/used
-    let credits_total = pick_number(Some(root), &[
-        &["estimatedUsage", "total"],
-        &["usageBreakdowns", "plan", "totalCredits"],
-    ]).or_else(|| pick_number(breakdown, &[
-        &["usageLimitWithPrecision"], &["usageLimit"], &["limit"], &["total"], &["totalCredits"],
-    ]));
-
-    let credits_used = pick_number(Some(root), &[
-        &["estimatedUsage", "used"],
-        &["usageBreakdowns", "plan", "usedCredits"],
-    ]).or_else(|| pick_number(breakdown, &[
-        &["currentUsageWithPrecision"], &["currentUsage"], &["used"], &["usedCredits"],
-    ]));
-
-    // Bonus / free trial credits
-    let free_trial = breakdown.and_then(|b| {
-        b.get("freeTrialUsage").or_else(|| b.get("freeTrialInfo"))
+    let plan_name = plan_name.or_else(|| {
+        pick_string(
+            breakdown,
+            &[
+                &["displayName"],
+                &["displayNamePlural"],
+                &["type"],
+                &["unit"],
+            ],
+        )
     });
 
-    let bonus_total = pick_number(free_trial, &[
-        &["usageLimitWithPrecision"], &["usageLimit"], &["limit"], &["total"],
-    ]).or_else(|| pick_number(Some(root), &[
-        &["bonusCredits", "total"], &["bonus", "total"],
-    ]));
+    // Credits total/used
+    let credits_total = pick_number(
+        Some(root),
+        &[
+            &["estimatedUsage", "total"],
+            &["usageBreakdowns", "plan", "totalCredits"],
+        ],
+    )
+    .or_else(|| {
+        pick_number(
+            breakdown,
+            &[
+                &["usageLimitWithPrecision"],
+                &["usageLimit"],
+                &["limit"],
+                &["total"],
+                &["totalCredits"],
+            ],
+        )
+    });
 
-    let bonus_used = pick_number(free_trial, &[
-        &["currentUsageWithPrecision"], &["currentUsage"], &["used"],
-    ]).or_else(|| pick_number(Some(root), &[
-        &["bonusCredits", "used"], &["bonus", "used"],
-    ]));
+    let credits_used = pick_number(
+        Some(root),
+        &[
+            &["estimatedUsage", "used"],
+            &["usageBreakdowns", "plan", "usedCredits"],
+        ],
+    )
+    .or_else(|| {
+        pick_number(
+            breakdown,
+            &[
+                &["currentUsageWithPrecision"],
+                &["currentUsage"],
+                &["used"],
+                &["usedCredits"],
+            ],
+        )
+    });
+
+    // Bonus / free trial credits
+    let free_trial =
+        breakdown.and_then(|b| b.get("freeTrialUsage").or_else(|| b.get("freeTrialInfo")));
+
+    let bonus_total = pick_number(
+        free_trial,
+        &[
+            &["usageLimitWithPrecision"],
+            &["usageLimit"],
+            &["limit"],
+            &["total"],
+        ],
+    )
+    .or_else(|| {
+        pick_number(
+            Some(root),
+            &[&["bonusCredits", "total"], &["bonus", "total"]],
+        )
+    });
+
+    let bonus_used = pick_number(
+        free_trial,
+        &[&["currentUsageWithPrecision"], &["currentUsage"], &["used"]],
+    )
+    .or_else(|| pick_number(Some(root), &[&["bonusCredits", "used"], &["bonus", "used"]]));
 
     // Bonus expiry days
-    let bonus_expire_days = pick_number(free_trial, &[
-        &["daysRemaining"], &["expiryDays"], &["expireDays"],
-    ]).map(|v| v.round() as i64).or_else(|| {
+    let bonus_expire_days = pick_number(
+        free_trial,
+        &[&["daysRemaining"], &["expiryDays"], &["expireDays"]],
+    )
+    .map(|v| v.round() as i64)
+    .or_else(|| {
         let expiry_ts = pick_timestamp(free_trial, &[&["expiryDate"], &["freeTrialExpiry"]])?;
         let now = now_timestamp();
-        if expiry_ts <= now { Some(0) } else { Some(((expiry_ts - now) as f64 / 86400.0).ceil() as i64) }
+        if expiry_ts <= now {
+            Some(0)
+        } else {
+            Some(((expiry_ts - now) as f64 / 86400.0).ceil() as i64)
+        }
     });
 
     // Usage reset time
-    let usage_reset_at = pick_timestamp(Some(root), &[
-        &["resetAt"], &["resetTime"], &["resetOn"], &["nextDateReset"],
-        &["usageBreakdowns", "resetAt"],
-    ]).or_else(|| pick_timestamp(breakdown, &[&["resetDate"], &["resetAt"]]));
+    let usage_reset_at = pick_timestamp(
+        Some(root),
+        &[
+            &["resetAt"],
+            &["resetTime"],
+            &["resetOn"],
+            &["nextDateReset"],
+            &["usageBreakdowns", "resetAt"],
+        ],
+    )
+    .or_else(|| pick_timestamp(breakdown, &[&["resetDate"], &["resetAt"]]));
 
     ParsedUsage {
         plan_name,
@@ -831,11 +972,14 @@ fn parse_usage(raw: &Value) -> ParsedUsage {
 }
 
 fn find_primary_breakdown(root: &Value) -> Option<&Value> {
-    let list = root.get("usageBreakdownList")
+    let list = root
+        .get("usageBreakdownList")
         .and_then(|v| v.as_array())
         .or_else(|| root.get("usageBreakdowns").and_then(|v| v.as_array()))?;
 
-    if list.is_empty() { return None; }
+    if list.is_empty() {
+        return None;
+    }
 
     list.iter()
         .find(|item| {
@@ -856,37 +1000,56 @@ async fn build_and_save_account(
 ) -> Result<KiroAccountSummary, String> {
     let storage_dir = quota_storage_dir()?;
 
-    let access_token = pick_string(Some(&auth_token), &[
-        &["accessToken"], &["access_token"], &["token"], &["idToken"], &["id_token"],
-    ])
+    let access_token = pick_string(
+        Some(&auth_token),
+        &[
+            &["accessToken"],
+            &["access_token"],
+            &["token"],
+            &["idToken"],
+            &["id_token"],
+        ],
+    )
     .ok_or_else(|| "Kiro auth token missing access token field.".to_string())?;
 
-    let refresh_token = pick_string(Some(&auth_token), &[
-        &["refreshToken"], &["refresh_token"],
-    ]);
+    let refresh_token = pick_string(Some(&auth_token), &[&["refreshToken"], &["refresh_token"]]);
 
-    let expires_at = pick_timestamp(Some(&auth_token), &[
-        &["expiresAt"], &["expires_at"], &["expiry"], &["expiration"],
-    ]);
+    let expires_at = pick_timestamp(
+        Some(&auth_token),
+        &[
+            &["expiresAt"],
+            &["expires_at"],
+            &["expiry"],
+            &["expiration"],
+        ],
+    );
 
-    let idc_region = pick_string(Some(&auth_token), &[
-        &["idc_region"], &["idcRegion"], &["region"],
-    ]);
+    let idc_region = pick_string(
+        Some(&auth_token),
+        &[&["idc_region"], &["idcRegion"], &["region"]],
+    );
 
-    let client_id = pick_string(Some(&auth_token), &[
-        &["client_id"], &["clientId"],
-    ]);
+    let client_id = pick_string(Some(&auth_token), &[&["client_id"], &["clientId"]]);
 
-    let login_provider = pick_string(Some(&auth_token), &[
-        &["login_option"], &["provider"], &["loginProvider"],
-    ])
+    let login_provider = pick_string(
+        Some(&auth_token),
+        &[&["login_option"], &["provider"], &["loginProvider"]],
+    )
     .map(|v| provider_from_login_option(&v));
 
     // Email from profile → auth token → decode JWT claims
-    let email = pick_string(profile.as_ref(), &[&["email"], &["account", "email"], &["primaryEmail"]])
-        .or_else(|| pick_string(Some(&auth_token), &[&["email"], &["userEmail"], &["login_hint"], &["loginHint"]]))
-        .or_else(|| decode_jwt_email(&access_token))
-        .unwrap_or_default();
+    let email = pick_string(
+        profile.as_ref(),
+        &[&["email"], &["account", "email"], &["primaryEmail"]],
+    )
+    .or_else(|| {
+        pick_string(
+            Some(&auth_token),
+            &[&["email"], &["userEmail"], &["login_hint"], &["loginHint"]],
+        )
+    })
+    .or_else(|| decode_jwt_email(&access_token))
+    .unwrap_or_default();
 
     let profile_arn = extract_profile_arn(Some(&auth_token), profile.as_ref());
 
@@ -955,19 +1118,27 @@ async fn build_and_save_account(
     upsert_account_in(&storage_dir, account)
 }
 
-async fn fetch_and_apply_usage(account: &mut StoredKiroAccount, profile_arn: &str) -> Result<(), String> {
+async fn fetch_and_apply_usage(
+    account: &mut StoredKiroAccount,
+    profile_arn: &str,
+) -> Result<(), String> {
     let usage = match fetch_runtime_usage(&account.access_token, profile_arn).await {
         Ok(u) => u,
         Err(e) => {
             // Try refresh token if first attempt fails
-            let refresh_token = account.refresh_token.as_deref()
+            let refresh_token = account
+                .refresh_token
+                .as_deref()
                 .filter(|t| !t.is_empty())
                 .ok_or_else(|| e.clone())?;
             let new_token = try_refresh_token(refresh_token).await?;
-            if let Some(at) = pick_string(Some(&new_token), &[&["accessToken"], &["access_token"]]) {
+            if let Some(at) = pick_string(Some(&new_token), &[&["accessToken"], &["access_token"]])
+            {
                 account.access_token = at;
             }
-            if let Some(rt) = pick_string(Some(&new_token), &[&["refreshToken"], &["refresh_token"]]) {
+            if let Some(rt) =
+                pick_string(Some(&new_token), &[&["refreshToken"], &["refresh_token"]])
+            {
                 account.refresh_token = Some(rt);
             }
             if let Some(ea) = pick_timestamp(Some(&new_token), &[&["expiresAt"], &["expires_at"]]) {
@@ -989,20 +1160,36 @@ fn apply_usage(account: &mut StoredKiroAccount, usage: &Value) {
             account.email = email;
         }
     }
-    if let Some(v) = parsed.plan_name { account.plan_name = Some(v); }
-    if let Some(v) = parsed.credits_total { account.credits_total = Some(v); }
-    if let Some(v) = parsed.credits_used { account.credits_used = Some(v); }
-    if let Some(v) = parsed.bonus_total { account.bonus_total = Some(v); }
-    if let Some(v) = parsed.bonus_used { account.bonus_used = Some(v); }
-    if let Some(v) = parsed.usage_reset_at { account.usage_reset_at = Some(v); }
-    if let Some(v) = parsed.bonus_expire_days { account.bonus_expire_days = Some(v); }
+    if let Some(v) = parsed.plan_name {
+        account.plan_name = Some(v);
+    }
+    if let Some(v) = parsed.credits_total {
+        account.credits_total = Some(v);
+    }
+    if let Some(v) = parsed.credits_used {
+        account.credits_used = Some(v);
+    }
+    if let Some(v) = parsed.bonus_total {
+        account.bonus_total = Some(v);
+    }
+    if let Some(v) = parsed.bonus_used {
+        account.bonus_used = Some(v);
+    }
+    if let Some(v) = parsed.usage_reset_at {
+        account.usage_reset_at = Some(v);
+    }
+    if let Some(v) = parsed.bonus_expire_days {
+        account.bonus_expire_days = Some(v);
+    }
     account.quota_query_last_error = None;
     account.quota_query_last_error_at = None;
     account.usage_updated_at = Some(now_timestamp_ms());
 }
 
 fn resolve_plan_display(account: &StoredKiroAccount) -> Option<String> {
-    let raw = account.plan_name.as_deref()
+    let raw = account
+        .plan_name
+        .as_deref()
         .or(account.plan_tier.as_deref())?;
     let upper = raw.trim().to_uppercase();
     if upper.contains("FREE") || upper.contains("STANDALONE") {
@@ -1033,7 +1220,8 @@ fn now_timestamp_ms() -> i64 {
 fn quota_storage_dir() -> Result<PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not locate home directory".to_string())?;
     let dir = home.join(DATA_DIR);
-    fs::create_dir_all(&dir).map_err(|e| format!("Could not create Quota data directory: {}", e))?;
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("Could not create Quota data directory: {}", e))?;
     Ok(dir)
 }
 
@@ -1050,7 +1238,9 @@ fn account_path_in(storage_dir: &Path, account_id: &str) -> PathBuf {
 }
 
 fn write_string_atomic(path: &Path, content: &str) -> Result<(), String> {
-    let parent = path.parent().ok_or_else(|| "No parent directory".to_string())?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| "No parent directory".to_string())?;
     fs::create_dir_all(parent).map_err(|e| format!("Could not create directory: {}", e))?;
     let tmp = parent.join(format!(
         ".{}.{}.tmp",
@@ -1103,7 +1293,10 @@ fn list_accounts_in(storage_dir: &Path) -> Result<Vec<KiroAccountSummary>, Strin
         .collect())
 }
 
-fn upsert_account_in(storage_dir: &Path, mut account: StoredKiroAccount) -> Result<KiroAccountSummary, String> {
+fn upsert_account_in(
+    storage_dir: &Path,
+    mut account: StoredKiroAccount,
+) -> Result<KiroAccountSummary, String> {
     let mut index = load_index_in(storage_dir)?;
     if let Ok(existing) = load_account_in(storage_dir, &account.id) {
         account.created_at = existing.created_at;
@@ -1120,7 +1313,10 @@ fn upsert_account_in(storage_dir: &Path, mut account: StoredKiroAccount) -> Resu
     Ok(account.to_summary())
 }
 
-async fn refresh_account_in(storage_dir: &Path, account_id: &str) -> Result<KiroAccountSummary, String> {
+async fn refresh_account_in(
+    storage_dir: &Path,
+    account_id: &str,
+) -> Result<KiroAccountSummary, String> {
     let mut account = load_account_in(storage_dir, account_id)?;
 
     let profile_arn = extract_profile_arn(
@@ -1133,7 +1329,11 @@ async fn refresh_account_in(storage_dir: &Path, account_id: &str) -> Result<Kiro
             Ok(()) => {}
             Err(e) => {
                 let is_banned = e.starts_with("BANNED:");
-                let msg = if is_banned { e.trim_start_matches("BANNED:").to_string() } else { e };
+                let msg = if is_banned {
+                    e.trim_start_matches("BANNED:").to_string()
+                } else {
+                    e
+                };
                 account.quota_query_last_error = Some(msg.clone());
                 account.quota_query_last_error_at = Some(now_timestamp_ms());
                 if is_banned {
@@ -1143,7 +1343,8 @@ async fn refresh_account_in(storage_dir: &Path, account_id: &str) -> Result<Kiro
             }
         }
     } else {
-        account.quota_query_last_error = Some("Cannot refresh: no profile ARN in stored credentials.".to_string());
+        account.quota_query_last_error =
+            Some("Cannot refresh: no profile ARN in stored credentials.".to_string());
         account.quota_query_last_error_at = Some(now_timestamp_ms());
     }
 
@@ -1189,7 +1390,11 @@ impl StoredKiroAccount {
 
 fn local_auth_token_path() -> Result<PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not locate home directory".to_string())?;
-    Ok(home.join(".aws").join("sso").join("cache").join("kiro-auth-token.json"))
+    Ok(home
+        .join(".aws")
+        .join("sso")
+        .join("cache")
+        .join("kiro-auth-token.json"))
 }
 
 fn local_profile_path() -> Result<PathBuf, String> {
@@ -1199,13 +1404,16 @@ fn local_profile_path() -> Result<PathBuf, String> {
     return Ok(home.join(".config/Kiro/User/globalStorage/kiro.kiroagent/profile.json"));
 
     #[cfg(target_os = "macos")]
-    return Ok(home.join("Library/Application Support/Kiro/User/globalStorage/kiro.kiroagent/profile.json"));
+    return Ok(home
+        .join("Library/Application Support/Kiro/User/globalStorage/kiro.kiroagent/profile.json"));
 
     #[cfg(target_os = "windows")]
     {
         let appdata = std::env::var("APPDATA")
             .map_err(|_| "Could not read APPDATA environment variable".to_string())?;
-        return Ok(PathBuf::from(appdata).join("Kiro/User/globalStorage/kiro.kiroagent/profile.json"));
+        return Ok(
+            PathBuf::from(appdata).join("Kiro/User/globalStorage/kiro.kiroagent/profile.json")
+        );
     }
 
     #[allow(unreachable_code)]
@@ -1214,7 +1422,9 @@ fn local_profile_path() -> Result<PathBuf, String> {
 
 fn read_local_auth_token() -> Result<Option<Value>, String> {
     let path = local_auth_token_path()?;
-    if !path.exists() { return Ok(None); }
+    if !path.exists() {
+        return Ok(None);
+    }
     let raw = fs::read_to_string(&path)
         .map_err(|e| format!("Could not read {}: {}", path.display(), e))?;
     let parsed = serde_json::from_str(&raw)
@@ -1227,7 +1437,9 @@ fn read_local_profile_json() -> Result<Option<Value>, String> {
         Ok(p) => p,
         Err(_) => return Ok(None),
     };
-    if !path.exists() { return Ok(None); }
+    if !path.exists() {
+        return Ok(None);
+    }
     let raw = fs::read_to_string(&path)
         .map_err(|e| format!("Could not read {}: {}", path.display(), e))?;
     let parsed = serde_json::from_str(&raw)
@@ -1269,7 +1481,9 @@ fn pick_number(root: Option<&Value>, paths: &[&[&str]]) -> Option<f64> {
             }
             if let Some(text) = val.as_str() {
                 if let Ok(n) = text.trim().parse::<f64>() {
-                    if n.is_finite() { return Some(n); }
+                    if n.is_finite() {
+                        return Some(n);
+                    }
                 }
             }
         }
@@ -1297,7 +1511,9 @@ fn parse_ts_value(val: &Value) -> Option<i64> {
         }
         Value::String(s) => {
             let trimmed = s.trim();
-            if trimmed.is_empty() { return None; }
+            if trimmed.is_empty() {
+                return None;
+            }
             if let Ok(n) = trimmed.parse::<i64>() {
                 return normalize_ts(n);
             }
@@ -1310,17 +1526,27 @@ fn parse_ts_value(val: &Value) -> Option<i64> {
 }
 
 fn normalize_ts(raw: i64) -> Option<i64> {
-    if raw <= 0 { return None; }
+    if raw <= 0 {
+        return None;
+    }
     // milliseconds → seconds
-    if raw > 10_000_000_000 { Some(raw / 1000) } else { Some(raw) }
+    if raw > 10_000_000_000 {
+        Some(raw / 1000)
+    } else {
+        Some(raw)
+    }
 }
 
 fn decode_jwt_email(token: &str) -> Option<String> {
     let payload = token.split('.').nth(1)?;
-    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(payload)
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(payload)
         .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(payload))
         .ok()?;
     let claims: Value = serde_json::from_slice(&decoded).ok()?;
-    pick_string(Some(&claims), &[&["email"], &["upn"], &["preferred_username"]])
-        .filter(|e| e.contains('@'))
+    pick_string(
+        Some(&claims),
+        &[&["email"], &["upn"], &["preferred_username"]],
+    )
+    .filter(|e| e.contains('@'))
 }

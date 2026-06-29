@@ -7,5 +7,3 @@ tsconfig.json
 *.vsix
 *.log
 screenshots/**
-VSIX_PLAN.md
-VSIX_DIRECT_AUTH_PLAN.md

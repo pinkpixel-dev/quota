@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { formatAntigravityCredits, type AntigravityCreditInfo } from './antigravityUsage';
 import { PROVIDER_LABELS } from './constants';
 import type { ProviderId, QuotaSnapshot, QuotaTrack, TrackId } from './types';
 
@@ -173,6 +174,19 @@ function tracksFromAntigravity(accounts: Record<string, unknown>[]): QuotaTrack[
     const quota = isRecord(account.quota) ? account.quota : {};
     const geminiFiveHour = isRecord(quota.geminiFiveHour) ? quota.geminiFiveHour : {};
     const thirdPartyFiveHour = isRecord(quota.thirdPartyFiveHour) ? quota.thirdPartyFiveHour : {};
+    const credits = asArray(account.credits)
+      .map((item): AntigravityCreditInfo | undefined => {
+        const creditType = asString(item.creditType);
+        const creditAmount = asString(item.creditAmount);
+        if (!creditType || !creditAmount) return undefined;
+        return {
+          creditType,
+          creditAmount,
+          minimumCreditAmountForUsage: asString(item.minimumCreditAmountForUsage),
+        };
+      })
+      .filter((item): item is AntigravityCreditInfo => item != null);
+    const creditsValue = formatAntigravityCredits(credits);
 
     return [
       makeTrack(
@@ -193,7 +207,19 @@ function tracksFromAntigravity(accounts: Record<string, unknown>[]): QuotaTrack[
         asNumber(thirdPartyFiveHour.remainingPercent),
         normalizeTimestamp(thirdPartyFiveHour.resetAt),
       ),
-    ];
+      creditsValue
+        ? {
+            id: 'antigravity.credits',
+            providerId: 'antigravity',
+            providerLabel: PROVIDER_LABELS.antigravity,
+            label: 'Available AI Credits',
+            accountLabel: accountLabel(account),
+            valueLabel: creditsValue,
+            updatedAt: normalizeTimestamp(account.usageUpdatedAt),
+            error: asString(account.quotaQueryLastError) ?? null,
+          }
+        : undefined,
+    ].filter((track): track is QuotaTrack => track != null);
   });
 }
 
@@ -224,7 +250,7 @@ function payloadToTracks(payload: SafeSummaryPayload): QuotaTrack[] {
     ...tracksFromClaude(asArray(providers.claude)),
     ...tracksFromAntigravity(asArray(providers.antigravity)),
     ...tracksFromKiro(asArray(providers.kiro)),
-  ].filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
+  ].filter((track) => track.percentUsed != null || track.percentRemaining != null || track.valueLabel || track.error);
 }
 
 export function expandHome(inputPath: string): string {

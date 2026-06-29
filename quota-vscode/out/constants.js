@@ -31,6 +31,7 @@ exports.CANONICAL_TRACK_ORDER = [
     'antigravity.geminiWeekly',
     'antigravity.claude',
     'antigravity.claudeWeekly',
+    'antigravity.credits',
     'kiro.promptCredits',
 ];
 exports.TRACK_LABELS = {
@@ -47,6 +48,7 @@ exports.TRACK_LABELS = {
     'antigravity.geminiWeekly': 'Gemini models weekly',
     'antigravity.claude': 'Claude/GPT models',
     'antigravity.claudeWeekly': 'Claude/GPT models weekly',
+    'antigravity.credits': 'Available AI Credits',
     'kiro.promptCredits': 'Prompt credits',
 };
 exports.TRACK_STATUS_BAR_LABEL = {
@@ -63,6 +65,7 @@ exports.TRACK_STATUS_BAR_LABEL = {
     'antigravity.geminiWeekly': 'Agy:Gemini:Wk',
     'antigravity.claude': 'Agy:Claude:5h',
     'antigravity.claudeWeekly': 'Agy:Claude:Wk',
+    'antigravity.credits': 'Agy:Credits',
     'kiro.promptCredits': 'Kiro:Credits',
 };
 //# sourceMappingURL=constants.js.map

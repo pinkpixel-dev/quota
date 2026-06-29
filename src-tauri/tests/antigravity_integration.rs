@@ -3,8 +3,8 @@ use quota_lib::antigravity::{
     apply_antigravity_token_response_for_test, build_antigravity_code_assist_headers_for_test,
     build_antigravity_load_code_assist_payload_for_test, build_antigravity_oauth_start_for_test,
     import_antigravity_from_gemini_home_for_test, parse_antigravity_code_assist_response_for_test,
-    parse_antigravity_quota_for_test, record_antigravity_refresh_error_for_test,
-    AntigravityAccountIndex,
+    parse_antigravity_load_status_for_test, parse_antigravity_quota_for_test,
+    record_antigravity_refresh_error_for_test, AntigravityAccountIndex,
 };
 use serde_json::json;
 use std::fs;
@@ -160,6 +160,40 @@ fn builds_antigravity_load_code_assist_payload_with_antigravity_metadata() {
     assert_eq!(payload["metadata"]["updateChannel"], "stable");
     assert_eq!(payload["metadata"]["pluginType"], "GEMINI");
     assert!(payload["metadata"]["platform"].as_str().is_some());
+}
+
+#[test]
+fn parses_antigravity_ai_credits_from_paid_tier() {
+    let raw = json!({
+        "cloudaicompanionProject": "project-123",
+        "paidTier": {
+            "id": "g1-pro-tier",
+            "name": "Pro",
+            "availableCredits": [
+                {
+                    "creditType": "GOOGLE_ONE_AI",
+                    "creditAmount": "25,000",
+                    "minimumCreditAmountForUsage": "50"
+                },
+                {
+                    "creditType": "IGNORED_WITHOUT_AMOUNT"
+                }
+            ]
+        }
+    });
+
+    let status = parse_antigravity_load_status_for_test(&raw);
+
+    assert_eq!(status.project_id, Some("project-123".to_string()));
+    assert_eq!(status.tier_id, Some("g1-pro-tier".to_string()));
+    assert_eq!(status.tier_name, Some("Pro".to_string()));
+    assert_eq!(status.credits.len(), 1);
+    assert_eq!(status.credits[0].credit_type, "GOOGLE_ONE_AI");
+    assert_eq!(status.credits[0].credit_amount, Some("25,000".to_string()));
+    assert_eq!(
+        status.credits[0].minimum_credit_amount_for_usage,
+        Some("50".to_string())
+    );
 }
 
 #[test]

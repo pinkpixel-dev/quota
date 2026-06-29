@@ -27,7 +27,7 @@ Quota currently supports direct extension-owned auth for:
 | GitHub Copilot | Premium requests, chat messages, inline suggestions |
 | Codex | 5h usage, weekly usage |
 | Claude Code | 5h usage, weekly usage, weekly Sonnet, extra usage |
-| Antigravity | Gemini 5h, Gemini weekly, Claude/GPT 5h, Claude/GPT weekly |
+| Antigravity | Gemini 5h, Gemini weekly, Claude/GPT 5h, Claude/GPT weekly, AI credits when available |
 | Kiro | Prompt credits |
 
 Cursor is not included in the extension because modern Cursor is its own standalone app. The Quota desktop app can still track Cursor.

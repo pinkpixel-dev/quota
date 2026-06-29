@@ -39,6 +39,7 @@ exports.loadQuotaSnapshot = loadQuotaSnapshot;
 const fs = __importStar(require("node:fs/promises"));
 const os = __importStar(require("node:os"));
 const path = __importStar(require("node:path"));
+const antigravityUsage_1 = require("./antigravityUsage");
 const constants_1 = require("./constants");
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -123,10 +124,36 @@ function tracksFromAntigravity(accounts) {
         const quota = isRecord(account.quota) ? account.quota : {};
         const geminiFiveHour = isRecord(quota.geminiFiveHour) ? quota.geminiFiveHour : {};
         const thirdPartyFiveHour = isRecord(quota.thirdPartyFiveHour) ? quota.thirdPartyFiveHour : {};
+        const credits = asArray(account.credits)
+            .map((item) => {
+            const creditType = asString(item.creditType);
+            const creditAmount = asString(item.creditAmount);
+            if (!creditType || !creditAmount)
+                return undefined;
+            return {
+                creditType,
+                creditAmount,
+                minimumCreditAmountForUsage: asString(item.minimumCreditAmountForUsage),
+            };
+        })
+            .filter((item) => item != null);
+        const creditsValue = (0, antigravityUsage_1.formatAntigravityCredits)(credits);
         return [
             makeTrack('antigravity.gemini', 'antigravity', account, 'Gemini Models', usedFromRemaining(geminiFiveHour.remainingPercent), asNumber(geminiFiveHour.remainingPercent), normalizeTimestamp(geminiFiveHour.resetAt)),
             makeTrack('antigravity.claude', 'antigravity', account, 'Claude/GPT models', usedFromRemaining(thirdPartyFiveHour.remainingPercent), asNumber(thirdPartyFiveHour.remainingPercent), normalizeTimestamp(thirdPartyFiveHour.resetAt)),
-        ];
+            creditsValue
+                ? {
+                    id: 'antigravity.credits',
+                    providerId: 'antigravity',
+                    providerLabel: constants_1.PROVIDER_LABELS.antigravity,
+                    label: 'Available AI Credits',
+                    accountLabel: accountLabel(account),
+                    valueLabel: creditsValue,
+                    updatedAt: normalizeTimestamp(account.usageUpdatedAt),
+                    error: asString(account.quotaQueryLastError) ?? null,
+                }
+                : undefined,
+        ].filter((track) => track != null);
     });
 }
 function tracksFromKiro(accounts) {
@@ -145,7 +172,7 @@ function payloadToTracks(payload) {
         ...tracksFromClaude(asArray(providers.claude)),
         ...tracksFromAntigravity(asArray(providers.antigravity)),
         ...tracksFromKiro(asArray(providers.kiro)),
-    ].filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
+    ].filter((track) => track.percentUsed != null || track.percentRemaining != null || track.valueLabel || track.error);
 }
 function expandHome(inputPath) {
     if (inputPath === '~')

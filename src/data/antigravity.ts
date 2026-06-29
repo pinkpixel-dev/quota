@@ -12,6 +12,12 @@ export interface AntigravityQuotaSummary {
   thirdPartyWeekly: AntigravityQuotaWindow;
 }
 
+export interface AntigravityCreditInfo {
+  creditType: string;
+  creditAmount?: string | null;
+  minimumCreditAmountForUsage?: string | null;
+}
+
 export interface AntigravityAccountSummary {
   id: string;
   email: string;
@@ -22,6 +28,7 @@ export interface AntigravityAccountSummary {
   projectId?: string | null;
   tierId?: string | null;
   planName?: string | null;
+  credits: AntigravityCreditInfo[];
   quota: AntigravityQuotaSummary;
   quotaQueryLastError?: string | null;
   quotaQueryLastErrorAt?: number | null;

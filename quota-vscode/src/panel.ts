@@ -37,6 +37,7 @@ function escapeHtml(value: string): string {
 }
 
 function trackPercentLabel(track: QuotaTrack, config: QuotaConfiguration): string {
+  if (track.valueLabel) return track.valueLabel;
   const percent = displayPercent(track, config.statusBarDisplay);
   const suffix = config.statusBarDisplay === 'percentRemaining' ? 'left' : 'used';
   return `${formatPercent(percent)} ${suffix}`;

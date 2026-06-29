@@ -554,6 +554,10 @@ code {
   background: var(--danger);
 }
 
+.usage-metric--credits .usage-metric__line strong {
+  color: var(--accent);
+}
+
 .usage-metric__meta {
   color: var(--subtle);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;

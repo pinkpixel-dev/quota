@@ -5,6 +5,12 @@ import * as os from 'node:os';
 
 import * as vscode from 'vscode';
 
+import {
+  buildAntigravityCreditsTrack,
+  parseAntigravityLoadStatus,
+  type AntigravityCreditInfo,
+  type AntigravityLoadStatus,
+} from './antigravityUsage';
 import { PROVIDER_LABELS } from './constants';
 import type { QuotaTrack, TrackId } from './types';
 
@@ -56,6 +62,7 @@ interface AntigravityAccount {
   projectId?: string;
   tierId?: string;
   planName?: string;
+  credits: AntigravityCreditInfo[];
   quota: AntigravityQuotaSummary;
   quotaQueryLastError?: string | null;
   quotaQueryLastErrorAt?: number | null;
@@ -106,12 +113,6 @@ interface OAuthSession {
   redirectUri: string;
   state: string;
   callback: Promise<OAuthCallbackResult>;
-}
-
-interface CodeAssistStatus {
-  tierId?: string;
-  tierName?: string;
-  projectId?: string;
 }
 
 function now(): number {
@@ -328,23 +329,9 @@ async function postCodeAssist(accessToken: string, endpoint: string, payload: un
   return parseJsonResponse<unknown>(response, 'Antigravity quota request');
 }
 
-async function loadCodeAssistStatus(accessToken: string): Promise<CodeAssistStatus> {
+async function loadCodeAssistStatus(accessToken: string): Promise<AntigravityLoadStatus> {
   const raw = await postCodeAssist(accessToken, codeAssistUrl(CODE_ASSIST_LOAD_ENDPOINT), loadCodeAssistPayload());
-  const tierId = firstString([
-    readString(raw, ['paidTier', 'id']),
-    readString(raw, ['currentTier', 'id']),
-    readString(readArray(raw, ['allowedTiers'])[0], ['id']),
-  ]);
-  const tierName = firstString([
-    readString(raw, ['paidTier', 'name']),
-    readString(raw, ['currentTier', 'name']),
-  ]);
-  const projectValue = readPath(raw, ['cloudaicompanionProject']);
-  const projectId = normalize(projectValue)
-    ?? readString(projectValue, ['id'])
-    ?? readString(projectValue, ['projectId']);
-
-  return { tierId, tierName, projectId };
+  return parseAntigravityLoadStatus(raw);
 }
 
 async function retrieveUserQuota(accessToken: string, projectId: string): Promise<unknown> {
@@ -475,6 +462,7 @@ function accountFromTokenResponse(response: TokenResponse, profile?: GoogleUserI
       projectId: existing?.projectId,
       tierId: existing?.tierId,
       planName: existing?.planName,
+      credits: existing?.credits ?? [],
       quota: existing?.quota ?? emptyQuota(),
       quotaQueryLastError: existing?.quotaQueryLastError ?? null,
       quotaQueryLastErrorAt: existing?.quotaQueryLastErrorAt ?? null,
@@ -554,6 +542,7 @@ export class AntigravityProvider {
         projectId: loadStatus.projectId,
         tierId: loadStatus.tierId,
         planName: loadStatus.tierName ?? parseTierPlanName(loadStatus.tierId) ?? account.planName,
+        credits: loadStatus.credits,
         lastUsed: now(),
       };
 
@@ -621,7 +610,11 @@ export class AntigravityProvider {
       trackFromAccount(account, 'antigravity.geminiWeekly', 'Gemini Models weekly', account.quota.geminiWeekly),
       trackFromAccount(account, 'antigravity.claude', 'Claude/GPT models', account.quota.thirdPartyFiveHour),
       trackFromAccount(account, 'antigravity.claudeWeekly', 'Claude/GPT models weekly', account.quota.thirdPartyWeekly),
-    ]).filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
+      buildAntigravityCreditsTrack(account),
+    ]).filter((track): track is QuotaTrack => (
+      track != null
+      && (track.percentUsed != null || track.percentRemaining != null || track.valueLabel != null || track.error != null)
+    ));
   }
 
   async hasAccounts(): Promise<boolean> {

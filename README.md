@@ -53,6 +53,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Theme Modes: System, Dark, Light
 - Safe JSON Export for account summaries
 - Account Pages for providers with refresh and delete buttons
+- Antigravity AI credit display when credits are available
 - Tauri desktop shell
 - Separate VS Code/OpenVSX extension scaffold in `quota-vscode/`
 

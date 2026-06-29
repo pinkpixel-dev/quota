@@ -18,6 +18,7 @@ export type TrackId =
   | 'antigravity.geminiWeekly'
   | 'antigravity.claude'
   | 'antigravity.claudeWeekly'
+  | 'antigravity.credits'
   | 'kiro.promptCredits';
 
 export interface QuotaConfiguration {
@@ -39,6 +40,7 @@ export interface QuotaTrack {
   accountLabel: string;
   percentUsed?: number;
   percentRemaining?: number;
+  valueLabel?: string;
   resetAt?: number | null;
   updatedAt?: number | null;
   error?: string | null;

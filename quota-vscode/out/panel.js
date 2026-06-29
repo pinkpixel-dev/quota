@@ -52,6 +52,8 @@ function escapeHtml(value) {
         .replaceAll("'", '&#39;');
 }
 function trackPercentLabel(track, config) {
+    if (track.valueLabel)
+        return track.valueLabel;
     const percent = (0, format_1.displayPercent)(track, config.statusBarDisplay);
     const suffix = config.statusBarDisplay === 'percentRemaining' ? 'left' : 'used';
     return `${(0, format_1.formatPercent)(percent)} ${suffix}`;
