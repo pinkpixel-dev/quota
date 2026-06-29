@@ -1,8 +1,14 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from '@tauri-apps/plugin-notification';
+import {
   ArrowLeft,
   ArrowDown,
   ArrowUp,
+  Bell,
   Database,
   Download,
   Eye,
@@ -131,6 +137,11 @@ const AUTO_REFRESH_INTERVAL_SECONDS_KEY = 'quota.autoRefreshIntervalSeconds';
 const DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS = 120;
 const MIN_AUTO_REFRESH_INTERVAL_SECONDS = 30;
 const MAX_AUTO_REFRESH_INTERVAL_SECONDS = 3600;
+const NOTIFICATIONS_ENABLED_KEY = 'quota.notificationsEnabled';
+const NOTIFICATION_THRESHOLD_KEY = 'quota.notificationThreshold';
+const DEFAULT_NOTIFICATION_THRESHOLD = 20;
+const MIN_NOTIFICATION_THRESHOLD = 1;
+const MAX_NOTIFICATION_THRESHOLD = 99;
 const VIEW_MODES: ViewMode[] = ['default', 'compact', 'list'];
 const THEME_MODES: ThemeMode[] = ['system', 'dark', 'light'];
 const DEFAULT_PROVIDER_ORDER: ProviderKey[] = ['githubCopilot', 'codex', 'antigravity', 'claude', 'kiro', 'cursor'];
@@ -291,6 +302,147 @@ function storeAutoRefreshIntervalSeconds(value: number) {
   }
 }
 
+function clampNotificationThreshold(value: number) {
+  if (!Number.isFinite(value)) return DEFAULT_NOTIFICATION_THRESHOLD;
+  return Math.min(MAX_NOTIFICATION_THRESHOLD, Math.max(MIN_NOTIFICATION_THRESHOLD, Math.round(value)));
+}
+
+function readStoredNotificationsEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(NOTIFICATIONS_ENABLED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function storeNotificationsEnabled(value: boolean) {
+  try {
+    window.localStorage.setItem(NOTIFICATIONS_ENABLED_KEY, String(value));
+  } catch {
+    // best-effort
+  }
+}
+
+function readStoredNotificationThreshold(): number {
+  try {
+    const stored = Number(window.localStorage.getItem(NOTIFICATION_THRESHOLD_KEY));
+    return clampNotificationThreshold(stored || DEFAULT_NOTIFICATION_THRESHOLD);
+  } catch {
+    return DEFAULT_NOTIFICATION_THRESHOLD;
+  }
+}
+
+function storeNotificationThreshold(value: number) {
+  try {
+    window.localStorage.setItem(NOTIFICATION_THRESHOLD_KEY, String(clampNotificationThreshold(value)));
+  } catch {
+    // best-effort
+  }
+}
+
+interface QuotaMetric {
+  key: string;
+  accountLabel: string;
+  metricLabel: string;
+  remaining: number;
+}
+
+function collectQuotaMetrics(
+  copilotAccounts: GitHubCopilotAccountSummary[],
+  codexAccounts: CodexAccountSummary[],
+  antigravityAccounts: AntigravityAccountSummary[],
+  claudeAccounts: ClaudeAccountSummary[],
+  kiroAccounts: KiroAccountSummary[],
+  cursorAccounts: CursorAccountSummary[],
+): QuotaMetric[] {
+  const metrics: QuotaMetric[] = [];
+
+  for (const a of copilotAccounts) {
+    const label = a.githubLogin;
+    if (a.usage.premiumRequestsUsedPercent != null) {
+      metrics.push({ key: `copilot:${a.id}:premium`, accountLabel: `GitHub Copilot (${label})`, metricLabel: 'Premium requests', remaining: 100 - a.usage.premiumRequestsUsedPercent });
+    }
+    if (a.usage.inlineSuggestionsUsedPercent != null) {
+      metrics.push({ key: `copilot:${a.id}:inline`, accountLabel: `GitHub Copilot (${label})`, metricLabel: 'Inline suggestions', remaining: 100 - a.usage.inlineSuggestionsUsedPercent });
+    }
+    if (a.usage.chatMessagesUsedPercent != null) {
+      metrics.push({ key: `copilot:${a.id}:chat`, accountLabel: `GitHub Copilot (${label})`, metricLabel: 'Chat messages', remaining: 100 - a.usage.chatMessagesUsedPercent });
+    }
+  }
+
+  for (const a of codexAccounts) {
+    const label = a.email;
+    if (a.quota.hourlyRemainingPercent != null) {
+      metrics.push({ key: `codex:${a.id}:hourly`, accountLabel: `Codex (${label})`, metricLabel: '5 Hour Limit', remaining: a.quota.hourlyRemainingPercent });
+    }
+    if (a.quota.weeklyRemainingPercent != null) {
+      metrics.push({ key: `codex:${a.id}:weekly`, accountLabel: `Codex (${label})`, metricLabel: 'Weekly Limit', remaining: a.quota.weeklyRemainingPercent });
+    }
+  }
+
+  for (const a of antigravityAccounts) {
+    const label = a.email;
+    if (a.quota.geminiFiveHour.remainingPercent != null) {
+      metrics.push({ key: `antigravity:${a.id}:geminiFiveHour`, accountLabel: `Antigravity (${label})`, metricLabel: 'Gemini 5 Hour', remaining: a.quota.geminiFiveHour.remainingPercent });
+    }
+    if (a.quota.geminiWeekly.remainingPercent != null) {
+      metrics.push({ key: `antigravity:${a.id}:geminiWeekly`, accountLabel: `Antigravity (${label})`, metricLabel: 'Gemini Weekly', remaining: a.quota.geminiWeekly.remainingPercent });
+    }
+    if (a.quota.thirdPartyFiveHour.remainingPercent != null) {
+      metrics.push({ key: `antigravity:${a.id}:thirdPartyFiveHour`, accountLabel: `Antigravity (${label})`, metricLabel: 'Third-Party 5 Hour', remaining: a.quota.thirdPartyFiveHour.remainingPercent });
+    }
+    if (a.quota.thirdPartyWeekly.remainingPercent != null) {
+      metrics.push({ key: `antigravity:${a.id}:thirdPartyWeekly`, accountLabel: `Antigravity (${label})`, metricLabel: 'Third-Party Weekly', remaining: a.quota.thirdPartyWeekly.remainingPercent });
+    }
+  }
+
+  for (const a of claudeAccounts) {
+    const label = a.email;
+    if (a.quota.fiveHourRemainingPercent != null) {
+      metrics.push({ key: `claude:${a.id}:fiveHour`, accountLabel: `Claude (${label})`, metricLabel: '5 Hour Limit', remaining: a.quota.fiveHourRemainingPercent });
+    }
+    if (a.quota.weeklyRemainingPercent != null) {
+      metrics.push({ key: `claude:${a.id}:weekly`, accountLabel: `Claude (${label})`, metricLabel: 'Weekly Limit', remaining: a.quota.weeklyRemainingPercent });
+    }
+    if (a.quota.weeklySonnetRemainingPercent != null) {
+      metrics.push({ key: `claude:${a.id}:weeklySonnet`, accountLabel: `Claude (${label})`, metricLabel: 'Weekly Sonnet', remaining: a.quota.weeklySonnetRemainingPercent });
+    }
+  }
+
+  for (const a of kiroAccounts) {
+    const label = a.email;
+    if (a.creditsTotal != null && a.creditsUsed != null && a.creditsTotal > 0) {
+      metrics.push({ key: `kiro:${a.id}:credits`, accountLabel: `Kiro (${label})`, metricLabel: 'Credits', remaining: ((a.creditsTotal - a.creditsUsed) / a.creditsTotal) * 100 });
+    }
+    if (a.bonusTotal != null && a.bonusUsed != null && a.bonusTotal > 0) {
+      metrics.push({ key: `kiro:${a.id}:bonus`, accountLabel: `Kiro (${label})`, metricLabel: 'Bonus Credits', remaining: ((a.bonusTotal - a.bonusUsed) / a.bonusTotal) * 100 });
+    }
+  }
+
+  for (const a of cursorAccounts) {
+    if (a.totalPercent != null) {
+      metrics.push({ key: `cursor:${a.id}:total`, accountLabel: `Cursor (${a.email})`, metricLabel: 'Usage', remaining: 100 - a.totalPercent });
+    }
+  }
+
+  return metrics;
+}
+
+async function notifyLowQuota(title: string, body: string) {
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const perm = await requestPermission();
+      granted = perm === 'granted';
+    }
+    if (granted) {
+      sendNotification({ title, body });
+    }
+  } catch {
+    // Notification errors are non-fatal
+  }
+}
+
 function getVisibleAccounts<T extends { id: string }>(accounts: T[], pinnedAccounts: Set<string>): T[] {
   const pinned = accounts.filter((a) => pinnedAccounts.has(a.id));
   return pinned.length > 0 ? pinned : accounts.slice(0, 2);
@@ -334,6 +486,10 @@ export function App() {
   const [cursorError, setCursorError] = useState<string | null>(null);
   const autoRefreshRunningRef = useRef(false);
   const autoRefreshTickRef = useRef<() => Promise<void>>(async () => {});
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => readStoredNotificationsEnabled());
+  const [notificationThreshold, setNotificationThreshold] = useState(() => readStoredNotificationThreshold());
+  const notifiedMetricsRef = useRef<Set<string>>(new Set());
+  const notificationCheckActiveRef = useRef(false);
 
   const connectedCount =
     copilotAccounts.length + codexAccounts.length + antigravityAccounts.length + claudeAccounts.length + kiroAccounts.length + cursorAccounts.length;
@@ -374,6 +530,21 @@ export function App() {
   useEffect(() => {
     storeAutoRefreshIntervalSeconds(autoRefreshIntervalSeconds);
   }, [autoRefreshIntervalSeconds]);
+
+  useEffect(() => {
+    storeNotificationsEnabled(notificationsEnabled);
+  }, [notificationsEnabled]);
+
+  useEffect(() => {
+    storeNotificationThreshold(notificationThreshold);
+  }, [notificationThreshold]);
+
+  useEffect(() => {
+    // Give the initial SQLite load time to settle before activating notification checks,
+    // so we don't fire alerts on the first data load after startup.
+    const timer = setTimeout(() => { notificationCheckActiveRef.current = true; }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     storeThemeMode(themeMode);
@@ -1110,6 +1281,41 @@ export function App() {
     return () => window.clearInterval(timer);
   }, [autoRefreshEnabled, autoRefreshIntervalSeconds]);
 
+  useEffect(() => {
+    if (!notificationsEnabled || !notificationCheckActiveRef.current) return;
+
+    const metrics = collectQuotaMetrics(
+      copilotAccounts, codexAccounts, antigravityAccounts, claudeAccounts, kiroAccounts, cursorAccounts,
+    );
+
+    for (const metric of metrics) {
+      const isLow = metric.remaining <= notificationThreshold;
+      const wasNotified = notifiedMetricsRef.current.has(metric.key);
+
+      if (isLow && !wasNotified) {
+        notifiedMetricsRef.current.add(metric.key);
+        const isExhausted = metric.remaining <= 0;
+        void notifyLowQuota(
+          isExhausted ? 'Quota Exhausted' : 'Low Quota',
+          `${metric.accountLabel} — ${metric.metricLabel}: ${isExhausted ? 'exhausted' : `${Math.round(metric.remaining)}% remaining`}`,
+        );
+      } else if (!isLow && wasNotified) {
+        notifiedMetricsRef.current.delete(metric.key);
+      }
+    }
+  }, [copilotAccounts, codexAccounts, antigravityAccounts, claudeAccounts, kiroAccounts, cursorAccounts, notificationsEnabled, notificationThreshold]);
+
+  async function handleNotificationsEnabledChange(enabled: boolean) {
+    setNotificationsEnabled(enabled);
+    if (enabled) {
+      try {
+        if (!(await isPermissionGranted())) await requestPermission();
+      } catch {
+        // non-fatal
+      }
+    }
+  }
+
   function toggleHiddenProvider(provider: ProviderKey) {
     setHiddenProviders((prev) => {
       const next = new Set(prev);
@@ -1266,6 +1472,10 @@ export function App() {
             onMoveProvider={(provider, direction) => setProviderOrder((order) => moveProvider(order, provider, direction))}
             onToggleHiddenProvider={toggleHiddenProvider}
             onExportSafeAccountSummaries={exportSafeAccountSummaries}
+            notificationsEnabled={notificationsEnabled}
+            notificationThreshold={notificationThreshold}
+            onNotificationsEnabledChange={handleNotificationsEnabledChange}
+            onNotificationThresholdChange={(value) => setNotificationThreshold(clampNotificationThreshold(value))}
           />
         ) : view === 'github-copilot-accounts' ? (
           <ProviderAccountsView
@@ -1433,6 +1643,10 @@ interface SettingsViewProps {
   onMoveProvider: (provider: ProviderKey, direction: -1 | 1) => void;
   onToggleHiddenProvider: (provider: ProviderKey) => void;
   onExportSafeAccountSummaries: () => void;
+  notificationsEnabled: boolean;
+  notificationThreshold: number;
+  onNotificationsEnabledChange: (enabled: boolean) => void;
+  onNotificationThresholdChange: (threshold: number) => void;
 }
 
 function SettingsView({
@@ -1452,6 +1666,10 @@ function SettingsView({
   onMoveProvider,
   onToggleHiddenProvider,
   onExportSafeAccountSummaries,
+  notificationsEnabled,
+  notificationThreshold,
+  onNotificationsEnabledChange,
+  onNotificationThresholdChange,
 }: SettingsViewProps) {
   return (
     <div className="page-stack">
@@ -1545,6 +1763,48 @@ function SettingsView({
             </SettingsControlRow>
             <div className="settings-hint">
               Default is 120 seconds. Shorter intervals can hit provider rate limits.
+            </div>
+          </div>
+        </article>
+
+        <article className="settings-section">
+          <div className="settings-section__header">
+            <div className="settings-section__icon">
+              <Bell size={18} />
+            </div>
+            <div>
+              <h2>Notifications</h2>
+              <p>Get desktop alerts when a quota drops below the threshold.</p>
+            </div>
+          </div>
+
+          <div className="settings-list">
+            <SettingsControlRow label="Notifications">
+              <label className="toggle-control">
+                <input
+                  type="checkbox"
+                  checked={notificationsEnabled}
+                  onChange={(event) => onNotificationsEnabledChange(event.currentTarget.checked)}
+                />
+                <span>{notificationsEnabled ? 'On' : 'Off'}</span>
+              </label>
+            </SettingsControlRow>
+            <SettingsControlRow label="Alert at">
+              <label className="number-control">
+                <input
+                  type="number"
+                  min={MIN_NOTIFICATION_THRESHOLD}
+                  max={MAX_NOTIFICATION_THRESHOLD}
+                  step={5}
+                  value={notificationThreshold}
+                  disabled={!notificationsEnabled}
+                  onChange={(event) => onNotificationThresholdChange(Number(event.currentTarget.value))}
+                />
+                <span>% remaining</span>
+              </label>
+            </SettingsControlRow>
+            <div className="settings-hint">
+              Fires once per quota drop. Clears when the quota recovers above the threshold.
             </div>
           </div>
         </article>
