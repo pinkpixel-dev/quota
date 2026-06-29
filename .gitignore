@@ -33,6 +33,9 @@ src-tauri/gen/
 .claude/
 .codex
 
+# Debug / temp
+squashfs-root/
+
 # Other
 CHANGELOG.md
 ERRORS.md

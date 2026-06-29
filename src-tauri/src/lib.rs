@@ -41,8 +41,7 @@ pub fn run() {
             let quit_i = MenuItem::with_id(app, "quit", "Quit Quota", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &sep, &quit_i])?;
 
-            TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
+            let mut tray_builder = TrayIconBuilder::new()
                 .menu(&menu)
                 .tooltip("Quota")
                 .show_menu_on_left_click(false)
@@ -73,8 +72,13 @@ pub fn run() {
                             let _ = window.set_focus();
                         }
                     }
-                })
-                .build(app)?;
+                });
+
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+
+            tray_builder.build(app)?;
 
             Ok(())
         })
