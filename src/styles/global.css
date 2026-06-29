@@ -809,6 +809,53 @@ code {
   color: var(--text);
 }
 
+.toggle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.toggle-control input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.toggle-control span,
+.number-control span {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.number-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  justify-content: flex-end;
+}
+
+.number-control input {
+  width: 92px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--button-bg);
+  color: var(--text);
+  padding: 0 10px;
+  text-align: right;
+}
+
+.number-control input:disabled {
+  color: var(--subtle);
+  opacity: 0.6;
+}
+
 .provider-order-list {
   display: grid;
   gap: 8px;

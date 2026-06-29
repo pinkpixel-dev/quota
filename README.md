@@ -52,6 +52,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Dashboard Layouts: Default, Compact, List
 - Theme Modes: System, Dark, Light
 - Safe JSON Export for account summaries
+- Opt-in auto refresh with a configurable interval
 - Account Pages for providers with refresh and delete buttons
 - Antigravity AI credit display when credits are available
 - Tauri desktop shell

@@ -20,7 +20,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   cancelAntigravityOAuthLogin,
@@ -126,6 +126,11 @@ const THEME_MODE_KEY = 'quota.themeMode';
 const PROVIDER_ORDER_KEY = 'quota.providerOrder';
 const PINNED_ACCOUNTS_KEY = 'quota.pinnedAccounts';
 const HIDDEN_PROVIDERS_KEY = 'quota.hiddenProviders';
+const AUTO_REFRESH_ENABLED_KEY = 'quota.autoRefreshEnabled';
+const AUTO_REFRESH_INTERVAL_SECONDS_KEY = 'quota.autoRefreshIntervalSeconds';
+const DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS = 120;
+const MIN_AUTO_REFRESH_INTERVAL_SECONDS = 30;
+const MAX_AUTO_REFRESH_INTERVAL_SECONDS = 3600;
 const VIEW_MODES: ViewMode[] = ['default', 'compact', 'list'];
 const THEME_MODES: ThemeMode[] = ['system', 'dark', 'light'];
 const DEFAULT_PROVIDER_ORDER: ProviderKey[] = ['githubCopilot', 'codex', 'antigravity', 'claude', 'kiro', 'cursor'];
@@ -248,6 +253,44 @@ function storeHiddenProviders(value: Set<ProviderKey>) {
   }
 }
 
+function readStoredAutoRefreshEnabled() {
+  try {
+    return window.localStorage.getItem(AUTO_REFRESH_ENABLED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function storeAutoRefreshEnabled(value: boolean) {
+  try {
+    window.localStorage.setItem(AUTO_REFRESH_ENABLED_KEY, String(value));
+  } catch {
+    // Preference persistence is best-effort so private browsing/storage errors do not break the UI.
+  }
+}
+
+function clampAutoRefreshIntervalSeconds(value: number) {
+  if (!Number.isFinite(value)) return DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS;
+  return Math.min(MAX_AUTO_REFRESH_INTERVAL_SECONDS, Math.max(MIN_AUTO_REFRESH_INTERVAL_SECONDS, Math.round(value)));
+}
+
+function readStoredAutoRefreshIntervalSeconds() {
+  try {
+    const stored = Number(window.localStorage.getItem(AUTO_REFRESH_INTERVAL_SECONDS_KEY));
+    return clampAutoRefreshIntervalSeconds(stored || DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS);
+  } catch {
+    return DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS;
+  }
+}
+
+function storeAutoRefreshIntervalSeconds(value: number) {
+  try {
+    window.localStorage.setItem(AUTO_REFRESH_INTERVAL_SECONDS_KEY, String(clampAutoRefreshIntervalSeconds(value)));
+  } catch {
+    // Preference persistence is best-effort so private browsing/storage errors do not break the UI.
+  }
+}
+
 function getVisibleAccounts<T extends { id: string }>(accounts: T[], pinnedAccounts: Set<string>): T[] {
   const pinned = accounts.filter((a) => pinnedAccounts.has(a.id));
   return pinned.length > 0 ? pinned : accounts.slice(0, 2);
@@ -261,6 +304,8 @@ export function App() {
   const [providerOrder, setProviderOrder] = useState<ProviderKey[]>(() => readStoredProviderOrder());
   const [pinnedAccounts, setPinnedAccounts] = useState<Set<string>>(() => readStoredPinnedAccounts());
   const [hiddenProviders, setHiddenProviders] = useState<Set<ProviderKey>>(() => readStoredHiddenProviders());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(() => readStoredAutoRefreshEnabled());
+  const [autoRefreshIntervalSeconds, setAutoRefreshIntervalSeconds] = useState(() => readStoredAutoRefreshIntervalSeconds());
   const [copilotAccounts, setCopilotAccounts] = useState<GitHubCopilotAccountSummary[]>([]);
   const [codexAccounts, setCodexAccounts] = useState<CodexAccountSummary[]>([]);
   const [antigravityAccounts, setAntigravityAccounts] = useState<AntigravityAccountSummary[]>([]);
@@ -287,6 +332,8 @@ export function App() {
   const [claudeError, setClaudeError] = useState<string | null>(null);
   const [kiroError, setKiroError] = useState<string | null>(null);
   const [cursorError, setCursorError] = useState<string | null>(null);
+  const autoRefreshRunningRef = useRef(false);
+  const autoRefreshTickRef = useRef<() => Promise<void>>(async () => {});
 
   const connectedCount =
     copilotAccounts.length + codexAccounts.length + antigravityAccounts.length + claudeAccounts.length + kiroAccounts.length + cursorAccounts.length;
@@ -319,6 +366,14 @@ export function App() {
   useEffect(() => {
     storeHiddenProviders(hiddenProviders);
   }, [hiddenProviders]);
+
+  useEffect(() => {
+    storeAutoRefreshEnabled(autoRefreshEnabled);
+  }, [autoRefreshEnabled]);
+
+  useEffect(() => {
+    storeAutoRefreshIntervalSeconds(autoRefreshIntervalSeconds);
+  }, [autoRefreshIntervalSeconds]);
 
   useEffect(() => {
     storeThemeMode(themeMode);
@@ -1022,6 +1077,39 @@ export function App() {
     });
   }
 
+  useEffect(() => {
+    autoRefreshTickRef.current = async () => {
+      const refreshTasks: Array<() => Promise<void>> = [];
+
+      if (copilotAccounts.length > 0 && !copilotBusy) refreshTasks.push(refreshAllCopilot);
+      if (codexAccounts.length > 0 && !codexBusy) refreshTasks.push(refreshAllCodex);
+      if (antigravityAccounts.length > 0 && !antigravityBusy) refreshTasks.push(refreshAllAntigravity);
+      if (claudeAccounts.length > 0 && !claudeBusy) refreshTasks.push(refreshAllClaude);
+      if (kiroAccounts.length > 0 && !kiroBusy) refreshTasks.push(refreshAllKiro);
+      if (cursorAccounts.length > 0 && !cursorBusy) refreshTasks.push(refreshAllCursor);
+
+      for (const refreshTask of refreshTasks) {
+        await refreshTask();
+      }
+    };
+  });
+
+  useEffect(() => {
+    if (!autoRefreshEnabled) return undefined;
+
+    const intervalMs = clampAutoRefreshIntervalSeconds(autoRefreshIntervalSeconds) * 1000;
+    const timer = window.setInterval(() => {
+      if (autoRefreshRunningRef.current) return;
+
+      autoRefreshRunningRef.current = true;
+      void autoRefreshTickRef.current().finally(() => {
+        autoRefreshRunningRef.current = false;
+      });
+    }, intervalMs);
+
+    return () => window.clearInterval(timer);
+  }, [autoRefreshEnabled, autoRefreshIntervalSeconds]);
+
   function toggleHiddenProvider(provider: ProviderKey) {
     setHiddenProviders((prev) => {
       const next = new Set(prev);
@@ -1166,11 +1254,15 @@ export function App() {
             themeMode={themeMode}
             dashboardViewMode={dashboardViewMode}
             accountPagesViewMode={accountPagesViewMode}
+            autoRefreshEnabled={autoRefreshEnabled}
+            autoRefreshIntervalSeconds={autoRefreshIntervalSeconds}
             providerOrder={providerOrder}
             hiddenProviders={hiddenProviders}
             onThemeModeChange={setThemeMode}
             onDashboardViewModeChange={setDashboardViewMode}
             onAccountPagesViewModeChange={setAccountPagesViewMode}
+            onAutoRefreshEnabledChange={setAutoRefreshEnabled}
+            onAutoRefreshIntervalSecondsChange={(value) => setAutoRefreshIntervalSeconds(clampAutoRefreshIntervalSeconds(value))}
             onMoveProvider={(provider, direction) => setProviderOrder((order) => moveProvider(order, provider, direction))}
             onToggleHiddenProvider={toggleHiddenProvider}
             onExportSafeAccountSummaries={exportSafeAccountSummaries}
@@ -1329,11 +1421,15 @@ interface SettingsViewProps {
   themeMode: ThemeMode;
   dashboardViewMode: ViewMode;
   accountPagesViewMode: ViewMode;
+  autoRefreshEnabled: boolean;
+  autoRefreshIntervalSeconds: number;
   providerOrder: ProviderKey[];
   hiddenProviders: Set<ProviderKey>;
   onThemeModeChange: (mode: ThemeMode) => void;
   onDashboardViewModeChange: (mode: ViewMode) => void;
   onAccountPagesViewModeChange: (mode: ViewMode) => void;
+  onAutoRefreshEnabledChange: (enabled: boolean) => void;
+  onAutoRefreshIntervalSecondsChange: (seconds: number) => void;
   onMoveProvider: (provider: ProviderKey, direction: -1 | 1) => void;
   onToggleHiddenProvider: (provider: ProviderKey) => void;
   onExportSafeAccountSummaries: () => void;
@@ -1344,11 +1440,15 @@ function SettingsView({
   themeMode,
   dashboardViewMode,
   accountPagesViewMode,
+  autoRefreshEnabled,
+  autoRefreshIntervalSeconds,
   providerOrder,
   hiddenProviders,
   onThemeModeChange,
   onDashboardViewModeChange,
   onAccountPagesViewModeChange,
+  onAutoRefreshEnabledChange,
+  onAutoRefreshIntervalSecondsChange,
   onMoveProvider,
   onToggleHiddenProvider,
   onExportSafeAccountSummaries,
@@ -1403,6 +1503,48 @@ function SettingsView({
             </SettingsControlRow>
             <div className="settings-hint">
               Pin accounts from any provider's accounts page to choose which appear on the dashboard.
+            </div>
+          </div>
+        </article>
+
+        <article className="settings-section">
+          <div className="settings-section__header">
+            <div className="settings-section__icon">
+              <RefreshCcw size={18} />
+            </div>
+            <div>
+              <h2>Refresh</h2>
+              <p>Automatically refresh connected providers while Quota is open.</p>
+            </div>
+          </div>
+
+          <div className="settings-list">
+            <SettingsControlRow label="Auto refresh">
+              <label className="toggle-control">
+                <input
+                  type="checkbox"
+                  checked={autoRefreshEnabled}
+                  onChange={(event) => onAutoRefreshEnabledChange(event.currentTarget.checked)}
+                />
+                <span>{autoRefreshEnabled ? 'On' : 'Off'}</span>
+              </label>
+            </SettingsControlRow>
+            <SettingsControlRow label="Interval">
+              <label className="number-control">
+                <input
+                  type="number"
+                  min={MIN_AUTO_REFRESH_INTERVAL_SECONDS}
+                  max={MAX_AUTO_REFRESH_INTERVAL_SECONDS}
+                  step={30}
+                  value={autoRefreshIntervalSeconds}
+                  disabled={!autoRefreshEnabled}
+                  onChange={(event) => onAutoRefreshIntervalSecondsChange(Number(event.currentTarget.value))}
+                />
+                <span>seconds</span>
+              </label>
+            </SettingsControlRow>
+            <div className="settings-hint">
+              Default is 120 seconds. Shorter intervals can hit provider rate limits.
             </div>
           </div>
         </article>
@@ -3120,13 +3262,13 @@ function CodexUsageCard({ account, busy, pinned, dashboardMode = false, onRefres
 
       <div className="usage-card__rows">
         <CodexMetricRow
-          label="Primary window"
+          label="5 Hour Limit"
           remaining={account.quota.hourlyRemainingPercent}
           resetAt={account.quota.hourlyResetAt}
           windowMinutes={account.quota.hourlyWindowMinutes}
         />
         <CodexMetricRow
-          label="Weekly window"
+          label="Weekly Limit"
           remaining={account.quota.weeklyRemainingPercent}
           resetAt={account.quota.weeklyResetAt}
           windowMinutes={account.quota.weeklyWindowMinutes}
@@ -3185,13 +3327,13 @@ function ClaudeUsageCard({ account, busy, pinned, dashboardMode = false, onRefre
 
       <div className="usage-card__rows">
         <ClaudeMetricRow
-          label="Five hour window"
+          label="5 Hour Limit"
           remaining={account.quota.fiveHourRemainingPercent}
           resetAt={account.quota.fiveHourResetAt}
           windowText="5h window"
         />
         <ClaudeMetricRow
-          label="Weekly window"
+          label="Weekly Limit"
           remaining={account.quota.weeklyRemainingPercent}
           resetAt={account.quota.weeklyResetAt}
           windowText="7d window"
@@ -3317,7 +3459,7 @@ function AntigravityQuotaGroup({ title, weekly, fiveHour }: AntigravityQuotaGrou
   return (
     <section className="usage-card__group" aria-label={title}>
       <h3>{title}</h3>
-      <AntigravityMetricRow label="Five Hour Limit" window={fiveHour} />
+      <AntigravityMetricRow label="5 Hour Limit" window={fiveHour} />
       <AntigravityMetricRow label="Weekly Limit" window={weekly} />
     </section>
   );
