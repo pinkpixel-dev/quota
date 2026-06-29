@@ -53,6 +53,8 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Theme Modes: System, Dark, Light
 - Safe JSON Export for account summaries
 - Opt-in auto refresh with a configurable interval
+- System tray — close the window to keep running in the background, click the tray icon to restore
+- Opt-in desktop notifications when a quota drops below a configurable threshold
 - Account Pages for providers with refresh and delete buttons
 - Antigravity AI credit display when credits are available
 - Tauri desktop shell
