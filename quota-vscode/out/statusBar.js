@@ -78,7 +78,7 @@ class QuotaStatusBar {
         }
         for (const track of visibleTracks) {
             const item = this.getTrackItem(track.id);
-            item.text = `$(circle-filled) ${(0, format_1.statusBarLabel)(track, config.statusBarDisplay)}`;
+            item.text = `${(0, format_1.statusBarIndicator)(track)} ${(0, format_1.statusBarLabel)(track, config.statusBarDisplay)}`;
             item.tooltip = [
                 `${track.providerLabel}: ${track.label}`,
                 track.accountLabel,

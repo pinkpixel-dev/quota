@@ -10,6 +10,16 @@ export function displayPercent(track: QuotaTrack, mode: StatusBarDisplayMode): n
   return track.percentUsed ?? (track.percentRemaining == null ? undefined : 100 - track.percentRemaining);
 }
 
+export function statusBarIndicator(track: QuotaTrack): string {
+  const remaining = displayPercent(track, 'percentRemaining');
+  if (remaining == null || !Number.isFinite(remaining)) return '⚪';
+
+  const normalized = Math.min(100, Math.max(0, remaining));
+  if (normalized <= 10) return '🔴';
+  if (normalized <= 30) return '🟡';
+  return '🟢';
+}
+
 export function statusBarLabel(track: QuotaTrack, mode: StatusBarDisplayMode): string {
   const label = TRACK_STATUS_BAR_LABEL[track.id as TrackId] ?? track.providerLabel;
   if (track.valueLabel) return `${label} ${track.valueLabel}`;

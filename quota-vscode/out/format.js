@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatPercent = formatPercent;
 exports.displayPercent = displayPercent;
+exports.statusBarIndicator = statusBarIndicator;
 exports.statusBarLabel = statusBarLabel;
 exports.formatReset = formatReset;
 exports.formatUpdated = formatUpdated;
@@ -13,6 +14,17 @@ function displayPercent(track, mode) {
     if (mode === 'percentRemaining')
         return track.percentRemaining ?? (track.percentUsed == null ? undefined : 100 - track.percentUsed);
     return track.percentUsed ?? (track.percentRemaining == null ? undefined : 100 - track.percentRemaining);
+}
+function statusBarIndicator(track) {
+    const remaining = displayPercent(track, 'percentRemaining');
+    if (remaining == null || !Number.isFinite(remaining))
+        return '⚪';
+    const normalized = Math.min(100, Math.max(0, remaining));
+    if (normalized <= 10)
+        return '🔴';
+    if (normalized <= 30)
+        return '🟡';
+    return '🟢';
 }
 function statusBarLabel(track, mode) {
     const label = constants_1.TRACK_STATUS_BAR_LABEL[track.id] ?? track.providerLabel;

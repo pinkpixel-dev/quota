@@ -38,6 +38,13 @@ Keep Quota visible without crowding your editor. The main `Quota` button opens t
 
 ![Quota status bar](https://res.cloudinary.com/dlbyddfav/image/upload/v1782548917/statusbar_gakrw0.png)
 
+Pinned percentage tracks use a small usage indicator:
+
+- 🟢 More than 30% remaining
+- 🟡 11–30% remaining
+- 🔴 10% remaining or less
+- ⚪ No percentage data available
+
 Example pinned tracks:
 
 - `codex.primary`

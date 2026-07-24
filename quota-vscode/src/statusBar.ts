@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 
 import { CANONICAL_TRACK_ORDER, EXTENSION_NAME } from './constants';
-import { statusBarLabel } from './format';
+import { statusBarIndicator, statusBarLabel } from './format';
 import type { QuotaConfiguration, QuotaSnapshot, TrackId } from './types';
 
 export class QuotaStatusBar {
@@ -50,7 +50,7 @@ export class QuotaStatusBar {
 
     for (const track of visibleTracks) {
       const item = this.getTrackItem(track.id);
-      item.text = `$(circle-filled) ${statusBarLabel(track, config.statusBarDisplay)}`;
+      item.text = `${statusBarIndicator(track)} ${statusBarLabel(track, config.statusBarDisplay)}`;
       item.tooltip = [
         `${track.providerLabel}: ${track.label}`,
         track.accountLabel,
