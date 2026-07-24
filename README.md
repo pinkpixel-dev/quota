@@ -62,7 +62,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 
 ## Installation
 
-Download for your platform at https://github.com/pinkpixel-dev/quota/releases
+Download the latest desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform.
 
 Or install from source:
 
@@ -85,7 +85,7 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 
 - [Open VSX Registry](https://open-vsx.org/extension/pinkpixel/quota-ai-usage-tracker/)
 
-- [Github](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.3.vsix)
+- [GitHub](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.5.vsix)
 
 Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
 
