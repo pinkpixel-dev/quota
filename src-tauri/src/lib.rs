@@ -30,8 +30,23 @@ fn get_app_status() -> AppStatus {
     }
 }
 
+#[cfg(target_os = "linux")]
+fn apply_appimage_gio_workaround() {
+    if std::env::var_os("APPIMAGE").is_none() {
+        return;
+    }
+
+    const DISABLED_GIO_MODULE_PATH: &str = "/__quota_appimage_disabled_gio_modules__";
+
+    std::env::set_var("GIO_MODULE_DIR", DISABLED_GIO_MODULE_PATH);
+    std::env::set_var("GIO_EXTRA_MODULES", DISABLED_GIO_MODULE_PATH);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    apply_appimage_gio_workaround();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
