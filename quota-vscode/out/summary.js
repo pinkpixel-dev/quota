@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.payloadToTracks = payloadToTracks;
 exports.expandHome = expandHome;
 exports.loadQuotaSnapshot = loadQuotaSnapshot;
 // @env node
@@ -102,12 +103,9 @@ function tracksFromCopilot(accounts) {
     });
 }
 function tracksFromCodex(accounts) {
-    return accounts.flatMap((account) => {
+    return accounts.map((account) => {
         const quota = isRecord(account.quota) ? account.quota : {};
-        return [
-            makeTrack('codex.primary', 'codex', account, '5h usage', usedFromRemaining(quota.hourlyRemainingPercent), asNumber(quota.hourlyRemainingPercent), normalizeTimestamp(quota.hourlyResetAt)),
-            makeTrack('codex.weekly', 'codex', account, 'Weekly usage', usedFromRemaining(quota.weeklyRemainingPercent), asNumber(quota.weeklyRemainingPercent), normalizeTimestamp(quota.weeklyResetAt)),
-        ];
+        return makeTrack('codex.primary', 'codex', account, 'Weekly usage', usedFromRemaining(quota.hourlyRemainingPercent), asNumber(quota.hourlyRemainingPercent), normalizeTimestamp(quota.hourlyResetAt));
     });
 }
 function tracksFromClaude(accounts) {

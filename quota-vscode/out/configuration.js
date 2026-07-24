@@ -42,7 +42,6 @@ const TRACK_IDS = [
     'githubCopilot.chat',
     'githubCopilot.inline',
     'codex.primary',
-    'codex.weekly',
     'claude.fiveHour',
     'claude.weekly',
     'claude.weeklySonnet',

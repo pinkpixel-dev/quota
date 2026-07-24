@@ -147,19 +147,14 @@ fn builds_codex_oauth_start_with_pkce_state_and_local_callback() {
 }
 
 #[test]
-fn parses_codex_usage_windows_into_remaining_percentages() {
+fn parses_current_codex_primary_weekly_window() {
     let raw = json!({
         "plan_type": "plus",
         "rate_limit": {
             "primary_window": {
                 "used_percent": 35,
-                "limit_window_seconds": 18000,
-                "reset_at": 1771736400
-            },
-            "secondary_window": {
-                "used_percent": 80,
                 "limit_window_seconds": 604800,
-                "reset_after_seconds": 3600
+                "reset_at": 1771736400
             }
         }
     });
@@ -168,9 +163,9 @@ fn parses_codex_usage_windows_into_remaining_percentages() {
 
     assert_eq!(parsed.plan, Some("plus".to_string()));
     assert_eq!(parsed.quota.hourly_remaining_percent, Some(65));
-    assert_eq!(parsed.quota.hourly_window_minutes, Some(300));
+    assert_eq!(parsed.quota.hourly_window_minutes, Some(10080));
     assert_eq!(parsed.quota.hourly_reset_at, Some(1771736400));
-    assert_eq!(parsed.quota.weekly_remaining_percent, Some(20));
-    assert_eq!(parsed.quota.weekly_window_minutes, Some(10080));
-    assert!(parsed.quota.weekly_reset_at.is_some());
+    assert_eq!(parsed.quota.weekly_remaining_percent, None);
+    assert_eq!(parsed.quota.weekly_window_minutes, None);
+    assert_eq!(parsed.quota.weekly_reset_at, None);
 }

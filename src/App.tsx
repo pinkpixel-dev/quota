@@ -373,10 +373,7 @@ function collectQuotaMetrics(
   for (const a of codexAccounts) {
     const label = a.email;
     if (a.quota.hourlyRemainingPercent != null) {
-      metrics.push({ key: `codex:${a.id}:hourly`, accountLabel: `Codex (${label})`, metricLabel: '5 Hour Limit', remaining: a.quota.hourlyRemainingPercent });
-    }
-    if (a.quota.weeklyRemainingPercent != null) {
-      metrics.push({ key: `codex:${a.id}:weekly`, accountLabel: `Codex (${label})`, metricLabel: 'Weekly Limit', remaining: a.quota.weeklyRemainingPercent });
+      metrics.push({ key: `codex:${a.id}:weekly`, accountLabel: `Codex (${label})`, metricLabel: 'Weekly Limit', remaining: a.quota.hourlyRemainingPercent });
     }
   }
 
@@ -3522,16 +3519,10 @@ function CodexUsageCard({ account, busy, pinned, dashboardMode = false, onRefres
 
       <div className="usage-card__rows">
         <CodexMetricRow
-          label="5 Hour Limit"
+          label="Weekly Limit"
           remaining={account.quota.hourlyRemainingPercent}
           resetAt={account.quota.hourlyResetAt}
           windowMinutes={account.quota.hourlyWindowMinutes}
-        />
-        <CodexMetricRow
-          label="Weekly Limit"
-          remaining={account.quota.weeklyRemainingPercent}
-          resetAt={account.quota.weeklyResetAt}
-          windowMinutes={account.quota.weeklyWindowMinutes}
         />
       </div>
 

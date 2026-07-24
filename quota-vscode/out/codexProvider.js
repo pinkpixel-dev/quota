@@ -158,19 +158,17 @@ function quotaFromUsage(value) {
         },
     };
 }
-function trackFromAccount(account, id, label) {
-    const isPrimary = id === 'codex.primary';
-    const remaining = isPrimary ? account.quota.hourlyRemainingPercent : account.quota.weeklyRemainingPercent;
-    const reset = isPrimary ? account.quota.hourlyResetAt : account.quota.weeklyResetAt;
+function trackFromAccount(account) {
+    const remaining = account.quota.hourlyRemainingPercent;
     return {
-        id,
+        id: 'codex.primary',
         providerId: 'codex',
         providerLabel: constants_1.PROVIDER_LABELS.codex,
-        label,
+        label: 'Weekly usage',
         accountLabel: account.email,
         percentUsed: usedFromRemaining(remaining),
         percentRemaining: remaining ?? undefined,
-        resetAt: reset,
+        resetAt: account.quota.hourlyResetAt,
         updatedAt: account.usageUpdatedAt,
         error: account.quotaQueryLastError ?? null,
     };
@@ -380,10 +378,9 @@ class CodexProvider {
     }
     async getTracks() {
         const accounts = await this.getAccounts();
-        return accounts.flatMap((account) => [
-            trackFromAccount(account, 'codex.primary', '5h usage'),
-            trackFromAccount(account, 'codex.weekly', 'Weekly usage'),
-        ]).filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
+        return accounts
+            .map(trackFromAccount)
+            .filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
     }
     async hasAccounts() {
         return (await this.getAccounts()).length > 0;
