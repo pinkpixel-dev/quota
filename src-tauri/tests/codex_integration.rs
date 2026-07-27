@@ -1,7 +1,8 @@
 use base64::Engine;
 use quota_lib::codex::{
     apply_codex_token_response_for_test, build_codex_oauth_start_for_test,
-    import_codex_from_auth_dir_for_test, parse_codex_quota_for_test, CodexAccountIndex,
+    classify_codex_refresh_failure_for_test, import_codex_from_auth_dir_for_test,
+    parse_codex_quota_for_test, CodexAccountIndex,
 };
 use serde_json::json;
 use std::fs;
@@ -168,4 +169,28 @@ fn parses_current_codex_primary_weekly_window() {
     assert_eq!(parsed.quota.weekly_remaining_percent, None);
     assert_eq!(parsed.quota.weekly_window_minutes, None);
     assert_eq!(parsed.quota.weekly_reset_at, None);
+}
+
+#[test]
+fn classifies_rejected_codex_refresh_tokens_without_exposing_response_bodies() {
+    let body = r#"{"error":"invalid_grant","secret":"must-not-leak"}"#;
+    let (message, requires_reauthentication) = classify_codex_refresh_failure_for_test(401, body);
+
+    assert!(requires_reauthentication);
+    assert_eq!(
+        message,
+        "Codex authorization expired. Reauthenticate to continue."
+    );
+    assert!(!message.contains("must-not-leak"));
+
+    let (temporary_message, temporary_requires_reauthentication) =
+        classify_codex_refresh_failure_for_test(503, body);
+    assert!(!temporary_requires_reauthentication);
+    assert_eq!(
+        temporary_message,
+        format!(
+            "Codex token refresh returned 503 with body length {}",
+            body.len()
+        )
+    );
 }

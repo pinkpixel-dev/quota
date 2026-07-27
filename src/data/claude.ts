@@ -26,6 +26,7 @@ export interface ClaudeAccountSummary {
   quota: ClaudeQuotaSummary;
   quotaQueryLastError?: string | null;
   quotaQueryLastErrorAt?: number | null;
+  requiresReauthentication: boolean;
   usageUpdatedAt?: number | null;
   profileUpdatedAt?: number | null;
   createdAt: number;

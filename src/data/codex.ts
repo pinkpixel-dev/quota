@@ -21,6 +21,7 @@ export interface CodexAccountSummary {
   quota: CodexQuotaSummary;
   quotaQueryLastError?: string | null;
   quotaQueryLastErrorAt?: number | null;
+  requiresReauthentication: boolean;
   usageUpdatedAt?: number | null;
   createdAt: number;
   lastUsed: number;

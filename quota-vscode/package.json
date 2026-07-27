@@ -2,7 +2,7 @@
   "name": "quota-ai-usage-tracker",
   "displayName": "Quota: AI Usage Tracker",
   "description": "AI quota tracking for VS Code and compatible IDEs.",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "publisher": "pinkpixel",
   "icon": "icon.png",
   "private": true,

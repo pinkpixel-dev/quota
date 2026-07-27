@@ -15,6 +15,7 @@ Quota is built for developers who use more than one AI coding tool and want one 
 - **Pins quota tracks to the status bar**: choose the exact limits you want visible while coding
 - **Opens a compact quota panel**: scan percent used or remaining, reset timing, and last update time
 - **Refreshes extension-owned accounts**: use manual refresh or the built-in refresh interval
+- **Explains expired authorization**: get a clear error and Reauthenticate action instead of an opaque token-refresh response
 - **Keeps provider tokens in SecretStorage**: raw credentials stay in VS Code's secret store
 - **Works with VS Code-style editors**: designed for VS Code and OpenVSX-compatible IDEs
 
@@ -65,6 +66,7 @@ Each track shows:
 - Reset time when available
 - Last updated time
 - Provider connect, disconnect, refresh, and settings actions
+- A Reauthenticate action for connected Codex or Claude Code accounts whose authorization expired
 
 ## Connect accounts
 
@@ -77,6 +79,8 @@ Run the matching connect command from the Command Palette:
 - `Quota: Connect Kiro`
 
 Each provider uses its own auth flow. Quota stores raw provider tokens only in VS Code SecretStorage and stores display-safe account metadata in extension state.
+
+When a Codex or Claude Code refresh token is rejected, Quota keeps the cached account visible, identifies that reauthentication is required, and offers the existing secure connection flow again. It does not delete the saved account before the new authorization succeeds.
 
 ## Configure Quota
 

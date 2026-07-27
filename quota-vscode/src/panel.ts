@@ -3,6 +3,7 @@ import * as crypto from 'node:crypto';
 
 import * as vscode from 'vscode';
 
+import { isReauthenticationRequired } from './authError';
 import { PROVIDER_ORDER } from './constants';
 import { displayPercent, formatPercent, formatReset, formatUpdated } from './format';
 import type { ProviderId, QuotaConfiguration, QuotaSnapshot, QuotaTrack } from './types';
@@ -59,13 +60,23 @@ function toPanelTrack(track: QuotaTrack, config: QuotaConfiguration): PanelTrack
   };
 }
 
-function renderProviderAction(provider: 'githubCopilot' | 'codex' | 'claude' | 'antigravity' | 'kiro', label: string, connected: boolean): string {
-  const command = connected
-    ? provider === 'githubCopilot' ? 'disconnectGitHubCopilot' : provider === 'codex' ? 'disconnectCodex' : provider === 'claude' ? 'disconnectClaude' : provider === 'antigravity' ? 'disconnectAntigravity' : 'disconnectKiro'
-    : provider === 'githubCopilot' ? 'connectGitHubCopilot' : provider === 'codex' ? 'connectCodex' : provider === 'claude' ? 'connectClaude' : provider === 'antigravity' ? 'connectAntigravity' : 'connectKiro';
-  const verb = connected ? 'Disconnect' : 'Connect';
+function renderProviderAction(
+  provider: 'githubCopilot' | 'codex' | 'claude' | 'antigravity' | 'kiro',
+  label: string,
+  connected: boolean,
+  requiresReauthentication = false,
+): string {
+  const connectCommand = provider === 'githubCopilot' ? 'connectGitHubCopilot' : provider === 'codex' ? 'connectCodex' : provider === 'claude' ? 'connectClaude' : provider === 'antigravity' ? 'connectAntigravity' : 'connectKiro';
+  const disconnectCommand = provider === 'githubCopilot' ? 'disconnectGitHubCopilot' : provider === 'codex' ? 'disconnectCodex' : provider === 'claude' ? 'disconnectClaude' : provider === 'antigravity' ? 'disconnectAntigravity' : 'disconnectKiro';
 
-  return `<button type="button" class="secondary" data-command="${command}">${verb} ${label}</button>`;
+  if (!connected) {
+    return `<button type="button" class="secondary" data-command="${connectCommand}">Connect ${label}</button>`;
+  }
+
+  const reauthenticateAction = requiresReauthentication
+    ? `<button type="button" data-command="${connectCommand}">Reauthenticate ${label}</button>`
+    : '';
+  return `${reauthenticateAction}<button type="button" class="secondary" data-command="${disconnectCommand}">Disconnect ${label}</button>`;
 }
 
 function displayTrackLabel(label: string): string {
@@ -142,6 +153,11 @@ function renderHtml(webview: vscode.Webview, snapshot: QuotaSnapshot, config: Qu
     : `Source: ${snapshot.sourcePath}`;
   const trackCountLabel = tracks.length === 1 ? '1 track' : `${tracks.length} tracks`;
   const connectedProviders = new Set(tracks.map((track) => track.providerId));
+  const reauthenticationProviders = new Set(
+    tracks
+      .filter((track) => isReauthenticationRequired(track.error))
+      .map((track) => track.providerId),
+  );
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -444,8 +460,8 @@ function renderHtml(webview: vscode.Webview, snapshot: QuotaSnapshot, config: Qu
     </header>
     <nav class="provider-actions" aria-label="Provider actions">
       ${renderProviderAction('githubCopilot', 'Copilot', connectedProviders.has('githubCopilot'))}
-      ${renderProviderAction('codex', 'Codex', connectedProviders.has('codex'))}
-      ${renderProviderAction('claude', 'Claude', connectedProviders.has('claude'))}
+      ${renderProviderAction('codex', 'Codex', connectedProviders.has('codex'), reauthenticationProviders.has('codex'))}
+      ${renderProviderAction('claude', 'Claude', connectedProviders.has('claude'), reauthenticationProviders.has('claude'))}
       ${renderProviderAction('antigravity', 'Antigravity', connectedProviders.has('antigravity'))}
       ${renderProviderAction('kiro', 'Kiro', connectedProviders.has('kiro'))}
     </nav>

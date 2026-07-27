@@ -38,6 +38,7 @@ exports.deactivate = deactivate;
 // @env node
 const vscode = __importStar(require("vscode"));
 const antigravityProvider_1 = require("./antigravityProvider");
+const authError_1 = require("./authError");
 const claudeProvider_1 = require("./claudeProvider");
 const codexProvider_1 = require("./codexProvider");
 const configuration_1 = require("./configuration");
@@ -90,6 +91,35 @@ async function refresh(showToast = false, options = {}) {
     snapshot = await loadSnapshot();
     statusBar.update(snapshot, config);
     if (showToast) {
+        const reauthenticationProviders = new Set(snapshot.tracks
+            .filter((track) => (0, authError_1.isReauthenticationRequired)(track.error))
+            .map((track) => track.providerId));
+        if (reauthenticationProviders.size > 0) {
+            const onlyProvider = reauthenticationProviders.size === 1
+                ? [...reauthenticationProviders][0]
+                : undefined;
+            const providerLabel = onlyProvider === 'codex'
+                ? 'Codex'
+                : onlyProvider === 'claude'
+                    ? 'Claude Code'
+                    : undefined;
+            const action = providerLabel ? `Reauthenticate ${providerLabel}` : 'Open Quota';
+            const selected = await vscode.window.showErrorMessage(providerLabel
+                ? `${providerLabel} authorization expired. Reauthenticate to resume quota updates.`
+                : 'Some connected accounts need to be reauthenticated. Open Quota for details.', action);
+            if (selected === action) {
+                if (onlyProvider === 'codex') {
+                    await vscode.commands.executeCommand('quota.connectCodex');
+                }
+                else if (onlyProvider === 'claude') {
+                    await vscode.commands.executeCommand('quota.connectClaude');
+                }
+                else {
+                    await vscode.commands.executeCommand('quota.openPanel');
+                }
+            }
+            return;
+        }
         const message = snapshot.tracks.length > 0
             ? `Quota refreshed ${snapshot.tracks.length} quota tracks.`
             : snapshot.warnings[0] ?? 'Quota refreshed, but no tracks were found.';

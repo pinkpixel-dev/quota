@@ -30,6 +30,9 @@
   --accent-hover: rgba(231, 255, 95, 0.38);
   --accent-focus: rgba(231, 255, 95, 0.45);
   --success: #1ed760;
+  --warning: #ffb84d;
+  --warning-soft: rgba(255, 184, 77, 0.07);
+  --warning-border: rgba(255, 184, 77, 0.28);
   --danger: #ff5f66;
   --brand-icon-filter: invert(1);
   --grid-dot: rgba(255, 255, 255, 0.055);
@@ -61,6 +64,9 @@
   --accent-hover: rgba(245, 158, 11, 0.46);
   --accent-focus: rgba(245, 158, 11, 0.5);
   --success: #0f9f63;
+  --warning: #a85b00;
+  --warning-soft: rgba(168, 91, 0, 0.08);
+  --warning-border: rgba(168, 91, 0, 0.3);
   --danger: #d43f4d;
   --brand-icon-filter: none;
   --grid-dot: rgba(23, 29, 31, 0.08);
@@ -71,7 +77,7 @@
 }
 
 html {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100%;
   background:
     radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0) 0 0 / 22px 22px,
@@ -79,7 +85,7 @@ html {
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100vh;
   margin: 0;
   background: transparent;
@@ -448,6 +454,32 @@ code {
   color: var(--danger) !important;
   padding: 10px;
   line-height: 1.45;
+}
+
+.reauthentication-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  padding: 10px;
+}
+
+.reauthentication-alert strong {
+  color: var(--warning);
+  font-size: 0.84rem;
+}
+
+.reauthentication-alert p {
+  margin-top: 3px;
+  color: var(--text);
+}
+
+.reauthentication-alert button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .usage-card__actions button {
@@ -999,13 +1031,25 @@ code {
 }
 
 .accounts-grid--list .usage-card {
-  grid-template-columns: minmax(220px, 28%) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 28%) minmax(0, 1fr) auto;
   gap: 12px;
   padding: 10px 12px;
 }
 
 .accounts-grid--list .usage-card__header {
-  align-items: start;
+  display: contents;
+}
+
+.accounts-grid--list .usage-card__header > :first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.accounts-grid--list .usage-card__actions {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
 }
 
 .accounts-grid--list .usage-card h2 {
@@ -1016,7 +1060,13 @@ code {
 .accounts-grid--list .usage-card__rows,
 .accounts-grid--list .usage-card__groups {
   grid-column: 2;
+  grid-row: 1;
   gap: 7px;
+}
+
+.accounts-grid--list .usage-card > .usage-card__error,
+.accounts-grid--list .usage-card > .reauthentication-alert {
+  grid-column: 2 / 4;
 }
 
 .accounts-grid--list .usage-card__group {
@@ -1159,13 +1209,25 @@ code {
 }
 
 .dashboard-view--list .usage-card {
-  grid-template-columns: minmax(220px, 28%) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 28%) minmax(0, 1fr) auto;
   gap: 12px;
   padding: 10px 12px;
 }
 
 .dashboard-view--list .usage-card__header {
-  align-items: start;
+  display: contents;
+}
+
+.dashboard-view--list .usage-card__header > :first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.dashboard-view--list .usage-card__actions {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
 }
 
 .dashboard-view--list .usage-card h2 {
@@ -1176,7 +1238,13 @@ code {
 .dashboard-view--list .usage-card__rows,
 .dashboard-view--list .usage-card__groups {
   grid-column: 2;
+  grid-row: 1;
   gap: 7px;
+}
+
+.dashboard-view--list .usage-card > .usage-card__error,
+.dashboard-view--list .usage-card > .reauthentication-alert {
+  grid-column: 2 / 4;
 }
 
 .dashboard-view--list .usage-card__group {
@@ -1304,6 +1372,33 @@ code {
   .dashboard-view--list .usage-card,
   .accounts-grid--list .usage-card {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-view--list .usage-card__header,
+  .accounts-grid--list .usage-card__header {
+    display: flex;
+  }
+
+  .dashboard-view--list .usage-card__header > :first-child,
+  .dashboard-view--list .usage-card__actions,
+  .dashboard-view--list .usage-card__rows,
+  .dashboard-view--list .usage-card__groups,
+  .dashboard-view--list .usage-card > .usage-card__error,
+  .dashboard-view--list .usage-card > .reauthentication-alert,
+  .accounts-grid--list .usage-card__header > :first-child,
+  .accounts-grid--list .usage-card__actions,
+  .accounts-grid--list .usage-card__rows,
+  .accounts-grid--list .usage-card__groups,
+  .accounts-grid--list .usage-card > .usage-card__error,
+  .accounts-grid--list .usage-card > .reauthentication-alert {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .dashboard-view--list .usage-card__actions,
+  .accounts-grid--list .usage-card__actions {
+    align-self: auto;
+    justify-self: auto;
   }
 
   .dashboard-view--list .usage-card__rows,

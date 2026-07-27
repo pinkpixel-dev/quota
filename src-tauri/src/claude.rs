@@ -18,6 +18,8 @@ const CLAUDE_OAUTH_USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage"
 const CLAUDE_OAUTH_CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 const CLAUDE_OAUTH_BETA_HEADER: &str = "oauth-2025-04-20";
 const CLAUDE_OAUTH_TIMEOUT_SECONDS: i64 = 600;
+const CLAUDE_REAUTHENTICATION_MESSAGE: &str =
+    "Claude Code authorization expired. Reauthenticate to continue.";
 const CLAUDE_OAUTH_SCOPES: [&str; 6] = [
     "org:create_api_key",
     "user:profile",
@@ -65,6 +67,8 @@ struct StoredClaudeAccount {
     quota: ClaudeQuotaSummary,
     quota_query_last_error: Option<String>,
     quota_query_last_error_at: Option<i64>,
+    #[serde(default)]
+    requires_reauthentication: bool,
     usage_updated_at: Option<i64>,
     profile_updated_at: Option<i64>,
     created_at: i64,
@@ -86,6 +90,7 @@ pub struct ClaudeAccountSummary {
     pub quota: ClaudeQuotaSummary,
     pub quota_query_last_error: Option<String>,
     pub quota_query_last_error_at: Option<i64>,
+    pub requires_reauthentication: bool,
     pub usage_updated_at: Option<i64>,
     pub profile_updated_at: Option<i64>,
     pub created_at: i64,
@@ -249,6 +254,14 @@ pub fn parse_claude_callback_input_for_test(
 
 pub fn parse_claude_quota_for_test(raw: &Value) -> ClaudeQuotaSummary {
     parse_quota_from_value(raw)
+}
+
+pub fn classify_claude_refresh_failure_for_test(status: u16, body: &str) -> (String, bool) {
+    let error = classify_token_refresh_failure(status, body);
+    (
+        error.message().to_string(),
+        error.requires_reauthentication(),
+    )
 }
 
 pub fn apply_claude_token_response_for_test(
@@ -482,7 +495,7 @@ async fn request_oauth_profile(access_token: &str) -> Result<Value, String> {
     parse_response_json(response, "Claude OAuth profile").await
 }
 
-async fn request_usage(access_token: &str) -> Result<Value, String> {
+async fn request_usage(access_token: &str) -> Result<Value, ClaudeUsageError> {
     let response = reqwest::Client::new()
         .get(CLAUDE_OAUTH_USAGE_URL)
         .header(AUTHORIZATION, format!("Bearer {}", access_token))
@@ -490,8 +503,29 @@ async fn request_usage(access_token: &str) -> Result<Value, String> {
         .header(USER_AGENT, "quota")
         .send()
         .await
-        .map_err(|err| format!("Claude usage request failed: {}", err))?;
-    parse_response_json(response, "Claude usage").await
+        .map_err(|err| ClaudeUsageError::Other(format!("Claude usage request failed: {}", err)))?;
+    let status = response.status();
+    let body = response.text().await.map_err(|err| {
+        ClaudeUsageError::Other(format!("Could not read Claude usage response: {}", err))
+    })?;
+    if status.as_u16() == 401 || status.as_u16() == 403 {
+        return Err(ClaudeUsageError::Unauthorized);
+    }
+    if !status.is_success() {
+        return Err(ClaudeUsageError::Other(format_response_failure(
+            "Claude usage",
+            status.as_u16(),
+            &body,
+        )));
+    }
+    serde_json::from_str(&body).map_err(|err| {
+        ClaudeUsageError::Other(format!(
+            "Could not parse Claude usage response: {} status={} body_length={}",
+            err,
+            status,
+            body.len()
+        ))
+    })
 }
 
 async fn parse_response_json(response: reqwest::Response, label: &str) -> Result<Value, String> {
@@ -501,7 +535,7 @@ async fn parse_response_json(response: reqwest::Response, label: &str) -> Result
         .await
         .map_err(|err| format!("Could not read {} response: {}", label, err))?;
     if !status.is_success() {
-        return Err(format!("{} failed: status={} {}", label, status, body));
+        return Err(format_response_failure(label, status.as_u16(), &body));
     }
     serde_json::from_str(&body).map_err(|err| {
         format!(
@@ -606,6 +640,7 @@ fn upsert_token_response_in(
         quota: ClaudeQuotaSummary::default(),
         quota_query_last_error: None,
         quota_query_last_error_at: None,
+        requires_reauthentication: false,
         usage_updated_at: None,
         profile_updated_at: profile.map(|_| now_timestamp_ms()),
         created_at: now,
@@ -644,19 +679,48 @@ async fn refresh_account_in(
 ) -> Result<ClaudeAccountSummary, String> {
     let mut account = load_account_in(storage_dir, account_id)?;
     if let Err(error) = ensure_access_token_valid(&mut account).await {
-        return record_refresh_error_in(storage_dir, account, error);
+        return record_refresh_error_in(
+            storage_dir,
+            account,
+            error.message().to_string(),
+            error.requires_reauthentication(),
+        );
     }
 
     match request_usage(&account.access_token).await {
         Ok(usage) => {
-            account.quota = parse_quota_from_value(&usage);
-            account.quota_query_last_error = None;
-            account.quota_query_last_error_at = None;
-            account.usage_updated_at = Some(now_timestamp_ms());
+            apply_usage_success(&mut account, &usage);
         }
-        Err(error) => {
+        Err(ClaudeUsageError::Unauthorized) => {
+            if let Err(error) = refresh_access_token(&mut account).await {
+                return record_refresh_error_in(
+                    storage_dir,
+                    account,
+                    error.message().to_string(),
+                    error.requires_reauthentication(),
+                );
+            }
+            match request_usage(&account.access_token).await {
+                Ok(usage) => apply_usage_success(&mut account, &usage),
+                Err(ClaudeUsageError::Unauthorized) => {
+                    return record_refresh_error_in(
+                        storage_dir,
+                        account,
+                        CLAUDE_REAUTHENTICATION_MESSAGE.to_string(),
+                        true,
+                    );
+                }
+                Err(ClaudeUsageError::Other(error)) => {
+                    account.quota_query_last_error = Some(error);
+                    account.quota_query_last_error_at = Some(now_timestamp_ms());
+                    account.requires_reauthentication = false;
+                }
+            }
+        }
+        Err(ClaudeUsageError::Other(error)) => {
             account.quota_query_last_error = Some(error);
             account.quota_query_last_error_at = Some(now_timestamp_ms());
+            account.requires_reauthentication = false;
         }
     }
     account.last_used = now_timestamp();
@@ -664,7 +728,9 @@ async fn refresh_account_in(
     Ok(account.to_summary())
 }
 
-async fn ensure_access_token_valid(account: &mut StoredClaudeAccount) -> Result<(), String> {
+async fn ensure_access_token_valid(
+    account: &mut StoredClaudeAccount,
+) -> Result<(), ClaudeTokenRefreshError> {
     let should_refresh = account
         .expires_at
         .map(|expires_at| expires_at <= now_timestamp_ms() + 300_000)
@@ -672,10 +738,16 @@ async fn ensure_access_token_valid(account: &mut StoredClaudeAccount) -> Result<
     if !should_refresh {
         return Ok(());
     }
+    refresh_access_token(account).await
+}
+
+async fn refresh_access_token(
+    account: &mut StoredClaudeAccount,
+) -> Result<(), ClaudeTokenRefreshError> {
     let refresh_token = account
         .refresh_token
         .clone()
-        .ok_or_else(|| "Claude refresh token is missing.".to_string())?;
+        .ok_or(ClaudeTokenRefreshError::ReauthenticationRequired)?;
     let response = reqwest::Client::new()
         .post(CLAUDE_OAUTH_TOKEN_URL)
         .header(CONTENT_TYPE, "application/json")
@@ -687,8 +759,27 @@ async fn ensure_access_token_valid(account: &mut StoredClaudeAccount) -> Result<
         }))
         .send()
         .await
-        .map_err(|err| format!("Claude token refresh failed: {}", err))?;
-    let payload = parse_response_json(response, "Claude token refresh").await?;
+        .map_err(|err| {
+            ClaudeTokenRefreshError::Other(format!("Claude token refresh failed: {}", err))
+        })?;
+    let status = response.status();
+    let body = response.text().await.map_err(|err| {
+        ClaudeTokenRefreshError::Other(format!(
+            "Could not read Claude token refresh response: {}",
+            err
+        ))
+    })?;
+    if !status.is_success() {
+        return Err(classify_token_refresh_failure(status.as_u16(), &body));
+    }
+    let payload: Value = serde_json::from_str(&body).map_err(|err| {
+        ClaudeTokenRefreshError::Other(format!(
+            "Could not parse Claude token refresh response: {} status={} body_length={}",
+            err,
+            status,
+            body.len()
+        ))
+    })?;
     if let Some(access_token) = read_string_path(&payload, &["access_token"]) {
         account.access_token = access_token;
     }
@@ -705,12 +796,89 @@ fn record_refresh_error_in(
     storage_dir: &Path,
     mut account: StoredClaudeAccount,
     error: String,
+    requires_reauthentication: bool,
 ) -> Result<ClaudeAccountSummary, String> {
     account.last_used = now_timestamp();
     account.quota_query_last_error = Some(error);
     account.quota_query_last_error_at = Some(now_timestamp_ms());
+    account.requires_reauthentication = requires_reauthentication;
     save_account_in(storage_dir, &account)?;
     Ok(account.to_summary())
+}
+
+fn apply_usage_success(account: &mut StoredClaudeAccount, usage: &Value) {
+    account.quota = parse_quota_from_value(usage);
+    account.quota_query_last_error = None;
+    account.quota_query_last_error_at = None;
+    account.requires_reauthentication = false;
+    account.usage_updated_at = Some(now_timestamp_ms());
+}
+
+#[derive(Debug)]
+enum ClaudeUsageError {
+    Unauthorized,
+    Other(String),
+}
+
+#[derive(Debug)]
+enum ClaudeTokenRefreshError {
+    ReauthenticationRequired,
+    Other(String),
+}
+
+impl ClaudeTokenRefreshError {
+    fn message(&self) -> &str {
+        match self {
+            Self::ReauthenticationRequired => CLAUDE_REAUTHENTICATION_MESSAGE,
+            Self::Other(message) => message,
+        }
+    }
+
+    fn requires_reauthentication(&self) -> bool {
+        matches!(self, Self::ReauthenticationRequired)
+    }
+}
+
+fn classify_token_refresh_failure(status: u16, body: &str) -> ClaudeTokenRefreshError {
+    let normalized = body.to_lowercase();
+    let rejected_refresh_token = status == 401
+        || status == 403
+        || (status == 400
+            && [
+                "invalid_grant",
+                "refresh token expired",
+                "refresh_token_expired",
+                "refresh token revoked",
+                "refresh_token_revoked",
+            ]
+            .iter()
+            .any(|signal| normalized.contains(signal)));
+
+    if rejected_refresh_token {
+        ClaudeTokenRefreshError::ReauthenticationRequired
+    } else {
+        ClaudeTokenRefreshError::Other(format!(
+            "Claude token refresh returned {} with body length {}",
+            status,
+            body.len()
+        ))
+    }
+}
+
+fn format_response_failure(label: &str, status: u16, body: &str) -> String {
+    let detail = serde_json::from_str::<Value>(body).ok().and_then(|value| {
+        read_string_path(&value, &["error_description"])
+            .or_else(|| read_string_path(&value, &["message"]))
+    });
+    match detail {
+        Some(detail) => format!("{} failed: status={} {}", label, status, detail),
+        None => format!(
+            "{} failed: status={} body_length={}",
+            label,
+            status,
+            body.len()
+        ),
+    }
 }
 
 fn parse_quota_from_value(raw: &Value) -> ClaudeQuotaSummary {
@@ -877,6 +1045,7 @@ impl StoredClaudeAccount {
             quota: self.quota.clone(),
             quota_query_last_error: self.quota_query_last_error.clone(),
             quota_query_last_error_at: self.quota_query_last_error_at,
+            requires_reauthentication: self.requires_reauthentication,
             usage_updated_at: self.usage_updated_at,
             profile_updated_at: self.profile_updated_at,
             created_at: self.created_at,

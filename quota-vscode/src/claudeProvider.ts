@@ -3,6 +3,10 @@ import * as crypto from 'node:crypto';
 
 import * as vscode from 'vscode';
 
+import {
+  reauthenticationMessage,
+  tokenRefreshErrorMessage,
+} from './authError';
 import { shouldSuppressClaudeError } from './claudeUsage';
 import { PROVIDER_LABELS } from './constants';
 import type { QuotaTrack, TrackId } from './types';
@@ -298,7 +302,11 @@ async function refreshToken(refreshToken: string): Promise<ClaudeTokenResponse> 
     }),
   });
 
-  return parseJsonResponse<ClaudeTokenResponse>(response, 'Claude token refresh');
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(tokenRefreshErrorMessage('Claude Code', response.status, body));
+  }
+  return JSON.parse(body) as ClaudeTokenResponse;
 }
 
 async function requestProfile(accessToken: string): Promise<unknown> {
@@ -318,6 +326,9 @@ async function requestUsage(accessToken: string): Promise<unknown> {
       'anthropic-beta': CLAUDE_OAUTH_BETA_HEADER,
     },
   });
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`unauthorized:${response.status}`);
+  }
   return parseJsonResponse<unknown>(response, 'Claude usage');
 }
 
@@ -455,6 +466,32 @@ export class ClaudeProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      if (message.startsWith('unauthorized:')) {
+        try {
+          const refreshedCredential = await this.refreshCredential(account, credential);
+          const usage = await requestUsage(refreshedCredential.accessToken);
+          return await this.saveAccount({
+            ...account,
+            quota: quotaFromUsage(usage),
+            quotaQueryLastError: null,
+            quotaQueryLastErrorAt: null,
+            usageUpdatedAt: now(),
+            lastUsed: now(),
+          });
+        } catch (refreshError) {
+          const refreshMessage = refreshError instanceof Error
+            ? refreshError.message
+            : String(refreshError);
+          return await this.saveAccount({
+            ...account,
+            quotaQueryLastError: refreshMessage.startsWith('unauthorized:')
+              ? reauthenticationMessage('Claude Code')
+              : refreshMessage,
+            quotaQueryLastErrorAt: now(),
+            lastUsed: now(),
+          });
+        }
+      }
       if (shouldSuppressClaudeError(message)) {
         return await this.saveAccount({
           ...account,
@@ -527,8 +564,11 @@ export class ClaudeProvider {
   private async ensureAccessToken(account: ClaudeAccount, credential: ClaudeCredential): Promise<ClaudeCredential> {
     const shouldRefresh = credential.expiresAt != null && credential.expiresAt <= now() + 300_000;
     if (!shouldRefresh) return credential;
-    if (!credential.refreshToken) throw new Error('Claude refresh token is missing.');
+    return this.refreshCredential(account, credential);
+  }
 
+  private async refreshCredential(account: ClaudeAccount, credential: ClaudeCredential): Promise<ClaudeCredential> {
+    if (!credential.refreshToken) throw new Error(reauthenticationMessage('Claude Code'));
     const tokenResponse = await refreshToken(credential.refreshToken);
     const updated = await this.upsertTokenResponse(tokenResponse, undefined, account);
     const nextCredential = await this.getCredential(updated.id);
@@ -537,7 +577,11 @@ export class ClaudeProvider {
   }
 
   private async upsertTokenResponse(response: ClaudeTokenResponse, profile?: unknown, existing?: ClaudeAccount): Promise<ClaudeAccount> {
-    const result = accountFromTokenResponse(response, profile, existing);
+    const initial = accountFromTokenResponse(response, profile, existing);
+    const matchedExisting = existing ?? await this.getAccount(initial.account.id);
+    const result = matchedExisting
+      ? accountFromTokenResponse(response, profile, matchedExisting)
+      : initial;
     const store = await this.getCredentialStore();
     store.accounts[result.account.id] = result.credential;
     if (!result.credential.refreshToken && existing) {

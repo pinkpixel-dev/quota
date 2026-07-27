@@ -1,6 +1,7 @@
 use quota_lib::claude::{
     apply_claude_token_response_for_test, build_claude_oauth_start_for_test,
-    parse_claude_callback_input_for_test, parse_claude_quota_for_test, ClaudeAccountIndex,
+    classify_claude_refresh_failure_for_test, parse_claude_callback_input_for_test,
+    parse_claude_quota_for_test, ClaudeAccountIndex,
 };
 use serde_json::json;
 use std::fs;
@@ -155,4 +156,17 @@ fn applies_claude_oauth_token_response_without_returning_tokens_in_summary() {
 
     let index = read_index(&storage_dir);
     assert_eq!(index.account_ids, vec![summary.id]);
+}
+
+#[test]
+fn classifies_expired_claude_refresh_tokens_as_reauthentication_required() {
+    let body = r#"{"error":"invalid_grant","error_description":"Refresh token expired"}"#;
+    let (message, requires_reauthentication) = classify_claude_refresh_failure_for_test(400, body);
+
+    assert!(requires_reauthentication);
+    assert_eq!(
+        message,
+        "Claude Code authorization expired. Reauthenticate to continue."
+    );
+    assert!(!message.contains(body));
 }

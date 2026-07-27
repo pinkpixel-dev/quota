@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { ReauthenticationAlert } from './components/ReauthenticationAlert';
 import {
   cancelAntigravityOAuthLogin,
   completeAntigravityOAuthLogin,
@@ -750,7 +751,8 @@ export function App() {
     if (!codexLogin) return;
     setCodexBusy(true);
     try {
-      const account = await completeCodexOAuthLogin(codexLogin.loginId);
+      const connectedAccount = await completeCodexOAuthLogin(codexLogin.loginId);
+      const account = await refreshCodexAccount(connectedAccount.id);
       setCodexAccounts((accounts) => [account, ...accounts.filter((item) => item.id !== account.id)]);
       setCodexLogin(null);
       setView('dashboard');
@@ -952,7 +954,12 @@ export function App() {
     if (!claudeLogin) return;
     setClaudeBusy(true);
     try {
-      const account = await completeClaudeOAuthLogin(claudeLogin.loginId, claudeCallbackInput, claudeEmailHint);
+      const connectedAccount = await completeClaudeOAuthLogin(
+        claudeLogin.loginId,
+        claudeCallbackInput,
+        claudeEmailHint,
+      );
+      const account = await refreshClaudeAccount(connectedAccount.id);
       setClaudeAccounts((accounts) => [account, ...accounts.filter((item) => item.id !== account.id)]);
       setClaudeLogin(null);
       setClaudeCallbackInput('');
@@ -1431,12 +1438,14 @@ export function App() {
             onRefreshAllCodex={refreshAllCodex}
             onRefreshCodexAccount={refreshCodex}
             onRemoveCodexAccount={removeCodexAccount}
+            onReauthenticateCodex={startCodexAuth}
             onRefreshAllAntigravity={refreshAllAntigravity}
             onRefreshAntigravityAccount={refreshAntigravity}
             onRemoveAntigravityAccount={removeAntigravityAccount}
             onRefreshAllClaude={refreshAllClaude}
             onRefreshClaudeAccount={refreshClaude}
             onRemoveClaudeAccount={removeClaudeAccount}
+            onReauthenticateClaude={startClaudeAuth}
             onRefreshAllKiro={refreshAllKiro}
             onRefreshKiroAccount={refreshKiro}
             onRemoveKiroAccount={removeKiroAccount}
@@ -1500,6 +1509,7 @@ export function App() {
             onRefreshAll={refreshAllCodex}
             onRefreshAccount={refreshCodex}
             onRemoveAccount={removeCodexAccount}
+            onReauthenticate={startCodexAuth}
             onTogglePinnedAccount={togglePinnedAccount}
           />
         ) : view === 'antigravity-accounts' ? (
@@ -1528,6 +1538,7 @@ export function App() {
             onRefreshAll={refreshAllClaude}
             onRefreshAccount={refreshClaude}
             onRemoveAccount={removeClaudeAccount}
+            onReauthenticate={startClaudeAuth}
             onTogglePinnedAccount={togglePinnedAccount}
           />
         ) : view === 'kiro-accounts' ? (
@@ -2017,12 +2028,14 @@ interface DashboardViewProps {
   onRefreshAllCodex: () => void;
   onRefreshCodexAccount: (accountId: string) => void;
   onRemoveCodexAccount: (accountId: string) => void;
+  onReauthenticateCodex: () => void;
   onRefreshAllAntigravity: () => void;
   onRefreshAntigravityAccount: (accountId: string) => void;
   onRemoveAntigravityAccount: (accountId: string) => void;
   onRefreshAllClaude: () => void;
   onRefreshClaudeAccount: (accountId: string) => void;
   onRemoveClaudeAccount: (accountId: string) => void;
+  onReauthenticateClaude: () => void;
   onRefreshAllKiro: () => void;
   onRefreshKiroAccount: (accountId: string) => void;
   onRemoveKiroAccount: (accountId: string) => void;
@@ -2068,12 +2081,14 @@ function DashboardView({
   onRefreshAllCodex,
   onRefreshCodexAccount,
   onRemoveCodexAccount,
+  onReauthenticateCodex,
   onRefreshAllAntigravity,
   onRefreshAntigravityAccount,
   onRemoveAntigravityAccount,
   onRefreshAllClaude,
   onRefreshClaudeAccount,
   onRemoveClaudeAccount,
+  onReauthenticateClaude,
   onRefreshAllKiro,
   onRefreshKiroAccount,
   onRemoveKiroAccount,
@@ -2253,6 +2268,7 @@ function DashboardView({
                     dashboardMode={true}
                     onRefresh={() => onRefreshCodexAccount(account.id)}
                     onRemove={() => onRemoveCodexAccount(account.id)}
+                    onReauthenticate={onReauthenticateCodex}
                     onTogglePin={() => onTogglePinnedAccount(account.id)}
                   />
                 ))}
@@ -2339,6 +2355,7 @@ function DashboardView({
                     dashboardMode={true}
                     onRefresh={() => onRefreshClaudeAccount(account.id)}
                     onRemove={() => onRemoveClaudeAccount(account.id)}
+                    onReauthenticate={onReauthenticateClaude}
                     onTogglePin={() => onTogglePinnedAccount(account.id)}
                   />
                 ))}
@@ -2540,6 +2557,7 @@ interface CodexAccountsViewProps {
   onRefreshAll: () => void;
   onRefreshAccount: (accountId: string) => void;
   onRemoveAccount: (accountId: string) => void;
+  onReauthenticate: () => void;
   onTogglePinnedAccount: (accountId: string) => void;
 }
 
@@ -2554,6 +2572,7 @@ function CodexAccountsView({
   onRefreshAll,
   onRefreshAccount,
   onRemoveAccount,
+  onReauthenticate,
   onTogglePinnedAccount,
 }: CodexAccountsViewProps) {
   return (
@@ -2612,6 +2631,7 @@ function CodexAccountsView({
               pinned={pinnedAccounts.has(account.id)}
               onRefresh={() => onRefreshAccount(account.id)}
               onRemove={() => onRemoveAccount(account.id)}
+              onReauthenticate={onReauthenticate}
               onTogglePin={() => onTogglePinnedAccount(account.id)}
             />
           ))}
@@ -2724,6 +2744,7 @@ interface ClaudeAccountsViewProps {
   onRefreshAll: () => void;
   onRefreshAccount: (accountId: string) => void;
   onRemoveAccount: (accountId: string) => void;
+  onReauthenticate: () => void;
   onTogglePinnedAccount: (accountId: string) => void;
 }
 
@@ -2738,6 +2759,7 @@ function ClaudeAccountsView({
   onRefreshAll,
   onRefreshAccount,
   onRemoveAccount,
+  onReauthenticate,
   onTogglePinnedAccount,
 }: ClaudeAccountsViewProps) {
   return (
@@ -2796,6 +2818,7 @@ function ClaudeAccountsView({
               pinned={pinnedAccounts.has(account.id)}
               onRefresh={() => onRefreshAccount(account.id)}
               onRemove={() => onRemoveAccount(account.id)}
+              onReauthenticate={onReauthenticate}
               onTogglePin={() => onTogglePinnedAccount(account.id)}
             />
           ))}
@@ -3482,10 +3505,20 @@ interface CodexUsageCardProps {
   dashboardMode?: boolean;
   onRefresh: () => void;
   onRemove: () => void;
+  onReauthenticate: () => void;
   onTogglePin: () => void;
 }
 
-function CodexUsageCard({ account, busy, pinned, dashboardMode = false, onRefresh, onRemove, onTogglePin }: CodexUsageCardProps) {
+function CodexUsageCard({
+  account,
+  busy,
+  pinned,
+  dashboardMode = false,
+  onRefresh,
+  onRemove,
+  onReauthenticate,
+  onTogglePin,
+}: CodexUsageCardProps) {
   return (
     <article className="usage-card">
       <div className="usage-card__header">
@@ -3526,7 +3559,15 @@ function CodexUsageCard({ account, busy, pinned, dashboardMode = false, onRefres
         />
       </div>
 
-      {account.quotaQueryLastError ? <p className="usage-card__error">{account.quotaQueryLastError}</p> : null}
+      {account.requiresReauthentication ? (
+        <ReauthenticationAlert
+          message={account.quotaQueryLastError ?? 'Codex authorization expired. Reauthenticate to continue.'}
+          busy={busy}
+          onReauthenticate={onReauthenticate}
+        />
+      ) : account.quotaQueryLastError ? (
+        <p className="usage-card__error" role="alert">{account.quotaQueryLastError}</p>
+      ) : null}
     </article>
   );
 }
@@ -3538,10 +3579,20 @@ interface ClaudeUsageCardProps {
   dashboardMode?: boolean;
   onRefresh: () => void;
   onRemove: () => void;
+  onReauthenticate: () => void;
   onTogglePin: () => void;
 }
 
-function ClaudeUsageCard({ account, busy, pinned, dashboardMode = false, onRefresh, onRemove, onTogglePin }: ClaudeUsageCardProps) {
+function ClaudeUsageCard({
+  account,
+  busy,
+  pinned,
+  dashboardMode = false,
+  onRefresh,
+  onRemove,
+  onReauthenticate,
+  onTogglePin,
+}: ClaudeUsageCardProps) {
   const extraUsageDetail = formatClaudeExtraUsage(account.quota);
 
   return (
@@ -3607,7 +3658,15 @@ function ClaudeUsageCard({ account, busy, pinned, dashboardMode = false, onRefre
         ) : null}
       </div>
 
-      {account.quotaQueryLastError ? <p className="usage-card__error">{account.quotaQueryLastError}</p> : null}
+      {account.requiresReauthentication ? (
+        <ReauthenticationAlert
+          message={account.quotaQueryLastError ?? 'Claude Code authorization expired. Reauthenticate to continue.'}
+          busy={busy}
+          onReauthenticate={onReauthenticate}
+        />
+      ) : account.quotaQueryLastError ? (
+        <p className="usage-card__error" role="alert">{account.quotaQueryLastError}</p>
+      ) : null}
     </article>
   );
 }

@@ -38,6 +38,7 @@ exports.CodexProvider = void 0;
 const crypto = __importStar(require("node:crypto"));
 const http = __importStar(require("node:http"));
 const vscode = __importStar(require("vscode"));
+const authError_1 = require("./authError");
 const constants_1 = require("./constants");
 const CODEX_USAGE_ENDPOINT = 'https://chatgpt.com/backend-api/wham/usage';
 const CODEX_OAUTH_AUTHORIZE_ENDPOINT = 'https://auth.openai.com/oauth/authorize';
@@ -204,7 +205,11 @@ async function refreshToken(refreshToken) {
             refresh_token: refreshToken,
         }).toString(),
     });
-    return parseJsonResponse(response, 'Codex token refresh');
+    const body = await response.text();
+    if (!response.ok) {
+        throw new Error((0, authError_1.tokenRefreshErrorMessage)('Codex', response.status, body));
+    }
+    return JSON.parse(body);
 }
 async function fetchCodexUsage(account, credential) {
     const headers = {
@@ -333,7 +338,14 @@ class CodexProvider {
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            if (message.startsWith('unauthorized:') && credential.refreshToken) {
+            if (message.startsWith('unauthorized:')) {
+                if (!credential.refreshToken) {
+                    return await this.saveAccount({
+                        ...account,
+                        quotaQueryLastError: (0, authError_1.reauthenticationMessage)('Codex'),
+                        quotaQueryLastErrorAt: now(),
+                    });
+                }
                 try {
                     const tokenResponse = await refreshToken(credential.refreshToken);
                     const updated = await this.upsertTokenResponse(tokenResponse, account);
@@ -386,7 +398,11 @@ class CodexProvider {
         return (await this.getAccounts()).length > 0;
     }
     async upsertTokenResponse(response, existing) {
-        const result = accountFromTokenResponse(response, existing);
+        const initial = accountFromTokenResponse(response, existing);
+        const matchedExisting = existing ?? await this.getAccount(initial.account.id);
+        const result = matchedExisting
+            ? accountFromTokenResponse(response, matchedExisting)
+            : initial;
         const store = await this.getCredentialStore();
         store.accounts[result.account.id] = result.credential;
         if (!result.credential.refreshToken && existing) {

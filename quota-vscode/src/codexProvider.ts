@@ -4,6 +4,10 @@ import * as http from 'node:http';
 
 import * as vscode from 'vscode';
 
+import {
+  reauthenticationMessage,
+  tokenRefreshErrorMessage,
+} from './authError';
 import { PROVIDER_LABELS } from './constants';
 import type { QuotaTrack } from './types';
 
@@ -278,7 +282,11 @@ async function refreshToken(refreshToken: string): Promise<CodexTokenResponse> {
     }).toString(),
   });
 
-  return parseJsonResponse<CodexTokenResponse>(response, 'Codex token refresh');
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(tokenRefreshErrorMessage('Codex', response.status, body));
+  }
+  return JSON.parse(body) as CodexTokenResponse;
 }
 
 async function fetchCodexUsage(account: CodexAccount, credential: CodexCredential): Promise<{ plan?: string; quota: CodexQuotaSummary }> {
@@ -415,7 +423,14 @@ export class CodexProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (message.startsWith('unauthorized:') && credential.refreshToken) {
+      if (message.startsWith('unauthorized:')) {
+        if (!credential.refreshToken) {
+          return await this.saveAccount({
+            ...account,
+            quotaQueryLastError: reauthenticationMessage('Codex'),
+            quotaQueryLastErrorAt: now(),
+          });
+        }
         try {
           const tokenResponse = await refreshToken(credential.refreshToken);
           const updated = await this.upsertTokenResponse(tokenResponse, account);
@@ -481,7 +496,11 @@ export class CodexProvider {
   }
 
   private async upsertTokenResponse(response: CodexTokenResponse, existing?: CodexAccount): Promise<CodexAccount> {
-    const result = accountFromTokenResponse(response, existing);
+    const initial = accountFromTokenResponse(response, existing);
+    const matchedExisting = existing ?? await this.getAccount(initial.account.id);
+    const result = matchedExisting
+      ? accountFromTokenResponse(response, matchedExisting)
+      : initial;
     const store = await this.getCredentialStore();
     store.accounts[result.account.id] = result.credential;
     if (!result.credential.refreshToken && existing) {

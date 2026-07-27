@@ -18,6 +18,8 @@ const CODEX_OAUTH_SCOPES: &str =
     "openid profile email offline_access api.connectors.read api.connectors.invoke";
 const CODEX_OAUTH_CALLBACK_PORT: u16 = 1455;
 const CODEX_OAUTH_TIMEOUT_SECONDS: i64 = 300;
+const CODEX_REAUTHENTICATION_MESSAGE: &str =
+    "Codex authorization expired. Reauthenticate to continue.";
 
 static PENDING_CODEX_OAUTH: std::sync::LazyLock<Arc<Mutex<Option<PendingCodexOAuth>>>> =
     std::sync::LazyLock::new(|| Arc::new(Mutex::new(None)));
@@ -76,6 +78,8 @@ struct StoredCodexAccount {
     quota: CodexQuotaSummary,
     quota_query_last_error: Option<String>,
     quota_query_last_error_at: Option<i64>,
+    #[serde(default)]
+    requires_reauthentication: bool,
     usage_updated_at: Option<i64>,
     created_at: i64,
     last_used: i64,
@@ -95,12 +99,13 @@ pub struct CodexAccountSummary {
     pub quota: CodexQuotaSummary,
     pub quota_query_last_error: Option<String>,
     pub quota_query_last_error_at: Option<i64>,
+    pub requires_reauthentication: bool,
     pub usage_updated_at: Option<i64>,
     pub created_at: i64,
     pub last_used: i64,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CodexQuotaSummary {
     pub hourly_remaining_percent: Option<i32>,
@@ -327,6 +332,14 @@ pub fn build_codex_oauth_start_for_test(
     build_oauth_start(login_id, state, code_verifier)
 }
 
+pub fn classify_codex_refresh_failure_for_test(status: u16, body: &str) -> (String, bool) {
+    let error = classify_token_refresh_failure(status, body);
+    (
+        error.message().to_string(),
+        error.requires_reauthentication(),
+    )
+}
+
 fn now_timestamp() -> i64 {
     chrono::Utc::now().timestamp()
 }
@@ -494,6 +507,7 @@ fn build_api_key_account(api_key: &str, api_base_url: Option<String>) -> StoredC
         quota: CodexQuotaSummary::default(),
         quota_query_last_error: None,
         quota_query_last_error_at: None,
+        requires_reauthentication: false,
         usage_updated_at: None,
         created_at: now,
         last_used: now,
@@ -552,6 +566,7 @@ fn build_oauth_account(tokens: CodexAuthTokens) -> Result<StoredCodexAccount, St
         quota: CodexQuotaSummary::default(),
         quota_query_last_error: None,
         quota_query_last_error_at: None,
+        requires_reauthentication: false,
         usage_updated_at: None,
         created_at: now,
         last_used: now,
@@ -756,6 +771,10 @@ fn upsert_account_in(
     let existing = load_account_in(storage_dir, &account.id).ok();
     if let Some(existing) = existing {
         account.created_at = existing.created_at;
+        if account.quota == CodexQuotaSummary::default() {
+            account.quota = existing.quota;
+            account.usage_updated_at = existing.usage_updated_at;
+        }
     }
     account.last_used = now_timestamp();
     save_account_in(storage_dir, &account)?;
@@ -827,6 +846,7 @@ async fn refresh_account_in(
         account.quota_query_last_error =
             Some("API key accounts do not expose Codex web quota in this slice.".to_string());
         account.quota_query_last_error_at = Some(now_timestamp());
+        account.requires_reauthentication = false;
         save_account_in(storage_dir, &account)?;
         return Ok(account.to_summary());
     }
@@ -837,28 +857,49 @@ async fn refresh_account_in(
             account.quota = parsed.quota;
             account.quota_query_last_error = None;
             account.quota_query_last_error_at = None;
+            account.requires_reauthentication = false;
             account.usage_updated_at = Some(now_timestamp());
             account.last_used = now_timestamp();
             save_account_in(storage_dir, &account)?;
             Ok(account.to_summary())
         }
         Err(CodexQuotaFetchError::Unauthorized(_error)) => {
-            account = refresh_account_tokens(storage_dir, account).await?;
+            account = match refresh_account_tokens(storage_dir, account).await {
+                Ok(account) => account,
+                Err(error) => {
+                    let message = error.message().to_string();
+                    let requires_reauthentication = error.requires_reauthentication();
+                    return record_refresh_error_in(
+                        storage_dir,
+                        account_id,
+                        message,
+                        requires_reauthentication,
+                    );
+                }
+            };
             match fetch_quota(&account).await {
                 Ok(parsed) => {
                     account.plan = parsed.plan.or(account.plan);
                     account.quota = parsed.quota;
                     account.quota_query_last_error = None;
                     account.quota_query_last_error_at = None;
+                    account.requires_reauthentication = false;
                     account.usage_updated_at = Some(now_timestamp());
                     account.last_used = now_timestamp();
                     save_account_in(storage_dir, &account)?;
                     Ok(account.to_summary())
                 }
+                Err(CodexQuotaFetchError::Unauthorized(_)) => record_refresh_error_in(
+                    storage_dir,
+                    &account.id,
+                    CODEX_REAUTHENTICATION_MESSAGE.to_string(),
+                    true,
+                ),
                 Err(error) => {
                     let message = error.to_string();
                     account.quota_query_last_error = Some(message.clone());
                     account.quota_query_last_error_at = Some(now_timestamp());
+                    account.requires_reauthentication = false;
                     save_account_in(storage_dir, &account)?;
                     Err(message)
                 }
@@ -868,6 +909,7 @@ async fn refresh_account_in(
             let message = error.to_string();
             account.quota_query_last_error = Some(message.clone());
             account.quota_query_last_error_at = Some(now_timestamp());
+            account.requires_reauthentication = false;
             save_account_in(storage_dir, &account)?;
             Err(message)
         }
@@ -945,18 +987,21 @@ async fn fetch_quota(
 async fn refresh_account_tokens(
     storage_dir: &Path,
     account: StoredCodexAccount,
-) -> Result<StoredCodexAccount, String> {
+) -> Result<StoredCodexAccount, CodexTokenRefreshError> {
     let refresh_token = account
         .tokens
         .as_ref()
         .and_then(|tokens| normalize_optional(tokens.refresh_token.clone()))
-        .ok_or_else(|| "Codex account has no refresh token. Reconnect this account.".to_string())?;
+        .ok_or(CodexTokenRefreshError::ReauthenticationRequired)?;
     let response = request_token_refresh(&refresh_token).await?;
-    let summary = upsert_token_response_in(storage_dir, Some(&account.id), &response)?;
-    load_account_in(storage_dir, &summary.id)
+    let summary = upsert_token_response_in(storage_dir, Some(&account.id), &response)
+        .map_err(CodexTokenRefreshError::Other)?;
+    load_account_in(storage_dir, &summary.id).map_err(CodexTokenRefreshError::Other)
 }
 
-async fn request_token_refresh(refresh_token: &str) -> Result<serde_json::Value, String> {
+async fn request_token_refresh(
+    refresh_token: &str,
+) -> Result<serde_json::Value, CodexTokenRefreshError> {
     let response = reqwest::Client::new()
         .post(CODEX_OAUTH_TOKEN_ENDPOINT)
         .form(&[
@@ -966,21 +1011,82 @@ async fn request_token_refresh(refresh_token: &str) -> Result<serde_json::Value,
         ])
         .send()
         .await
-        .map_err(|err| format!("Codex token refresh request failed: {}", err))?;
+        .map_err(|err| {
+            CodexTokenRefreshError::Other(format!("Codex token refresh request failed: {}", err))
+        })?;
     let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|err| format!("Could not read Codex token refresh response: {}", err))?;
+    let body = response.text().await.map_err(|err| {
+        CodexTokenRefreshError::Other(format!(
+            "Could not read Codex token refresh response: {}",
+            err
+        ))
+    })?;
     if !status.is_success() {
-        return Err(format!(
+        return Err(classify_token_refresh_failure(status.as_u16(), &body));
+    }
+    serde_json::from_str(&body).map_err(|err| {
+        CodexTokenRefreshError::Other(format!("Could not parse Codex token response: {}", err))
+    })
+}
+
+#[derive(Debug)]
+enum CodexTokenRefreshError {
+    ReauthenticationRequired,
+    Other(String),
+}
+
+impl CodexTokenRefreshError {
+    fn message(&self) -> &str {
+        match self {
+            Self::ReauthenticationRequired => CODEX_REAUTHENTICATION_MESSAGE,
+            Self::Other(message) => message,
+        }
+    }
+
+    fn requires_reauthentication(&self) -> bool {
+        matches!(self, Self::ReauthenticationRequired)
+    }
+}
+
+fn classify_token_refresh_failure(status: u16, body: &str) -> CodexTokenRefreshError {
+    let normalized = body.to_lowercase();
+    let rejected_refresh_token = status == 401
+        || status == 403
+        || (status == 400
+            && [
+                "invalid_grant",
+                "refresh token expired",
+                "refresh_token_expired",
+                "refresh token revoked",
+                "refresh_token_revoked",
+            ]
+            .iter()
+            .any(|signal| normalized.contains(signal)));
+
+    if rejected_refresh_token {
+        CodexTokenRefreshError::ReauthenticationRequired
+    } else {
+        CodexTokenRefreshError::Other(format!(
             "Codex token refresh returned {} with body length {}",
             status,
             body.len()
-        ));
+        ))
     }
-    serde_json::from_str(&body)
-        .map_err(|err| format!("Could not parse Codex token response: {}", err))
+}
+
+fn record_refresh_error_in(
+    storage_dir: &Path,
+    account_id: &str,
+    message: String,
+    requires_reauthentication: bool,
+) -> Result<CodexAccountSummary, String> {
+    let mut account = load_account_in(storage_dir, account_id)?;
+    account.quota_query_last_error = Some(message);
+    account.quota_query_last_error_at = Some(now_timestamp());
+    account.requires_reauthentication = requires_reauthentication;
+    account.last_used = now_timestamp();
+    save_account_in(storage_dir, &account)?;
+    Ok(account.to_summary())
 }
 
 fn parse_quota_from_value(value: &serde_json::Value) -> Result<ParsedCodexQuota, String> {
@@ -1086,6 +1192,7 @@ impl StoredCodexAccount {
             quota: self.quota.clone(),
             quota_query_last_error: self.quota_query_last_error.clone(),
             quota_query_last_error_at: self.quota_query_last_error_at,
+            requires_reauthentication: self.requires_reauthentication,
             usage_updated_at: self.usage_updated_at,
             created_at: self.created_at,
             last_used: self.last_used,

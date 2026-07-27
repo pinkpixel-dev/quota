@@ -50,12 +50,14 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Account pinning in Dashboard
 - Toggle provider visibility without disconnection of accounts
 - Dashboard Layouts: Default, Compact, List
+- List-mode account actions stay anchored to the far-right edge for easier removal
 - Theme Modes: System, Dark, Light
 - Safe JSON Export for account summaries
 - Opt-in auto refresh with a configurable interval
 - System tray — close the window to keep running in the background, click the tray icon to restore
 - Opt-in desktop notifications when a quota drops below a configurable threshold
 - Account Pages for providers with refresh and delete buttons
+- Clear Codex and Claude Code reauthentication prompts when saved authorization expires
 - Antigravity AI credit display when credits are available
 - Tauri desktop shell
 - Separate VS Code/OpenVSX extension scaffold in `quota-vscode/`
@@ -88,6 +90,8 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 - [GitHub](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.5.vsix)
 
 Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
+
+If Codex or Claude Code authorization expires, Quota keeps the account and its last safe quota data visible. Use the Reauthenticate action in the desktop account card or extension panel to renew access without disconnecting the account first.
 
 ## Contributing
 

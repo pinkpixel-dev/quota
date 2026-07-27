@@ -37,6 +37,7 @@ exports.ClaudeProvider = void 0;
 // @env node
 const crypto = __importStar(require("node:crypto"));
 const vscode = __importStar(require("vscode"));
+const authError_1 = require("./authError");
 const claudeUsage_1 = require("./claudeUsage");
 const constants_1 = require("./constants");
 const CLAUDE_OAUTH_AUTHORIZE_URL = 'https://claude.com/cai/oauth/authorize';
@@ -253,7 +254,11 @@ async function refreshToken(refreshToken) {
             client_id: CLAUDE_OAUTH_CLIENT_ID,
         }),
     });
-    return parseJsonResponse(response, 'Claude token refresh');
+    const body = await response.text();
+    if (!response.ok) {
+        throw new Error((0, authError_1.tokenRefreshErrorMessage)('Claude Code', response.status, body));
+    }
+    return JSON.parse(body);
 }
 async function requestProfile(accessToken) {
     const response = await fetch(CLAUDE_OAUTH_PROFILE_URL, {
@@ -271,6 +276,9 @@ async function requestUsage(accessToken) {
             'anthropic-beta': CLAUDE_OAUTH_BETA_HEADER,
         },
     });
+    if (response.status === 401 || response.status === 403) {
+        throw new Error(`unauthorized:${response.status}`);
+    }
     return parseJsonResponse(response, 'Claude usage');
 }
 function accountFromTokenResponse(response, profile, existing) {
@@ -404,6 +412,33 @@ class ClaudeProvider {
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
+            if (message.startsWith('unauthorized:')) {
+                try {
+                    const refreshedCredential = await this.refreshCredential(account, credential);
+                    const usage = await requestUsage(refreshedCredential.accessToken);
+                    return await this.saveAccount({
+                        ...account,
+                        quota: quotaFromUsage(usage),
+                        quotaQueryLastError: null,
+                        quotaQueryLastErrorAt: null,
+                        usageUpdatedAt: now(),
+                        lastUsed: now(),
+                    });
+                }
+                catch (refreshError) {
+                    const refreshMessage = refreshError instanceof Error
+                        ? refreshError.message
+                        : String(refreshError);
+                    return await this.saveAccount({
+                        ...account,
+                        quotaQueryLastError: refreshMessage.startsWith('unauthorized:')
+                            ? (0, authError_1.reauthenticationMessage)('Claude Code')
+                            : refreshMessage,
+                        quotaQueryLastErrorAt: now(),
+                        lastUsed: now(),
+                    });
+                }
+            }
             if ((0, claudeUsage_1.shouldSuppressClaudeError)(message)) {
                 return await this.saveAccount({
                     ...account,
@@ -464,8 +499,11 @@ class ClaudeProvider {
         const shouldRefresh = credential.expiresAt != null && credential.expiresAt <= now() + 300_000;
         if (!shouldRefresh)
             return credential;
+        return this.refreshCredential(account, credential);
+    }
+    async refreshCredential(account, credential) {
         if (!credential.refreshToken)
-            throw new Error('Claude refresh token is missing.');
+            throw new Error((0, authError_1.reauthenticationMessage)('Claude Code'));
         const tokenResponse = await refreshToken(credential.refreshToken);
         const updated = await this.upsertTokenResponse(tokenResponse, undefined, account);
         const nextCredential = await this.getCredential(updated.id);
@@ -474,7 +512,11 @@ class ClaudeProvider {
         return nextCredential;
     }
     async upsertTokenResponse(response, profile, existing) {
-        const result = accountFromTokenResponse(response, profile, existing);
+        const initial = accountFromTokenResponse(response, profile, existing);
+        const matchedExisting = existing ?? await this.getAccount(initial.account.id);
+        const result = matchedExisting
+            ? accountFromTokenResponse(response, profile, matchedExisting)
+            : initial;
         const store = await this.getCredentialStore();
         store.accounts[result.account.id] = result.credential;
         if (!result.credential.refreshToken && existing) {
