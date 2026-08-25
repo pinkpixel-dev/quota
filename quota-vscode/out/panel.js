@@ -75,8 +75,8 @@ function toPanelTrack(track, config) {
     };
 }
 function renderProviderAction(provider, label, connected, requiresReauthentication = false) {
-    const connectCommand = provider === 'githubCopilot' ? 'connectGitHubCopilot' : provider === 'codex' ? 'connectCodex' : provider === 'claude' ? 'connectClaude' : provider === 'antigravity' ? 'connectAntigravity' : 'connectKiro';
-    const disconnectCommand = provider === 'githubCopilot' ? 'disconnectGitHubCopilot' : provider === 'codex' ? 'disconnectCodex' : provider === 'claude' ? 'disconnectClaude' : provider === 'antigravity' ? 'disconnectAntigravity' : 'disconnectKiro';
+    const connectCommand = provider === 'githubCopilot' ? 'connectGitHubCopilot' : provider === 'codex' ? 'connectCodex' : provider === 'claude' ? 'connectClaude' : provider === 'antigravity' ? 'connectAntigravity' : provider === 'kiro' ? 'connectKiro' : 'connectGrok';
+    const disconnectCommand = provider === 'githubCopilot' ? 'disconnectGitHubCopilot' : provider === 'codex' ? 'disconnectCodex' : provider === 'claude' ? 'disconnectClaude' : provider === 'antigravity' ? 'disconnectAntigravity' : provider === 'kiro' ? 'disconnectKiro' : 'disconnectGrok';
     if (!connected) {
         return `<button type="button" class="secondary" data-command="${connectCommand}">Connect ${label}</button>`;
     }
@@ -148,6 +148,7 @@ function renderEmpty(snapshot) {
         <button type="button" class="secondary" data-command="connectClaude">Connect Claude</button>
         <button type="button" class="secondary" data-command="connectAntigravity">Connect Antigravity</button>
         <button type="button" class="secondary" data-command="connectKiro">Connect Kiro</button>
+        <button type="button" class="secondary" data-command="connectGrok">Connect Grok</button>
       </div>
     </section>
   `;
@@ -468,6 +469,7 @@ function renderHtml(webview, snapshot, config) {
       ${renderProviderAction('claude', 'Claude', connectedProviders.has('claude'), reauthenticationProviders.has('claude'))}
       ${renderProviderAction('antigravity', 'Antigravity', connectedProviders.has('antigravity'))}
       ${renderProviderAction('kiro', 'Kiro', connectedProviders.has('kiro'))}
+      ${renderProviderAction('grok', 'Grok', connectedProviders.has('grok'), reauthenticationProviders.has('grok'))}
     </nav>
     ${tracks.length > 0 ? `<section class="list">${tracks.map(renderTrack).join('')}</section>` : renderEmpty(snapshot)}
   </main>
@@ -526,6 +528,14 @@ async function runPanelCommand(command) {
             return;
         case 'disconnectKiro':
             await vscode.commands.executeCommand('quota.disconnectKiro');
+            await vscode.commands.executeCommand('quota.openPanel');
+            return;
+        case 'connectGrok':
+            await vscode.commands.executeCommand('quota.connectGrok');
+            await vscode.commands.executeCommand('quota.openPanel');
+            return;
+        case 'disconnectGrok':
+            await vscode.commands.executeCommand('quota.disconnectGrok');
             await vscode.commands.executeCommand('quota.openPanel');
             return;
         case 'settings':

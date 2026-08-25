@@ -9,6 +9,7 @@ exports.PROVIDER_LABELS = {
     claude: 'Claude Code',
     antigravity: 'Antigravity',
     kiro: 'Kiro',
+    grok: 'Grok',
 };
 exports.PROVIDER_ORDER = [
     'githubCopilot',
@@ -16,6 +17,7 @@ exports.PROVIDER_ORDER = [
     'claude',
     'antigravity',
     'kiro',
+    'grok',
 ];
 exports.CANONICAL_TRACK_ORDER = [
     'githubCopilot.premium',
@@ -32,6 +34,9 @@ exports.CANONICAL_TRACK_ORDER = [
     'antigravity.claudeWeekly',
     'antigravity.credits',
     'kiro.promptCredits',
+    'grok.credits',
+    'grok.monthlySpend',
+    'grok.onDemand',
 ];
 exports.TRACK_LABELS = {
     'githubCopilot.premium': 'Premium requests',
@@ -48,6 +53,9 @@ exports.TRACK_LABELS = {
     'antigravity.claudeWeekly': 'Claude/GPT models weekly',
     'antigravity.credits': 'Available AI Credits',
     'kiro.promptCredits': 'Prompt credits',
+    'grok.credits': 'Credit window',
+    'grok.monthlySpend': 'Monthly spend',
+    'grok.onDemand': 'On-demand spend',
 };
 exports.TRACK_STATUS_BAR_LABEL = {
     'githubCopilot.premium': 'Copilot:Premium',
@@ -64,5 +72,8 @@ exports.TRACK_STATUS_BAR_LABEL = {
     'antigravity.claudeWeekly': 'Agy:Claude:Wk',
     'antigravity.credits': 'Agy:Credits',
     'kiro.promptCredits': 'Kiro:Credits',
+    'grok.credits': 'Grok:Credits',
+    'grok.monthlySpend': 'Grok:Month',
+    'grok.onDemand': 'Grok:OnDemand',
 };
 //# sourceMappingURL=constants.js.map

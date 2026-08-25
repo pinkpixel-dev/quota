@@ -10,6 +10,7 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
   claude: 'Claude Code',
   antigravity: 'Antigravity',
   kiro: 'Kiro',
+  grok: 'Grok',
 };
 
 export const PROVIDER_ORDER: ProviderId[] = [
@@ -18,6 +19,7 @@ export const PROVIDER_ORDER: ProviderId[] = [
   'claude',
   'antigravity',
   'kiro',
+  'grok',
 ];
 
 export const CANONICAL_TRACK_ORDER: TrackId[] = [
@@ -35,6 +37,9 @@ export const CANONICAL_TRACK_ORDER: TrackId[] = [
   'antigravity.claudeWeekly',
   'antigravity.credits',
   'kiro.promptCredits',
+  'grok.credits',
+  'grok.monthlySpend',
+  'grok.onDemand',
 ];
 
 export const TRACK_LABELS: Record<TrackId, string> = {
@@ -52,6 +57,9 @@ export const TRACK_LABELS: Record<TrackId, string> = {
   'antigravity.claudeWeekly': 'Claude/GPT models weekly',
   'antigravity.credits': 'Available AI Credits',
   'kiro.promptCredits': 'Prompt credits',
+  'grok.credits': 'Credit window',
+  'grok.monthlySpend': 'Monthly spend',
+  'grok.onDemand': 'On-demand spend',
 };
 
 export const TRACK_STATUS_BAR_LABEL: Record<TrackId, string> = {
@@ -69,4 +77,7 @@ export const TRACK_STATUS_BAR_LABEL: Record<TrackId, string> = {
   'antigravity.claudeWeekly': 'Agy:Claude:Wk',
   'antigravity.credits': 'Agy:Credits',
   'kiro.promptCredits': 'Kiro:Credits',
+  'grok.credits': 'Grok:Credits',
+  'grok.monthlySpend': 'Grok:Month',
+  'grok.onDemand': 'Grok:OnDemand',
 };

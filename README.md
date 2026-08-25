@@ -18,6 +18,7 @@ Currently Quota supports the following providers:
 - Claude Code
 - Kiro
 - Cursor
+- Grok
 
 Every provider saves its raw auth info in the Rust backend and only secure account & usage information are sent to the React frontend.
 
@@ -57,7 +58,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - System tray — close the window to keep running in the background, click the tray icon to restore
 - Opt-in desktop notifications when a quota drops below a configurable threshold
 - Account Pages for providers with refresh and delete buttons
-- Clear Codex and Claude Code reauthentication prompts when saved authorization expires
+- Clear Codex, Claude Code, and Grok reauthentication prompts when saved authorization expires
 - Antigravity AI credit display when credits are available
 - Tauri desktop shell
 - Separate VS Code/OpenVSX extension scaffold in `quota-vscode/`
@@ -87,11 +88,11 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 
 - [Open VSX Registry](https://open-vsx.org/extension/pinkpixel/quota-ai-usage-tracker/)
 
-- [GitHub v1.0.5](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.5.vsix) (latest published VSIX; `v1.1.0` is prepared locally)
+- [GitHub v1.0.5](https://github.com/pinkpixel-dev/quota/blob/main/quota-vscode/quota-ai-usage-tracker-1.0.5.vsix) (latest published VSIX; `v1.2.0` is prepared locally)
 
 Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
 
-If Codex or Claude Code authorization expires, Quota keeps the account and its last safe quota data visible. Use the Reauthenticate action in the desktop account card or extension panel to renew access without disconnecting the account first.
+If Codex, Claude Code, or Grok authorization expires, Quota keeps the account and its last safe quota data visible. Use the Reauthenticate action in the desktop account card or extension panel to renew access without disconnecting the account first.
 
 ## Contributing
 

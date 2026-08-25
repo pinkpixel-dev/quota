@@ -26,6 +26,12 @@
         },
         {
           "url": "https://cursor.com/loginDeepControl*"
+        },
+        {
+          "url": "https://accounts.x.ai/oauth2/device*"
+        },
+        {
+          "url": "https://auth.x.ai/oauth2/device*"
         }
       ]
     }
