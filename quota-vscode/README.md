@@ -26,7 +26,7 @@ Quota currently supports direct extension-owned auth for:
 | Provider | Tracks |
 | --- | --- |
 | GitHub Copilot | Premium requests, chat messages, inline suggestions |
-| Codex | Weekly usage |
+| Codex | 5h usage, weekly usage |
 | Claude Code | 5h usage, weekly usage, weekly Sonnet, extra usage |
 | Antigravity | Gemini 5h, Gemini weekly, Claude/GPT 5h, Claude/GPT weekly, AI credits when available |
 | Kiro | Prompt credits |
@@ -131,7 +131,7 @@ Open `Quota: Open Settings` or edit your VS Code settings:
 
 Use these IDs in `quota.statusBar.items`:
 
-Codex keeps the stable `codex.primary` track ID for existing settings, but that track now represents the current weekly usage window.
+Codex keeps the stable `codex.primary` track ID for the five-hour window. The restored weekly window uses `codex.weekly`.
 
 ```json
 [
@@ -139,6 +139,7 @@ Codex keeps the stable `codex.primary` track ID for existing settings, but that 
   "githubCopilot.chat",
   "githubCopilot.inline",
   "codex.primary",
+  "codex.weekly",
   "claude.fiveHour",
   "claude.weekly",
   "claude.weeklySonnet",

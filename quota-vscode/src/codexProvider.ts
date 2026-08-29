@@ -8,7 +8,8 @@ import {
   reauthenticationMessage,
   tokenRefreshErrorMessage,
 } from './authError';
-import { PROVIDER_LABELS } from './constants';
+import { quotaFromUsage, tracksFromCodexAccount } from './codexUsage';
+import type { CodexQuotaSummary, CodexUsageResponse } from './codexUsage';
 import type { QuotaTrack } from './types';
 
 const CODEX_USAGE_ENDPOINT = 'https://chatgpt.com/backend-api/wham/usage';
@@ -48,15 +49,6 @@ interface CodexAccount {
   lastUsed: number;
 }
 
-interface CodexQuotaSummary {
-  hourlyRemainingPercent?: number | null;
-  hourlyResetAt?: number | null;
-  hourlyWindowMinutes?: number | null;
-  weeklyRemainingPercent?: number | null;
-  weeklyResetAt?: number | null;
-  weeklyWindowMinutes?: number | null;
-}
-
 interface CodexTokenResponse {
   id_token?: string;
   access_token?: string;
@@ -80,21 +72,6 @@ interface CodexJwtPayload {
   'https://api.openai.com/profile'?: {
     email?: string;
   };
-}
-
-interface UsageResponse {
-  plan_type?: string;
-  rate_limit?: {
-    primary_window?: WindowInfo;
-    secondary_window?: WindowInfo;
-  };
-}
-
-interface WindowInfo {
-  used_percent?: number;
-  limit_window_seconds?: number;
-  reset_after_seconds?: number;
-  reset_at?: number;
 }
 
 interface OAuthCallbackResult {
@@ -125,16 +102,6 @@ function randomToken(): string {
 
 function pkceChallenge(codeVerifier: string): string {
   return crypto.createHash('sha256').update(codeVerifier).digest('base64url');
-}
-
-function clampPercent(value: number | undefined): number | undefined {
-  if (value == null || !Number.isFinite(value)) return undefined;
-  return Math.min(100, Math.max(0, Math.round(value)));
-}
-
-function usedFromRemaining(value: number | null | undefined): number | undefined {
-  const remaining = clampPercent(value ?? undefined);
-  return remaining == null ? undefined : 100 - remaining;
 }
 
 function decodeJwtPayload(token: string): CodexJwtPayload {
@@ -198,55 +165,6 @@ function accountFromTokenResponse(response: CodexTokenResponse, existing?: Codex
   };
 }
 
-function remainingPercent(window: WindowInfo | undefined): number | undefined {
-  return window == null ? undefined : 100 - Math.min(100, Math.max(0, Math.round(window.used_percent ?? 0)));
-}
-
-function windowMinutes(window: WindowInfo | undefined): number | undefined {
-  const seconds = window?.limit_window_seconds;
-  if (seconds == null || seconds <= 0) return undefined;
-  return Math.ceil(seconds / 60);
-}
-
-function resetAt(window: WindowInfo | undefined): number | undefined {
-  if (window?.reset_at != null) return window.reset_at * 1000;
-  if (window?.reset_after_seconds == null || window.reset_after_seconds < 0) return undefined;
-  return now() + window.reset_after_seconds * 1000;
-}
-
-function quotaFromUsage(value: UsageResponse): { plan?: string; quota: CodexQuotaSummary } {
-  const primary = value.rate_limit?.primary_window;
-  const secondary = value.rate_limit?.secondary_window;
-
-  return {
-    plan: normalize(value.plan_type),
-    quota: {
-      hourlyRemainingPercent: remainingPercent(primary),
-      hourlyResetAt: resetAt(primary),
-      hourlyWindowMinutes: windowMinutes(primary),
-      weeklyRemainingPercent: remainingPercent(secondary),
-      weeklyResetAt: resetAt(secondary),
-      weeklyWindowMinutes: windowMinutes(secondary),
-    },
-  };
-}
-
-function trackFromAccount(account: CodexAccount): QuotaTrack {
-  const remaining = account.quota.hourlyRemainingPercent;
-  return {
-    id: 'codex.primary',
-    providerId: 'codex',
-    providerLabel: PROVIDER_LABELS.codex,
-    label: 'Weekly usage',
-    accountLabel: account.email,
-    percentUsed: usedFromRemaining(remaining),
-    percentRemaining: remaining ?? undefined,
-    resetAt: account.quota.hourlyResetAt,
-    updatedAt: account.usageUpdatedAt,
-    error: account.quotaQueryLastError ?? null,
-  };
-}
-
 async function parseJsonResponse<T>(response: Response, failureLabel: string): Promise<T> {
   const body = await response.text();
   if (!response.ok) {
@@ -301,7 +219,7 @@ async function fetchCodexUsage(account: CodexAccount, credential: CodexCredentia
     throw new Error(`unauthorized:${response.status}`);
   }
 
-  const usage = await parseJsonResponse<UsageResponse>(response, 'Codex quota API');
+  const usage = await parseJsonResponse<CodexUsageResponse>(response, 'Codex quota API');
   return quotaFromUsage(usage);
 }
 
@@ -486,9 +404,7 @@ export class CodexProvider {
 
   async getTracks(): Promise<QuotaTrack[]> {
     const accounts = await this.getAccounts();
-    return accounts
-      .map(trackFromAccount)
-      .filter((track) => track.percentUsed != null || track.percentRemaining != null || track.error);
+    return accounts.flatMap(tracksFromCodexAccount);
   }
 
   async hasAccounts(): Promise<boolean> {

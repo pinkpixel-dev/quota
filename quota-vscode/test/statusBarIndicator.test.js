@@ -8,7 +8,7 @@ function track(percentages = {}) {
     id: 'codex.primary',
     providerId: 'codex',
     providerLabel: 'Codex',
-    label: 'Weekly usage',
+    label: '5h usage',
     accountLabel: 'sizzlebop@example.com',
     ...percentages,
   };

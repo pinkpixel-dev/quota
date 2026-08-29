@@ -3,7 +3,7 @@ const test = require('node:test');
 
 const { payloadToTracks } = require('../out/summary');
 
-test('payloadToTracks emits only the current Codex primary window as weekly usage', () => {
+test('payloadToTracks emits Codex five-hour and weekly usage windows', () => {
   const tracks = payloadToTracks({
     providers: {
       codex: [
@@ -20,10 +20,15 @@ test('payloadToTracks emits only the current Codex primary window as weekly usag
     },
   });
 
-  assert.equal(tracks.length, 1);
+  assert.equal(tracks.length, 2);
   assert.equal(tracks[0].id, 'codex.primary');
-  assert.equal(tracks[0].label, 'Weekly usage');
+  assert.equal(tracks[0].label, '5h usage');
   assert.equal(tracks[0].percentUsed, 28);
   assert.equal(tracks[0].percentRemaining, 72);
   assert.equal(tracks[0].resetAt, 1771736400000);
+  assert.equal(tracks[1].id, 'codex.weekly');
+  assert.equal(tracks[1].label, 'Weekly usage');
+  assert.equal(tracks[1].percentUsed, 89);
+  assert.equal(tracks[1].percentRemaining, 11);
+  assert.equal(tracks[1].resetAt, 1772341200000);
 });
