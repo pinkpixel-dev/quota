@@ -1,5 +1,3 @@
-cbc4a9c17d6536289234fe48e165d0ec344d800d7a6a283bfc3efbb081853509  src-tauri/target/release/bundle/appimage/Quota_1.2.1_amd64.AppImage
-25c2daad304c51c0390cb482ca1babc2e2c688b8eea07a7c8cda5e7c2f93c6da  src-tauri/target/release/bundle/deb/Quota_1.2.1_amd64.deb
-6bceb8527a68f1aecf65af9b8414035f6dae76b2ffe6177c38ed575208eb585e  src-tauri/target/release/bundle/rpm/Quota-1.2.1-1.x86_64.rpm
-e21429fc1aa24aa039f5d9746734477992ae650eb6c59974c20de995ea5da385  src-tauri/target/release/bundle/msi/Quota_1.2.1_x64_en-US.msi
-12da68e742927a0acfac374b1ed5f8ca5109d0dbbdeccd5835273a29b70ebc9c  src-tauri/target/release/bundle/nsis/Quota_1.2.1_x64-setup.exe
+a81501f67a4858607e6e8cc99f190e9935e7286ffe3705b4409baee156bfb29a  src-tauri/target/release/bundle/appimage/Quota_1.2.2_amd64.AppImage
+679f8df366a5af52c5a6e82998ba4b02b6ce4cf91e473d0aef9c75e287e595a2  src-tauri/target/release/bundle/deb/Quota_1.2.2_amd64.deb
+a9570aa3f0d4b95eb66d6ebe85f3f23ae6f199396a1cc7470470d0f16b3f15cd  src-tauri/target/release/bundle/rpm/Quota-1.2.2-1.x86_64.rpm
