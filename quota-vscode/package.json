@@ -2,7 +2,7 @@
   "name": "quota-ai-usage-tracker",
   "displayName": "Quota: AI Usage Tracker",
   "description": "AI quota tracking for VS Code and compatible IDEs.",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "publisher": "pinkpixel",
   "icon": "icon.png",
   "private": true,
@@ -38,7 +38,11 @@
     "onCommand:quota.disconnectAntigravity",
     "onCommand:quota.connectKiro",
     "onCommand:quota.refreshKiro",
-    "onCommand:quota.disconnectKiro"
+    "onCommand:quota.disconnectKiro",
+    "onCommand:quota.connectGrok",
+    "onCommand:quota.importLocalGrok",
+    "onCommand:quota.refreshGrok",
+    "onCommand:quota.disconnectGrok"
   ],
   "contributes": {
     "commands": [
@@ -113,6 +117,22 @@
       {
         "command": "quota.disconnectKiro",
         "title": "Quota: Disconnect Kiro"
+      },
+      {
+        "command": "quota.connectGrok",
+        "title": "Quota: Connect Grok"
+      },
+      {
+        "command": "quota.importLocalGrok",
+        "title": "Quota: Import Local Grok CLI Account"
+      },
+      {
+        "command": "quota.refreshGrok",
+        "title": "Quota: Refresh Grok"
+      },
+      {
+        "command": "quota.disconnectGrok",
+        "title": "Quota: Disconnect Grok"
       }
     ],
     "configuration": {
@@ -141,7 +161,8 @@
             "codex",
             "claude",
             "antigravity",
-            "kiro"
+            "kiro",
+            "grok"
           ],
           "items": {
             "type": "string",
@@ -150,7 +171,8 @@
               "codex",
               "claude",
               "antigravity",
-              "kiro"
+              "kiro",
+              "grok"
             ]
           },
           "markdownDescription": "Providers shown in the Quota panel. Cursor is intentionally excluded from the VSIX scope."
@@ -180,7 +202,10 @@
               "antigravity.claude",
               "antigravity.claudeWeekly",
               "antigravity.credits",
-              "kiro.promptCredits"
+              "kiro.promptCredits",
+              "grok.credits",
+              "grok.monthlySpend",
+              "grok.onDemand"
             ]
           },
           "markdownDescription": "Quota tracks shown directly in the status bar. Leave empty to show only the small Quota button."

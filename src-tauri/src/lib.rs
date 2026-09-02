@@ -11,6 +11,7 @@ pub mod codex;
 pub mod cursor;
 pub mod external_open;
 mod github_copilot;
+pub mod grok;
 pub mod kiro;
 
 #[derive(Serialize)]
@@ -153,7 +154,15 @@ pub fn run() {
             cursor::cursor_oauth_login_cancel,
             cursor::refresh_cursor_account,
             cursor::refresh_all_cursor_accounts,
-            cursor::delete_cursor_account
+            cursor::delete_cursor_account,
+            grok::list_grok_accounts,
+            grok::import_grok_from_local,
+            grok::grok_oauth_login_start,
+            grok::grok_oauth_login_complete,
+            grok::grok_oauth_login_cancel,
+            grok::refresh_grok_account,
+            grok::refresh_all_grok_accounts,
+            grok::delete_grok_account
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quota");

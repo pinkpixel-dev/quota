@@ -53,6 +53,9 @@ const TRACK_IDS = [
     'antigravity.claudeWeekly',
     'antigravity.credits',
     'kiro.promptCredits',
+    'grok.credits',
+    'grok.monthlySpend',
+    'grok.onDemand',
 ];
 function isProviderId(value) {
     return constants_1.PROVIDER_ORDER.includes(value);

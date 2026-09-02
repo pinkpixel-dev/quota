@@ -1,8 +1,9 @@
-export type ReauthenticationProvider = 'Codex' | 'Claude Code';
+export type ReauthenticationProvider = 'Codex' | 'Claude Code' | 'Grok';
 
 const REAUTHENTICATION_MESSAGES: Record<ReauthenticationProvider, string> = {
   Codex: 'Codex authorization expired. Reauthenticate to continue.',
   'Claude Code': 'Claude Code authorization expired. Reauthenticate to continue.',
+  Grok: 'Grok authorization is no longer valid. Reconnect Grok to continue.',
 };
 
 function bodySignalsRejectedRefreshToken(body: string): boolean {

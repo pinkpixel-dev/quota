@@ -1,6 +1,6 @@
 # Quota: AI Usage Tracker
 
-Track AI usage from the editor you already have open. Quota adds a compact status bar button and a resize-friendly quota panel for GitHub Copilot, Codex, Claude Code, Antigravity, and Kiro.
+Track AI usage from the editor you already have open. Quota adds a compact status bar button and a resize-friendly quota panel for GitHub Copilot, Codex, Claude Code, Antigravity, Kiro, and Grok.
 
 ## See your AI quota at a glance
 
@@ -10,7 +10,7 @@ Quota is built for developers who use more than one AI coding tool and want one 
 
 ## What Quota does
 
-- **Tracks multiple providers**: GitHub Copilot, Codex, Claude Code, Antigravity, and Kiro
+- **Tracks multiple providers**: GitHub Copilot, Codex, Claude Code, Antigravity, Kiro, and Grok
 - **Shows a permanent status bar button**: open Quota without leaving your editor
 - **Pins quota tracks to the status bar**: choose the exact limits you want visible while coding
 - **Opens a compact quota panel**: scan percent used or remaining, reset timing, and last update time
@@ -30,6 +30,7 @@ Quota currently supports direct extension-owned auth for:
 | Claude Code | 5h usage, weekly usage, weekly Sonnet, extra usage |
 | Antigravity | Gemini 5h, Gemini weekly, Claude/GPT 5h, Claude/GPT weekly, AI credits when available |
 | Kiro | Prompt credits |
+| Grok | Credit window, monthly spend, on-demand spend |
 
 Cursor is not included in the extension because modern Cursor is its own standalone app. The Quota desktop app can still track Cursor.
 
@@ -53,6 +54,7 @@ Example pinned tracks:
 - `githubCopilot.premium`
 - `antigravity.gemini`
 - `kiro.promptCredits`
+- `grok.credits`
 
 ## Quota panel
 
@@ -77,10 +79,13 @@ Run the matching connect command from the Command Palette:
 - `Quota: Connect Claude Code`
 - `Quota: Connect Antigravity`
 - `Quota: Connect Kiro`
+- `Quota: Connect Grok`
 
 Each provider uses its own auth flow. Quota stores raw provider tokens only in VS Code SecretStorage and stores display-safe account metadata in extension state.
 
-When a Codex or Claude Code refresh token is rejected, Quota keeps the cached account visible, identifies that reauthentication is required, and offers the existing secure connection flow again. It does not delete the saved account before the new authorization succeeds.
+Grok can also be connected without a browser round trip by running `Quota: Import Local Grok CLI Account`, which reads the credentials the Grok CLI already stored in `~/.grok/auth.json`.
+
+When a Codex, Claude Code, or Grok refresh token is rejected, Quota keeps the cached account visible, identifies that reauthentication is required, and offers the existing secure connection flow again. It does not delete the saved account before the new authorization succeeds.
 
 ## Configure Quota
 
@@ -95,7 +100,8 @@ Open `Quota: Open Settings` or edit your VS Code settings:
     "codex",
     "claude",
     "antigravity",
-    "kiro"
+    "kiro",
+    "grok"
   ],
   "quota.statusBar.enabled": true,
   "quota.statusBar.items": ["codex.primary"],
@@ -126,6 +132,10 @@ Open `Quota: Open Settings` or edit your VS Code settings:
 | `Quota: Connect Kiro` | Connect a Kiro account |
 | `Quota: Refresh Kiro` | Refresh Kiro quota data |
 | `Quota: Disconnect Kiro` | Remove extension-stored Kiro credentials |
+| `Quota: Connect Grok` | Connect a Grok account with the xAI device-code flow |
+| `Quota: Import Local Grok CLI Account` | Import accounts from the local Grok CLI auth file |
+| `Quota: Refresh Grok` | Refresh Grok quota data |
+| `Quota: Disconnect Grok` | Remove extension-stored Grok credentials |
 
 ## Status bar track IDs
 
@@ -148,7 +158,10 @@ Codex keeps the stable `codex.primary` track ID for the five-hour window. The re
   "antigravity.geminiWeekly",
   "antigravity.claude",
   "antigravity.claudeWeekly",
-  "kiro.promptCredits"
+  "kiro.promptCredits",
+  "grok.credits",
+  "grok.monthlySpend",
+  "grok.onDemand"
 ]
 ```
 

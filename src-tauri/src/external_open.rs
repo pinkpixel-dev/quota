@@ -47,8 +47,10 @@ const APPIMAGE_MIXED_PATH_VARS: &[&str] = &["PATH", "XDG_DATA_DIRS"];
 /// built locally.
 const ALLOWED_HOSTS: &[&str] = &[
     "accounts.google.com",
+    "accounts.x.ai",
     "app.kiro.dev",
     "auth.openai.com",
+    "auth.x.ai",
     "claude.com",
     "cursor.com",
     "github.com",
@@ -225,6 +227,8 @@ mod tests {
             "https://claude.com/cai/oauth/authorize?state=1",
             "https://app.kiro.dev/signin?next=%2F",
             "https://cursor.com/loginDeepControl?uuid=1",
+            "https://accounts.x.ai/oauth2/device?user_code=ABCD-EFGH",
+            "https://auth.x.ai/oauth2/device?user_code=ABCD-EFGH",
         ] {
             assert!(validate_url(url).is_ok(), "should allow {url}");
         }

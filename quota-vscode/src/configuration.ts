@@ -20,6 +20,9 @@ const TRACK_IDS: TrackId[] = [
   'antigravity.claudeWeekly',
   'antigravity.credits',
   'kiro.promptCredits',
+  'grok.credits',
+  'grok.monthlySpend',
+  'grok.onDemand',
 ];
 
 function isProviderId(value: string): value is ProviderId {

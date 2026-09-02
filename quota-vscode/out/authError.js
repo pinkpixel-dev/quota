@@ -6,6 +6,7 @@ exports.tokenRefreshErrorMessage = tokenRefreshErrorMessage;
 const REAUTHENTICATION_MESSAGES = {
     Codex: 'Codex authorization expired. Reauthenticate to continue.',
     'Claude Code': 'Claude Code authorization expired. Reauthenticate to continue.',
+    Grok: 'Grok authorization is no longer valid. Reconnect Grok to continue.',
 };
 function bodySignalsRejectedRefreshToken(body) {
     const normalized = body.toLowerCase();

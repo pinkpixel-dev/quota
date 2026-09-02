@@ -241,6 +241,54 @@ function tracksFromKiro(accounts: Record<string, unknown>[]): QuotaTrack[] {
   });
 }
 
+function tracksFromGrok(accounts: Record<string, unknown>[]): QuotaTrack[] {
+  return accounts.flatMap((account) => {
+    const quota = isRecord(account.quota) ? account.quota : {};
+    const monthlyUsed = asNumber(quota.monthlyUsed);
+    const monthlyLimit = asNumber(quota.monthlyLimit);
+    const monthlyPercent = monthlyUsed != null && monthlyLimit != null && monthlyLimit > 0
+      ? (monthlyUsed / monthlyLimit) * 100
+      : undefined;
+    const onDemandUsed = asNumber(quota.onDemandUsed);
+    const onDemandCap = asNumber(quota.onDemandCap);
+    const onDemandPercent = onDemandUsed != null && onDemandCap != null && onDemandCap > 0
+      ? (onDemandUsed / onDemandCap) * 100
+      : undefined;
+    const periodLabel = asString(quota.periodLabel);
+    const monthlyResetAt = normalizeTimestamp(quota.monthlyPeriodEndAt);
+
+    return [
+      makeTrack(
+        'grok.credits',
+        'grok',
+        account,
+        periodLabel ? `${periodLabel} credits` : 'Credit window',
+        asNumber(quota.creditUsedPercent),
+        asNumber(quota.creditRemainingPercent),
+        normalizeTimestamp(quota.periodResetAt),
+      ),
+      makeTrack(
+        'grok.monthlySpend',
+        'grok',
+        account,
+        'Monthly spend',
+        monthlyPercent,
+        monthlyPercent == null ? undefined : 100 - monthlyPercent,
+        monthlyResetAt,
+      ),
+      makeTrack(
+        'grok.onDemand',
+        'grok',
+        account,
+        'On-demand spend',
+        onDemandPercent,
+        onDemandPercent == null ? undefined : 100 - onDemandPercent,
+        monthlyResetAt,
+      ),
+    ];
+  });
+}
+
 export function payloadToTracks(payload: SafeSummaryPayload): QuotaTrack[] {
   const providers = isRecord(payload.providers) ? payload.providers : {};
 
@@ -250,6 +298,7 @@ export function payloadToTracks(payload: SafeSummaryPayload): QuotaTrack[] {
     ...tracksFromClaude(asArray(providers.claude)),
     ...tracksFromAntigravity(asArray(providers.antigravity)),
     ...tracksFromKiro(asArray(providers.kiro)),
+    ...tracksFromGrok(asArray(providers.grok)),
   ].filter((track) => track.percentUsed != null || track.percentRemaining != null || track.valueLabel || track.error);
 }
 

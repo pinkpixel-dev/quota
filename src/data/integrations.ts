@@ -52,4 +52,13 @@ export const integrations: IntegrationSummary[] = [
     referenceHint: 'Connects through Claude Code OAuth; Claude Desktop cookie import stays deferred.',
     iconPath: '/brand-icons/claude.svg',
   },
+
+  {
+    name: 'Grok',
+    description: 'Grok CLI account connection, local import, and Grok Build credit windows.',
+    status: 'reference',
+    referenceHint:
+      'xAI OIDC device-code login with local ~/.grok/auth.json import; usage from the Grok CLI billing endpoint.',
+    iconPath: '/brand-icons/grok.svg',
+  },
 ];

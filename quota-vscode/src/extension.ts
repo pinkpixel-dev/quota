@@ -7,6 +7,7 @@ import { ClaudeProvider } from './claudeProvider';
 import { CodexProvider } from './codexProvider';
 import { readConfiguration } from './configuration';
 import { GitHubCopilotProvider } from './githubCopilotProvider';
+import { GrokProvider } from './grokProvider';
 import { KiroProvider } from './kiroProvider';
 import { showQuotaPanel } from './panel';
 import { loadQuotaSnapshot } from './summary';
@@ -21,6 +22,7 @@ let codexProvider: CodexProvider;
 let claudeProvider: ClaudeProvider;
 let antigravityProvider: AntigravityProvider;
 let kiroProvider: KiroProvider;
+let grokProvider: GrokProvider;
 let refreshTimer: NodeJS.Timeout | undefined;
 let lastManualRefreshAt = 0;
 
@@ -35,6 +37,7 @@ async function loadSnapshot(): Promise<QuotaSnapshot> {
     ...(await claudeProvider.getTracks()),
     ...(await antigravityProvider.getTracks()),
     ...(await kiroProvider.getTracks()),
+    ...(await grokProvider.getTracks()),
   ];
   return {
     sourcePath: 'VS Code extension accounts',
@@ -51,6 +54,7 @@ async function refresh(showToast = false, options: { refreshProviders?: boolean 
     if (await claudeProvider.hasAccounts()) await claudeProvider.refreshAll();
     if (await antigravityProvider.hasAccounts()) await antigravityProvider.refreshAll();
     if (await kiroProvider.hasAccounts()) await kiroProvider.refreshAll();
+    if (await grokProvider.hasAccounts()) await grokProvider.refreshAll();
   }
   snapshot = await loadSnapshot();
   statusBar.update(snapshot, config);
@@ -69,7 +73,9 @@ async function refresh(showToast = false, options: { refreshProviders?: boolean 
         ? 'Codex'
         : onlyProvider === 'claude'
           ? 'Claude Code'
-          : undefined;
+          : onlyProvider === 'grok'
+            ? 'Grok'
+            : undefined;
       const action = providerLabel ? `Reauthenticate ${providerLabel}` : 'Open Quota';
       const selected = await vscode.window.showErrorMessage(
         providerLabel
@@ -82,6 +88,8 @@ async function refresh(showToast = false, options: { refreshProviders?: boolean 
           await vscode.commands.executeCommand('quota.connectCodex');
         } else if (onlyProvider === 'claude') {
           await vscode.commands.executeCommand('quota.connectClaude');
+        } else if (onlyProvider === 'grok') {
+          await vscode.commands.executeCommand('quota.connectGrok');
         } else {
           await vscode.commands.executeCommand('quota.openPanel');
         }
@@ -130,6 +138,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   claudeProvider = new ClaudeProvider(context);
   antigravityProvider = new AntigravityProvider(context);
   kiroProvider = new KiroProvider(context);
+  grokProvider = new GrokProvider(context);
   config = readConfiguration();
   snapshot = await loadSnapshot();
   statusBar.update(snapshot, config);
@@ -267,6 +276,43 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand('quota.disconnectKiro', async () => {
       await kiroProvider.disconnect();
+      await refresh(false, { refreshProviders: false });
+    }),
+    vscode.commands.registerCommand('quota.connectGrok', async () => {
+      try {
+        await grokProvider.connect();
+        await refresh(true, { refreshProviders: false });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Grok connection failed: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand('quota.importLocalGrok', async () => {
+      try {
+        const accounts = await grokProvider.importLocal();
+        await refresh(false, { refreshProviders: false });
+        void vscode.window.showInformationMessage(
+          accounts.length === 1
+            ? 'Imported 1 Grok account from the local Grok CLI.'
+            : `Imported ${accounts.length} Grok accounts from the local Grok CLI.`,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Grok local import failed: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand('quota.refreshGrok', async () => {
+      try {
+        if (!checkManualRefreshCooldown()) return;
+        await grokProvider.refreshAll();
+        await refresh(true, { refreshProviders: false });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Grok refresh failed: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand('quota.disconnectGrok', async () => {
+      await grokProvider.disconnect();
       await refresh(false, { refreshProviders: false });
     }),
     vscode.workspace.onDidChangeConfiguration(async (event) => {
