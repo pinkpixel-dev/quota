@@ -9,6 +9,7 @@ pub mod antigravity;
 pub mod claude;
 pub mod codex;
 pub mod cursor;
+pub mod external_open;
 mod github_copilot;
 pub mod kiro;
 
@@ -105,6 +106,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_app_status,
+            external_open::open_external_url,
             github_copilot::github_copilot_oauth_login_start,
             github_copilot::github_copilot_oauth_login_complete,
             github_copilot::github_copilot_oauth_login_cancel,

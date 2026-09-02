@@ -1,9 +1,9 @@
-import { openUrl } from '@tauri-apps/plugin-opener';
 import {
   isPermissionGranted,
   requestPermission,
   sendNotification,
 } from '@tauri-apps/plugin-notification';
+import { openExternalUrl } from './data/externalOpen';
 import {
   ArrowLeft,
   ArrowDown,
@@ -664,11 +664,14 @@ export function App() {
     const url = copilotLogin.verificationUriComplete ?? copilotLogin.verificationUri;
 
     try {
-      await openUrl(url);
+      await openExternalUrl(url);
       setCopilotError(null);
     } catch (error) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setCopilotError(error instanceof Error ? `Opened with browser fallback. Tauri opener said: ${error.message}` : null);
+      setCopilotError(
+        `Could not open the link automatically. Copy it into your browser instead. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
@@ -742,11 +745,14 @@ export function App() {
     if (!codexLogin) return;
 
     try {
-      await openUrl(codexLogin.authUrl);
+      await openExternalUrl(codexLogin.authUrl);
       setCodexError(null);
     } catch (error) {
-      window.open(codexLogin.authUrl, '_blank', 'noopener,noreferrer');
-      setCodexError(error instanceof Error ? `Opened with browser fallback. Tauri opener said: ${error.message}` : null);
+      setCodexError(
+        `Could not open the link automatically. Copy it into your browser instead. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
@@ -850,11 +856,14 @@ export function App() {
     if (!antigravityLogin) return;
 
     try {
-      await openUrl(antigravityLogin.authUrl);
+      await openExternalUrl(antigravityLogin.authUrl);
       setAntigravityError(null);
     } catch (error) {
-      window.open(antigravityLogin.authUrl, '_blank', 'noopener,noreferrer');
-      setAntigravityError(error instanceof Error ? `Opened with browser fallback. Tauri opener said: ${error.message}` : null);
+      setAntigravityError(
+        `Could not open the link automatically. Copy it into your browser instead. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
@@ -945,11 +954,14 @@ export function App() {
     if (!claudeLogin) return;
 
     try {
-      await openUrl(claudeLogin.authUrl);
+      await openExternalUrl(claudeLogin.authUrl);
       setClaudeError(null);
     } catch (error) {
-      window.open(claudeLogin.authUrl, '_blank', 'noopener,noreferrer');
-      setClaudeError(error instanceof Error ? `Opened with browser fallback. Tauri opener said: ${error.message}` : null);
+      setClaudeError(
+        `Could not open the link automatically. Copy it into your browser instead. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
@@ -1064,11 +1076,14 @@ export function App() {
   async function openKiroAuthUrl() {
     if (!kiroLogin) return;
     try {
-      await openUrl(kiroLogin.authUrl);
+      await openExternalUrl(kiroLogin.authUrl);
       setKiroError(null);
     } catch (error) {
-      window.open(kiroLogin.authUrl, '_blank', 'noopener,noreferrer');
-      setKiroError(error instanceof Error ? `Opened with browser fallback. Tauri opener said: ${error.message}` : null);
+      setKiroError(
+        `Could not open the link automatically. Copy it into your browser instead. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
@@ -1170,11 +1185,14 @@ export function App() {
   async function openCursorAuthUrl() {
     if (!cursorLogin) return;
     try {
-      await openUrl(cursorLogin.verificationUri);
+      await openExternalUrl(cursorLogin.verificationUri);
       setCursorError(null);
     } catch (error) {
-      window.open(cursorLogin.verificationUri, '_blank', 'noopener,noreferrer');
-      setCursorError(error instanceof Error ? `Opened with browser fallback. Tauri opener said: ${error.message}` : null);
+      setCursorError(
+        `Could not open the link automatically. Copy it into your browser instead. ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 
