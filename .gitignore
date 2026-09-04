@@ -37,13 +37,4 @@ src-tauri/gen/
 squashfs-root/
 
 # Other
-CHANGELOG.md
-ERRORS.md
-MEMORY.md
-OVERVIEW.md
-RELEASE_NOTES.md
-ROADMAP.md
-SECURITY.md
-antigravity_credits.png
-
-APPIMAGE_FIX.md
+DOCS/
