@@ -32,6 +32,8 @@ src-tauri/gen/
 .agents/
 .claude/
 .codex
+AGENTS.md
+CLAUDE.md
 
 # Debug / temp
 squashfs-root/

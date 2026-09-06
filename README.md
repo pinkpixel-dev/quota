@@ -55,7 +55,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Theme Modes: System, Dark, Light
 - Safe JSON Export for account summaries
 - Opt-in auto refresh with a configurable interval
-- System tray — close the window to keep running in the background, click the tray icon to restore
+- System tray with compact usage for every connected account, background refresh, and click-to-restore behavior
 - Opt-in desktop notifications when a quota drops below a configurable threshold
 - Account Pages for providers with refresh and delete buttons
 - Clear Codex, Claude Code, and Grok reauthentication prompts when saved authorization expires
@@ -65,7 +65,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 
 ## Installation
 
-Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.3.0` is currently prepared locally and has not been published yet.
+Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.4.0` is currently prepared locally and has not been published yet.
 
 Or install from source:
 

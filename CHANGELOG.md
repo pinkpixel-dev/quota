@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented here.
 
+## 1.4.0 - September 6, 2026
+
+### ✨ Tray Usage
+
+- The desktop tray menu now lists compact usage for every connected account in the saved provider order.
+- Each account stays visible when usage has not loaded yet, and selecting an account row opens Quota.
+- Tray rows use safe account summaries. Raw tokens, refresh tokens, and API keys never enter the tray display model.
+- The tray limits unusually large account lists to 30 rows and links back to Quota for the remaining accounts.
+
+### 🔄 Refresh
+
+- Added a `Refresh usage` tray action that refreshes every connected provider without opening the main window.
+- The refresh action changes to `Refreshing usage...` and blocks duplicate refresh requests until the current refresh finishes.
+- Manual and timed refreshes update the tray from the same in-memory account summaries used by the dashboard.
+
+### 🧪 Testing
+
+- Added focused frontend tests for provider ordering, percentage normalization, count-based Copilot usage, and accounts without loaded usage.
+- Added Rust tests for tray-row cleanup, Unicode-safe length limits, menu mnemonic escaping, and large account lists.
+
+### 🏷️ Versioning
+
+- Bumped the desktop app to `1.4.0`. The VS Code/OpenVSX extension stays at `1.2.0`.
+
 ## 1.3.0 - September 2, 2026
 
 ### ✨ Grok Provider

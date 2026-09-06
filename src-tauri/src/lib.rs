@@ -1,9 +1,5 @@
 use serde::Serialize;
-use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, WindowEvent,
-};
+use tauri::WindowEvent;
 
 pub mod antigravity;
 pub mod claude;
@@ -13,6 +9,7 @@ pub mod external_open;
 mod github_copilot;
 pub mod grok;
 pub mod kiro;
+mod tray;
 
 #[derive(Serialize)]
 struct AppStatus {
@@ -53,50 +50,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let show_i = MenuItem::with_id(app, "show", "Show Quota", true, None::<&str>)?;
-            let sep = PredefinedMenuItem::separator(app)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit Quota", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &sep, &quit_i])?;
-
-            let mut tray_builder = TrayIconBuilder::new()
-                .menu(&menu)
-                .tooltip("Quota")
-                .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                });
-
-            if let Some(icon) = app.default_window_icon() {
-                tray_builder = tray_builder.icon(icon.clone());
-            }
-
-            tray_builder.build(app)?;
-
+            tray::setup(app)?;
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -107,6 +61,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_app_status,
+            tray::update_tray_menu,
             external_open::open_external_url,
             github_copilot::github_copilot_oauth_login_start,
             github_copilot::github_copilot_oauth_login_complete,

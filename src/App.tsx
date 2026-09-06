@@ -118,6 +118,8 @@ import {
   type GrokOAuthStartResponse,
 } from './data/grok';
 import { integrations } from './data/integrations';
+import { listenForTrayRefresh, updateTrayMenu } from './data/tray';
+import { buildTrayUsageRows, type TrayProviderKey } from './data/trayRows';
 
 type AppView =
   | 'dashboard'
@@ -133,7 +135,7 @@ type AppView =
 
 export type ViewMode = 'default' | 'compact' | 'list';
 type ThemeMode = 'system' | 'dark' | 'light';
-type ProviderKey = 'githubCopilot' | 'codex' | 'antigravity' | 'claude' | 'kiro' | 'cursor' | 'grok';
+type ProviderKey = TrayProviderKey;
 
 const GITHUB_COPILOT_ICON = '/brand-icons/githubcopilot.svg';
 const CODEX_ICON = '/brand-icons/openai.svg';
@@ -516,6 +518,7 @@ export function App() {
   const [kiroError, setKiroError] = useState<string | null>(null);
   const [cursorError, setCursorError] = useState<string | null>(null);
   const [grokError, setGrokError] = useState<string | null>(null);
+  const [trayRefreshing, setTrayRefreshing] = useState(false);
   const autoRefreshRunningRef = useRef(false);
   const autoRefreshTickRef = useRef<() => Promise<void>>(async () => {});
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => readStoredNotificationsEnabled());
@@ -525,6 +528,24 @@ export function App() {
 
   const connectedCount =
     copilotAccounts.length + codexAccounts.length + antigravityAccounts.length + claudeAccounts.length + kiroAccounts.length + cursorAccounts.length + grokAccounts.length;
+  const trayUsageRows = useMemo(() => buildTrayUsageRows({
+    githubCopilot: copilotAccounts,
+    codex: codexAccounts,
+    antigravity: antigravityAccounts,
+    claude: claudeAccounts,
+    kiro: kiroAccounts,
+    cursor: cursorAccounts,
+    grok: grokAccounts,
+  }, providerOrder), [
+    copilotAccounts,
+    codexAccounts,
+    antigravityAccounts,
+    claudeAccounts,
+    kiroAccounts,
+    cursorAccounts,
+    grokAccounts,
+    providerOrder,
+  ]);
 
   useEffect(() => {
     void loadCopilotAccounts();
@@ -1444,6 +1465,38 @@ export function App() {
       }
     };
   });
+
+  useEffect(() => {
+    let active = true;
+    let stopListening: (() => void) | undefined;
+
+    void listenForTrayRefresh(() => {
+      if (autoRefreshRunningRef.current) return;
+
+      autoRefreshRunningRef.current = true;
+      setTrayRefreshing(true);
+      void autoRefreshTickRef.current().finally(() => {
+        autoRefreshRunningRef.current = false;
+        setTrayRefreshing(false);
+      });
+    }).then((unlisten) => {
+      if (active) stopListening = unlisten;
+      else unlisten();
+    }).catch((error) => {
+      console.error('Could not listen for tray refresh requests:', error);
+    });
+
+    return () => {
+      active = false;
+      stopListening?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    void updateTrayMenu({ rows: trayUsageRows, refreshing: trayRefreshing }).catch((error) => {
+      console.error('Could not update tray usage:', error);
+    });
+  }, [trayUsageRows, trayRefreshing]);
 
   useEffect(() => {
     if (!autoRefreshEnabled) return undefined;
