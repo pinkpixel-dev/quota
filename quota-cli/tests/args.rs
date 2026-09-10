@@ -32,3 +32,20 @@ fn an_unknown_flag_is_an_error_naming_the_flag() {
     let error = parse_args(&argv(&["usage", "--nope"])).expect_err("should reject");
     assert!(error.contains("--nope"));
 }
+
+#[test]
+fn herdr_report_parses() {
+    let parsed = parse_args(&argv(&["herdr", "report"])).expect("parse");
+    assert_eq!(parsed, Command::HerdrReport { force: false });
+}
+
+#[test]
+fn herdr_report_accepts_force() {
+    let parsed = parse_args(&argv(&["herdr", "report", "--force"])).expect("parse");
+    assert_eq!(parsed, Command::HerdrReport { force: true });
+}
+
+#[test]
+fn herdr_without_a_subcommand_is_an_error() {
+    assert!(parse_args(&argv(&["herdr"])).is_err());
+}
