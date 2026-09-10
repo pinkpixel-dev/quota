@@ -26,3 +26,9 @@ pub fn provider_home(env_var: &str, default_dir_name: &str) -> Option<PathBuf> {
 
     dirs::home_dir().map(|home| home.join(default_dir_name))
 }
+
+/// Resolve the XDG config directory, for CLIs that store credentials under
+/// `~/.config/<name>` instead of a dot-directory of their own.
+pub fn config_home() -> Option<PathBuf> {
+    provider_home("XDG_CONFIG_HOME", ".config")
+}
