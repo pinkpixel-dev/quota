@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub mod local;
+pub mod local_usage;
 
 const DATA_DIR: &str = ".quota";
 const ACCOUNTS_DIR: &str = "claude_accounts";
