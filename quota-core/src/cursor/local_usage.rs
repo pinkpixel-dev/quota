@@ -45,13 +45,19 @@ fn get_path<'a>(root: &'a Value, parts: &[&str]) -> Option<&'a Value> {
     Some(current)
 }
 
+/// Cursor sends these numbers as JSON numbers in some responses and as strings
+/// in others, so both are accepted here.
 fn pick_f64(object: Option<&Value>, keys: &[&str]) -> Option<f64> {
     let object = object?.as_object()?;
     for key in keys {
-        if let Some(value) = object.get(*key).and_then(Value::as_f64) {
-            if value.is_finite() {
-                return Some(value);
-            }
+        let Some(value) = object.get(*key) else {
+            continue;
+        };
+        let parsed = value
+            .as_f64()
+            .or_else(|| value.as_str().and_then(|text| text.trim().parse().ok()));
+        if let Some(number) = parsed.filter(|number: &f64| number.is_finite()) {
+            return Some(number);
         }
     }
     None
@@ -95,14 +101,22 @@ impl std::fmt::Display for LocalUsageError {
 pub async fn fetch_local_usage() -> Result<ProviderUsage, LocalUsageError> {
     let credentials = read_local_credentials().map_err(LocalUsageError::Credentials)?;
 
+    let cookie = credentials.session_cookie().ok_or_else(|| {
+        LocalUsageError::Credentials(LocalCredentialError::Malformed(
+            "access token is not a WorkOS session JWT".to_string(),
+        ))
+    })?;
+
+    // Cursor's web API answers to the browser session cookie, not to a bearer
+    // token, and it is picky about the user agent it will serve.
     let response = reqwest::Client::new()
         .get(USAGE_URL)
         .header(reqwest::header::ACCEPT, "application/json")
+        .header(reqwest::header::COOKIE, cookie)
         .header(
-            reqwest::header::AUTHORIZATION,
-            format!("Bearer {}", credentials.access_token),
+            reqwest::header::USER_AGENT,
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
         )
-        .header(reqwest::header::USER_AGENT, "quota")
         .send()
         .await
         .map_err(|err| LocalUsageError::Request(err.to_string()))?;

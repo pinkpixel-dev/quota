@@ -22,27 +22,52 @@ async fn main() {
 }
 
 async fn run_usage(json: bool) {
-    match fetch_local_usage().await {
-        Ok(usage) => {
-            if json {
-                match serde_json::to_string_pretty(&vec![&usage]) {
-                    Ok(rendered) => println!("{}", rendered),
-                    Err(err) => {
-                        eprintln!("could not render JSON: {}", err);
-                        std::process::exit(1);
-                    }
-                }
-            } else {
-                println!(
-                    "claude  {}",
-                    usage.compact_token().unwrap_or_else(|| "unknown".to_string())
-                );
+    let reports = quota_core::providers::fetch_all().await;
+
+    let succeeded: Vec<_> = reports
+        .iter()
+        .filter_map(|(_, result)| result.as_ref().ok())
+        .collect();
+
+    if json {
+        // The JSON shape stays an array of usage records. A provider the user
+        // is not signed into is not a record, so its message goes to stderr
+        // rather than into a payload something else is parsing.
+        for (name, result) in &reports {
+            if let Err(message) = result {
+                eprintln!("{}: {}", name, message);
             }
         }
-        Err(err) => {
-            eprintln!("{}", err);
-            std::process::exit(1);
+        match serde_json::to_string_pretty(&succeeded) {
+            Ok(rendered) => println!("{}", rendered),
+            Err(err) => {
+                eprintln!("could not render JSON: {}", err);
+                std::process::exit(1);
+            }
         }
+    } else {
+        let width = reports
+            .iter()
+            .map(|(name, _)| name.len())
+            .max()
+            .unwrap_or(0);
+
+        for (name, result) in &reports {
+            let detail = match result {
+                Ok(usage) => usage
+                    .compact_token()
+                    .unwrap_or_else(|| "no usage numbers reported".to_string()),
+                Err(message) => message.clone(),
+            };
+            println!("{:<width$}  {}", name, detail, width = width);
+        }
+    }
+
+    // Any provider reporting is a useful run. Exiting non-zero because one
+    // provider the user never signed into failed would make the command look
+    // broken on a machine where it is working fine.
+    if succeeded.is_empty() {
+        std::process::exit(1);
     }
 }
 

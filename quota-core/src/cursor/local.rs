@@ -13,6 +13,7 @@
 //! deliberately not carried on the credentials struct: nothing here may use it,
 //! and a field that exists invites a future caller to try.
 
+use base64::Engine;
 use serde::Deserialize;
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -25,6 +26,40 @@ pub fn local_credentials_path() -> Option<PathBuf> {
 #[derive(Clone)]
 pub struct LocalCursorCredentials {
     pub access_token: String,
+}
+
+impl LocalCursorCredentials {
+    /// Build the session cookie the Cursor API authenticates with.
+    ///
+    /// Cursor does not accept a bearer token on `usage-summary`. It expects the
+    /// WorkOS session cookie the browser sends, which pairs the user id with
+    /// the token itself. The user id lives in the token's own `sub` claim, in
+    /// the form `something|user_xxx`, so no extra request is needed to find it.
+    ///
+    /// `None` when the token is not a JWT carrying such a claim, which means
+    /// the file holds something this code does not understand.
+    pub fn session_cookie(&self) -> Option<String> {
+        let user_id = self.workos_user_id()?;
+        // The separator is a URL-encoded "::" and Cursor requires it encoded.
+        Some(format!(
+            "WorkosCursorSessionToken={}%3A%3A{}",
+            user_id, self.access_token
+        ))
+    }
+
+    fn workos_user_id(&self) -> Option<String> {
+        let parts: Vec<&str> = self.access_token.split('.').collect();
+        if parts.len() < 2 {
+            return None;
+        }
+        let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(parts[1])
+            .ok()?;
+        let claims: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+        let subject = claims.get("sub")?.as_str()?;
+        let user_id = subject.rsplit('|').next().unwrap_or(subject);
+        user_id.starts_with("user_").then(|| user_id.to_string())
+    }
 }
 
 /// Deliberately hand-written so a token can never reach the Debug output.

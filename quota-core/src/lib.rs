@@ -2,6 +2,7 @@
 //! desktop app and the standalone CLI can build from it.
 
 pub mod local_paths;
+pub mod providers;
 pub mod usage;
 pub mod antigravity;
 pub mod claude;

@@ -1,3 +1,4 @@
+use base64::Engine;
 use quota_core::cursor::local::{read_local_credentials_at, LocalCredentialError};
 use std::fs;
 
@@ -111,4 +112,46 @@ fn reading_credentials_never_writes_to_the_file() {
 
     assert_eq!(before, after);
     assert_eq!(modified_before, modified_after);
+}
+
+/// Builds a token shaped like the one Cursor stores: three dot-separated parts
+/// with base64url claims in the middle.
+fn fake_access_token(claims: serde_json::Value) -> String {
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .encode(serde_json::to_vec(&claims).expect("encode claims"));
+    format!("header.{}.signature", payload)
+}
+
+#[test]
+fn builds_the_workos_session_cookie_the_api_expects() {
+    // Cursor rejects a bearer token on usage-summary. It authenticates with the
+    // browser's session cookie, which pairs the user id from the token's own
+    // `sub` claim with the token. Getting this wrong reads as "signed out".
+    let token = fake_access_token(serde_json::json!({ "sub": "auth0|user_abc123" }));
+    let path = temp_file("cookie", &format!(r#"{{"accessToken":"{}"}}"#, token));
+    let credentials = read_local_credentials_at(&path).expect("read credentials");
+
+    let cookie = credentials.session_cookie().expect("build cookie");
+
+    assert_eq!(
+        cookie,
+        format!("WorkosCursorSessionToken=user_abc123%3A%3A{}", token)
+    );
+}
+
+#[test]
+fn a_subject_without_a_user_id_has_no_cookie() {
+    let token = fake_access_token(serde_json::json!({ "sub": "auth0|something-else" }));
+    let path = temp_file("nosub", &format!(r#"{{"accessToken":"{}"}}"#, token));
+    let credentials = read_local_credentials_at(&path).expect("read credentials");
+
+    assert_eq!(credentials.session_cookie(), None);
+}
+
+#[test]
+fn an_opaque_token_has_no_cookie_rather_than_a_broken_one() {
+    let path = temp_file("opaque", r#"{"accessToken":"not-a-jwt"}"#);
+    let credentials = read_local_credentials_at(&path).expect("read credentials");
+
+    assert_eq!(credentials.session_cookie(), None);
 }
