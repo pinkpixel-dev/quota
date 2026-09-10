@@ -81,6 +81,7 @@ pub fn normalize_quota_response(raw: &Value, account_label: Option<String>) -> P
         provider: "antigravity".to_string(),
         account_label,
         windows,
+        note: None,
     }
 }
 

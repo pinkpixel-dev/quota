@@ -30,6 +30,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
             window_from(primary, "5h"),
             window_from(secondary, "Wk"),
         ],
+        note: None,
     }
 }
 

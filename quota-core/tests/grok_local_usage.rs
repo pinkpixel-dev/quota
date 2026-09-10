@@ -127,3 +127,80 @@ fn an_explicit_account_label_wins_over_the_payload_tier() {
 
     assert_eq!(usage.account_label.as_deref(), Some("Team"));
 }
+
+#[test]
+fn derives_the_percent_from_used_over_monthly_limit() {
+    // The live billing payload carries no creditUsagePercent and no
+    // productUsage. This pair is the only usage figure it does send.
+    let raw = json!({
+        "config": {
+            "monthlyLimit": { "val": 200 },
+            "used": { "val": 50 }
+        }
+    });
+
+    let usage = normalize_billing_response(&raw, None);
+
+    assert_eq!(usage.windows[0].remaining_percent, Some(75));
+    assert_eq!(usage.note, None);
+}
+
+#[test]
+fn an_overall_percent_wins_over_the_used_pair() {
+    let raw = json!({
+        "config": {
+            "creditUsagePercent": 10,
+            "monthlyLimit": { "val": 200 },
+            "used": { "val": 100 }
+        }
+    });
+
+    let usage = normalize_billing_response(&raw, None);
+
+    assert_eq!(usage.windows[0].remaining_percent, Some(90));
+}
+
+#[test]
+fn a_plan_with_no_allocation_says_so_instead_of_showing_nothing() {
+    // A free promotional plan reports every figure as zero. Rendering that as a
+    // blank pane is indistinguishable from a provider that is broken.
+    let raw = json!({
+        "config": {
+            "monthlyLimit": { "val": 0 },
+            "used": { "val": 0 },
+            "onDemandCap": { "val": 0 }
+        }
+    });
+
+    let usage = normalize_billing_response(&raw, None);
+
+    assert_eq!(usage.windows[0].remaining_percent, None);
+    assert_eq!(usage.note.as_deref(), Some("no credit allocation"));
+    assert_eq!(usage.compact_token().as_deref(), Some("no credit allocation"));
+}
+
+#[test]
+fn a_zero_limit_is_never_divided_by() {
+    let raw = json!({
+        "config": {
+            "monthlyLimit": { "val": 0 },
+            "used": { "val": 25 }
+        }
+    });
+
+    let usage = normalize_billing_response(&raw, None);
+
+    assert_eq!(usage.windows[0].remaining_percent, None);
+}
+
+#[test]
+fn a_payload_without_the_credit_pair_carries_no_note() {
+    // Absent fields are not the same as a zero allocation, so this must stay
+    // silent rather than claim the plan has nothing allocated.
+    let raw = json!({ "config": { "billingPeriodEnd": "2026-10-01T00:00:00Z" } });
+
+    let usage = normalize_billing_response(&raw, None);
+
+    assert_eq!(usage.note, None);
+    assert_eq!(usage.compact_token(), None);
+}

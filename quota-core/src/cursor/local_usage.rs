@@ -34,6 +34,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
             remaining_percent,
             reset_at: billing_cycle_end(raw),
         }],
+        note: None,
     }
 }
 

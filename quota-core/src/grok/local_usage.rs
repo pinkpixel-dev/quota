@@ -9,6 +9,9 @@ use serde_json::Value;
 
 use super::local::{parse_timestamp, read_local_credentials, LocalCredentialError};
 
+/// The bare endpoint is the one carrying `used` and `monthlyLimit`, the pair
+/// this reads a percent from. The `?format=credits` variant returns prepaid
+/// balance and on-demand caps instead, and no usage figure at all.
 const BILLING_URL: &str = "https://cli-chat-proxy.grok.com/v1/billing";
 
 /// Convert the raw billing payload into the single credit window.
@@ -22,7 +25,8 @@ pub fn normalize_billing_response(raw: &Value, account_label: Option<String>) ->
         .and_then(|item| item.get("creditUsagePercent"))
         .and_then(Value::as_f64)
         .filter(|used| used.is_finite())
-        .or_else(|| highest_product_usage(config));
+        .or_else(|| highest_product_usage(config))
+        .or_else(|| used_over_monthly_limit(config));
 
     let label = account_label.or_else(|| {
         config
@@ -30,6 +34,15 @@ pub fn normalize_billing_response(raw: &Value, account_label: Option<String>) ->
             .and_then(Value::as_str)
             .map(humanize_subscription_tier)
     });
+
+    // A plan with no allocation reports every figure as zero. That is a real
+    // account state, not a failure, so it gets said out loud rather than
+    // leaving a blank that looks like a broken provider.
+    let note = if used_percent.is_none() && has_no_allocation(config) {
+        Some("no credit allocation".to_string())
+    } else {
+        None
+    };
 
     ProviderUsage {
         provider: "grok".to_string(),
@@ -40,7 +53,39 @@ pub fn normalize_billing_response(raw: &Value, account_label: Option<String>) ->
                 .map(|used| (100.0 - used.round()).clamp(0.0, 100.0) as i32),
             reset_at: period_end(config),
         }],
+        note,
     }
+}
+
+/// Derive the used percent from the credit pair the billing payload carries.
+///
+/// A zero limit is not a division to attempt, and it is also the shape a plan
+/// with no allocation takes, so it deliberately yields no percent.
+fn used_over_monthly_limit(config: Option<&Value>) -> Option<f64> {
+    let config = config?;
+    let limit = credit_value(config, "monthlyLimit")?;
+    let used = credit_value(config, "used")?;
+    if limit <= 0.0 {
+        return None;
+    }
+    Some((used / limit * 100.0).clamp(0.0, 100.0))
+}
+
+/// These amounts arrive wrapped as `{"val": n}`.
+fn credit_value(config: &Value, key: &str) -> Option<f64> {
+    config
+        .get(key)?
+        .get("val")
+        .and_then(Value::as_f64)
+        .filter(|value| value.is_finite())
+}
+
+/// True when the payload carries a credit pair and the limit is zero, which is
+/// how a plan with nothing allocated reports itself.
+fn has_no_allocation(config: Option<&Value>) -> bool {
+    config
+        .and_then(|config| credit_value(config, "monthlyLimit"))
+        .is_some_and(|limit| limit <= 0.0)
 }
 
 /// When the payload carries no overall percent, the worst product is the
@@ -137,7 +182,7 @@ pub async fn fetch_local_usage() -> Result<ProviderUsage, LocalUsageError> {
     }
 
     let response = reqwest::Client::new()
-        .get(format!("{}?format=credits", BILLING_URL))
+        .get(BILLING_URL)
         .header(reqwest::header::ACCEPT, "application/json")
         .header(
             reqwest::header::AUTHORIZATION,

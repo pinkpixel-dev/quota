@@ -19,6 +19,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
             window_from("5h", raw.get("five_hour")),
             window_from("Wk", raw.get("seven_day")),
         ],
+        note: None,
     }
 }
 
