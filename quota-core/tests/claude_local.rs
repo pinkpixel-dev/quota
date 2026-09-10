@@ -65,8 +65,35 @@ fn a_file_without_the_oauth_block_is_malformed() {
 }
 
 #[test]
-fn the_error_debug_output_never_contains_a_token() {
+fn credentials_struct_debug_redacts_access_token() {
     let path = temp_file("leak", r#"{"claudeAiOauth":{"accessToken":"super-secret"}}"#);
     let rendered = format!("{:?}", read_local_credentials_at(&path));
     assert!(!rendered.contains("super-secret"));
+}
+
+#[test]
+fn malformed_error_never_leaks_token_in_debug_or_display() {
+    // Force a parse error where the entire file content is a token-like string
+    // This will cause serde to emit an error message that quotes the token
+    let path = temp_file("token-leak-test", r#""super-secret-token""#);
+    let result = read_local_credentials_at(&path);
+
+    match result {
+        Err(err) => {
+            let debug_output = format!("{:?}", err);
+            let display_output = format!("{}", err);
+
+            assert!(
+                !debug_output.contains("super-secret-token"),
+                "Debug output leaked token: {}",
+                debug_output
+            );
+            assert!(
+                !display_output.contains("super-secret-token"),
+                "Display output leaked token: {}",
+                display_output
+            );
+        }
+        Ok(_) => panic!("Expected Malformed error but got Ok"),
+    }
 }

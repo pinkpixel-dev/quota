@@ -102,7 +102,15 @@ pub fn read_local_credentials_at(path: &Path) -> Result<LocalClaudeCredentials, 
         .map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
 
     let parsed: CredentialsFile = serde_json::from_str(&raw)
-        .map_err(|err| LocalCredentialError::Malformed(err.to_string()))?;
+        .map_err(|err| {
+            // Use only line/column info from serde error, never the quoted value which could be a token
+            let msg = format!(
+                "JSON error at line {} column {}",
+                err.line(),
+                err.column()
+            );
+            LocalCredentialError::Malformed(msg)
+        })?;
 
     let oauth = parsed
         .oauth
