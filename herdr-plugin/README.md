@@ -44,7 +44,13 @@ With `quota-cli` on your `PATH`, link this plugin into Herdr:
 herdr plugin install pinkpixel-dev/quota/herdr-plugin
 ```
 
-Herdr will report back whether the plugin linked cleanly. If it mentions an unrecognized event name, that's worth a second look. This is still early, and the exact hook Herdr uses to notice a Claude pane's status changing hasn't been confirmed against a live plugin install.
+Herdr will report back whether the plugin linked cleanly. If you're working from a local checkout instead, point it at the plugin directory:
+
+```bash
+herdr plugin link /path/to/quota/herdr-plugin
+```
+
+The plugin hooks the `pane.agent_status_changed` event, which is a real event in Herdr 0.9.0. If a future Herdr release renames or drops it, linking will warn about an unrecognized event name, and the manual `refresh` action below still works either way.
 
 ## Adding the sidebar rows
 
@@ -68,7 +74,7 @@ Feel free to place `$quota` wherever it fits your layout better. These are just 
 
 ## Optional: a keybinding to refresh on demand
 
-The plugin only ever runs `quota-cli` in two situations: the event hook (meant to fire when a Claude pane's status changes, though that event name isn't confirmed yet) and the manual `refresh` action below. There's no timer running in the background. Each time `quota-cli herdr report` does run, it serves a cached value unless that value is older than 120 seconds, in which case it fetches a fresh one. That means the number you see can lag a real change by up to about two minutes. If you want it immediately, add a keybinding for the `refresh` action, which always bypasses the cache:
+The plugin only ever runs `quota-cli` in two situations: the event hook, which fires when a Claude pane's status changes, and the manual `refresh` action below. There's no timer running in the background. Each time `quota-cli herdr report` does run, it serves a cached value unless that value is older than 120 seconds, in which case it fetches a fresh one. That means the number you see can lag a real change by up to about two minutes. If you want it immediately, add a keybinding for the `refresh` action, which always bypasses the cache:
 
 ```toml
 [[keys.command]]
