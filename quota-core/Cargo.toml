@@ -19,3 +19,7 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-feature
 sha2 = "0.10"
 tokio = { version = "1", features = ["time"] }
 urlencoding = "2"
+# Reads the Antigravity CLI's token, which it stores in the OS keyring rather
+# than in a file. Defaults cover Secret Service on Linux and Credential Manager
+# on Windows; macOS needs its own store enabled.
+keyring = { version = "4", features = ["apple-native-keyring-store"] }
