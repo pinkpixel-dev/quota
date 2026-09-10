@@ -2,6 +2,7 @@
 //! provider we can report on, and pushes a display token onto each one.
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::process::Command as ProcessCommand;
 
@@ -9,35 +10,69 @@ use std::process::Command as ProcessCommand;
 /// Matches the VS Code extension default in quota-vscode/src/configuration.ts.
 pub const DEFAULT_TTL_MS: i64 = 120_000;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct AgentPane {
     pub agent: String,
     pub pane_id: String,
     pub workspace_id: String,
 }
 
-#[derive(Deserialize)]
-struct AgentListEnvelope {
-    result: AgentListResult,
-}
-
-#[derive(Deserialize)]
-struct AgentListResult {
-    agents: Vec<AgentPane>,
-}
-
 /// Parse the JSON envelope `herdr agent list` writes to stdout.
+///
+/// Read field by field rather than through a struct with required fields. A
+/// pane Herdr describes in a shape we do not expect should cost that one pane
+/// its number, not blank every pane in the sidebar.
 pub fn parse_agent_list(raw: &str) -> Result<Vec<AgentPane>, String> {
-    serde_json::from_str::<AgentListEnvelope>(raw)
-        .map(|envelope| envelope.result.agents)
-        .map_err(|err| format!("could not parse herdr agent list: {}", err))
+    let envelope: Value = serde_json::from_str(raw)
+        .map_err(|err| format!("could not parse herdr agent list: {}", err))?;
+
+    let agents = envelope
+        .get("result")
+        .and_then(|result| result.get("agents"))
+        .and_then(Value::as_array)
+        .ok_or_else(|| "herdr agent list had no result.agents array".to_string())?;
+
+    Ok(agents.iter().filter_map(agent_pane_from).collect())
 }
 
-/// Map a Herdr agent kind onto a Quota provider. Only Claude is wired up so
-/// far; the other kinds land with their providers in a follow-up.
+fn agent_pane_from(entry: &Value) -> Option<AgentPane> {
+    // Herdr reports the kind on the pane itself, and on the agent session for
+    // panes it adopted rather than started.
+    let agent = entry
+        .get("agent")
+        .and_then(Value::as_str)
+        .or_else(|| entry.get("kind").and_then(Value::as_str))
+        .or_else(|| {
+            entry
+                .get("agent_session")
+                .and_then(|session| session.get("agent"))
+                .and_then(Value::as_str)
+        })?;
+
+    Some(AgentPane {
+        agent: agent.to_string(),
+        pane_id: entry.get("pane_id").and_then(Value::as_str)?.to_string(),
+        workspace_id: entry
+            .get("workspace_id")
+            .and_then(Value::as_str)?
+            .to_string(),
+    })
+}
+
+/// Map a Herdr agent kind onto a Quota provider.
+///
+/// Herdr names some agents more than one way, so the aliases matter: an
+/// unmatched kind is silently skipped, which looks identical to a broken
+/// provider. `gemini` is deliberately absent. It is the Gemini Code Assist CLI,
+/// a different OAuth client from Antigravity's, and the Antigravity provider
+/// only handles its own. `kiro` waits for its provider to exist.
 pub fn provider_for_agent_kind(kind: &str) -> Option<&'static str> {
-    match kind {
-        "claude" => Some("claude"),
+    match kind.trim().to_ascii_lowercase().as_str() {
+        "claude" | "claude-code" | "anthropic" => Some("claude"),
+        "codex" => Some("codex"),
+        "cursor" => Some("cursor"),
+        "agy" | "antigravity" | "antigravity-cli" => Some("antigravity"),
+        "grok" => Some("grok"),
         _ => None,
     }
 }
@@ -58,21 +93,23 @@ impl TokenCache {
     }
 }
 
-pub fn cache_path(state_dir: &Path) -> PathBuf {
-    state_dir.join("claude-token.json")
+/// One cache file per provider. A shared file would let panes running
+/// different agents overwrite each other's numbers on every status change.
+pub fn cache_path(state_dir: &Path, provider: &str) -> PathBuf {
+    state_dir.join(format!("{}-token.json", provider))
 }
 
-pub fn read_cache(state_dir: &Path) -> Option<TokenCache> {
-    let raw = std::fs::read_to_string(cache_path(state_dir)).ok()?;
+pub fn read_cache(state_dir: &Path, provider: &str) -> Option<TokenCache> {
+    let raw = std::fs::read_to_string(cache_path(state_dir, provider)).ok()?;
     serde_json::from_str(&raw).ok()
 }
 
-pub fn write_cache(state_dir: &Path, cache: &TokenCache) -> Result<(), String> {
+pub fn write_cache(state_dir: &Path, provider: &str, cache: &TokenCache) -> Result<(), String> {
     std::fs::create_dir_all(state_dir)
         .map_err(|err| format!("could not create state directory: {}", err))?;
     let rendered = serde_json::to_string(cache)
         .map_err(|err| format!("could not render cache: {}", err))?;
-    std::fs::write(cache_path(state_dir), rendered)
+    std::fs::write(cache_path(state_dir, provider), rendered)
         .map_err(|err| format!("could not write cache: {}", err))
 }
 

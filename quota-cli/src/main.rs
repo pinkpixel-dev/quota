@@ -1,5 +1,4 @@
 use quota_cli::args::{parse_args, Command, HELP};
-use quota_core::claude::local_usage::fetch_local_usage;
 
 #[tokio::main]
 async fn main() {
@@ -73,9 +72,10 @@ async fn run_usage(json: bool) {
 
 async fn run_herdr_report(force: bool) {
     use quota_cli::herdr;
+    use std::collections::BTreeMap;
 
     // Check which panes need a number before touching the cache or the
-    // network. A user running no Claude panes at all should never fetch,
+    // network. A user running no agent we can report on should never fetch,
     // and never log an error, on every agent-status event.
     let panes = match herdr::list_agent_panes() {
         Ok(panes) => panes,
@@ -87,7 +87,9 @@ async fn run_herdr_report(force: bool) {
 
     let reportable_panes: Vec<_> = panes
         .into_iter()
-        .filter(|pane| herdr::provider_for_agent_kind(&pane.agent).is_some())
+        .filter_map(|pane| {
+            herdr::provider_for_agent_kind(&pane.agent).map(|provider| (pane, provider))
+        })
         .collect();
 
     if reportable_panes.is_empty() {
@@ -108,68 +110,111 @@ async fn run_herdr_report(force: bool) {
         .map(|elapsed| elapsed.as_millis() as i64)
         .unwrap_or(0);
 
-    let cached = herdr::read_cache(&state_dir);
+    // Only the providers actually on screen. A signed-out provider with no pane
+    // must not cost a request, or an error, on every status change.
+    let mut needed: Vec<&'static str> = Vec::new();
+    for (_, provider) in &reportable_panes {
+        if !needed.contains(provider) {
+            needed.push(provider);
+        }
+    }
+
+    let mut tokens: BTreeMap<&'static str, String> = BTreeMap::new();
+    for provider in needed {
+        if let Some(token) = token_for_provider(provider, &state_dir, now_ms, force).await {
+            tokens.insert(provider, token);
+        }
+    }
+
+    let mut any_report_succeeded = false;
+
+    for (pane, provider) in &reportable_panes {
+        let Some(token) = tokens.get(provider) else {
+            continue;
+        };
+        match herdr::report_pane_token(&pane.pane_id, &source, token) {
+            Ok(()) => any_report_succeeded = true,
+            Err(err) => eprintln!("{}", err),
+        }
+    }
+
+    // The workspace row carries no agent name, so it can only be reported when
+    // every reportable pane in that workspace runs the same provider. A mixed
+    // workspace gets no row rather than one agent's number labelled as all.
+    let mut workspace_providers: BTreeMap<&str, Option<&'static str>> = BTreeMap::new();
+    for (pane, provider) in &reportable_panes {
+        workspace_providers
+            .entry(pane.workspace_id.as_str())
+            .and_modify(|existing| {
+                if *existing != Some(*provider) {
+                    *existing = None;
+                }
+            })
+            .or_insert(Some(*provider));
+    }
+
+    for (workspace_id, provider) in workspace_providers {
+        let Some(token) = provider.and_then(|provider| tokens.get(provider)) else {
+            continue;
+        };
+        match herdr::report_workspace_token(workspace_id, &source, token) {
+            Ok(()) => any_report_succeeded = true,
+            Err(err) => eprintln!("{}", err),
+        }
+    }
+
+    if !any_report_succeeded {
+        std::process::exit(1);
+    }
+}
+
+/// Resolve one provider's display token, preferring a fresh cache entry.
+///
+/// A failed fetch falls back to the last good value rather than blanking the
+/// pane, matching what the single-provider version did.
+async fn token_for_provider(
+    provider: &str,
+    state_dir: &std::path::Path,
+    now_ms: i64,
+    force: bool,
+) -> Option<String> {
+    use quota_cli::herdr;
+
+    let cached = herdr::read_cache(state_dir, provider);
     let needs_fetch = force
         || cached
             .as_ref()
             .map(|cache| cache.is_stale_at_ms(now_ms, herdr::DEFAULT_TTL_MS))
             .unwrap_or(true);
 
-    let token = if needs_fetch {
-        match fetch_local_usage().await {
-            Ok(usage) => match usage.compact_token() {
-                Some(token) => {
-                    let cache = herdr::TokenCache {
-                        fetched_at_ms: now_ms,
-                        token: token.clone(),
-                    };
-                    if let Err(err) = herdr::write_cache(&state_dir, &cache) {
-                        eprintln!("{}", err);
-                    }
-                    token
-                }
-                None => {
-                    eprintln!("Claude usage returned no numbers to show");
-                    std::process::exit(1);
-                }
-            },
-            Err(err) => {
-                // A failed fetch falls back to the last good value rather than
-                // blanking the sidebar.
-                eprintln!("{}", err);
-                match cached {
-                    Some(cache) => cache.token,
-                    None => {
-                        std::process::exit(1);
-                    }
-                }
-            }
-        }
-    } else {
-        match cached {
-            Some(cache) => cache.token,
-            None => return,
-        }
-    };
-
-    let mut reported_workspaces: Vec<String> = Vec::new();
-    let mut any_report_succeeded = false;
-
-    for pane in reportable_panes {
-        match herdr::report_pane_token(&pane.pane_id, &source, &token) {
-            Ok(()) => any_report_succeeded = true,
-            Err(err) => eprintln!("{}", err),
-        }
-        if !reported_workspaces.contains(&pane.workspace_id) {
-            match herdr::report_workspace_token(&pane.workspace_id, &source, &token) {
-                Ok(()) => any_report_succeeded = true,
-                Err(err) => eprintln!("{}", err),
-            }
-            reported_workspaces.push(pane.workspace_id.clone());
-        }
+    if !needs_fetch {
+        return cached.map(|cache| cache.token);
     }
 
-    if !any_report_succeeded {
-        std::process::exit(1);
+    match quota_core::providers::fetch_provider(provider).await {
+        Some(Ok(usage)) => match usage.compact_token() {
+            Some(token) => {
+                let cache = herdr::TokenCache {
+                    fetched_at_ms: now_ms,
+                    token: token.clone(),
+                };
+                if let Err(err) = herdr::write_cache(state_dir, provider, &cache) {
+                    eprintln!("{}", err);
+                }
+                Some(token)
+            }
+            None => {
+                eprintln!("{} usage returned no numbers to show", provider);
+                cached.map(|cache| cache.token)
+            }
+        },
+        Some(Err(message)) => {
+            eprintln!("{}: {}", provider, message);
+            cached.map(|cache| cache.token)
+        }
+        None => {
+            eprintln!("{} has no usage reader", provider);
+            None
+        }
     }
 }
