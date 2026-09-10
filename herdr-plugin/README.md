@@ -12,7 +12,7 @@ A sidebar row with the token added might look like this:
 ● claude   my-app   main   $quota
 ```
 
-`5h` is your rolling 5-hour usage window, `Wk` is your weekly window, and the percentages are how much of each you've used. If no pane in your session is running Claude, the plugin does nothing. It never makes a network call in that case.
+`5h` is your rolling 5-hour usage window, `Wk` is your weekly window, and the percentages are how much of each you have left. If no pane in your session is running Claude, the plugin does nothing. It never makes a network call in that case.
 
 ## Installing quota-cli
 

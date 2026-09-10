@@ -1,3 +1,4 @@
+#![cfg(unix)]
 //! Verifies the fix that made `herdr report` list panes before touching the
 //! cache or the network: when no pane maps to a known provider, the command
 //! must exit 0 quietly, without fetching and without writing a cache file.

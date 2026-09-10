@@ -128,16 +128,23 @@ async fn run_herdr_report(force: bool) {
     };
 
     let mut reported_workspaces: Vec<String> = Vec::new();
+    let mut any_report_succeeded = false;
 
     for pane in reportable_panes {
-        if let Err(err) = herdr::report_pane_token(&pane.pane_id, &source, &token) {
-            eprintln!("{}", err);
+        match herdr::report_pane_token(&pane.pane_id, &source, &token) {
+            Ok(()) => any_report_succeeded = true,
+            Err(err) => eprintln!("{}", err),
         }
         if !reported_workspaces.contains(&pane.workspace_id) {
-            if let Err(err) = herdr::report_workspace_token(&pane.workspace_id, &source, &token) {
-                eprintln!("{}", err);
+            match herdr::report_workspace_token(&pane.workspace_id, &source, &token) {
+                Ok(()) => any_report_succeeded = true,
+                Err(err) => eprintln!("{}", err),
             }
             reported_workspaces.push(pane.workspace_id.clone());
         }
+    }
+
+    if !any_report_succeeded {
+        std::process::exit(1);
     }
 }
