@@ -40,3 +40,6 @@ squashfs-root/
 
 # Other
 DOCS/
+
+# Superpowers subagent-driven-development scratch
+.superpowers/
