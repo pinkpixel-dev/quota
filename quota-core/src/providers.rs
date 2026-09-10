@@ -10,7 +10,7 @@ use crate::usage::ProviderUsage;
 /// Every provider the CLI can read, in the order it lists them. Shortest
 /// windows first is a per-provider concern; this order is just the reading
 /// order of the report.
-pub const PROVIDERS: &[&str] = &["claude", "codex", "cursor", "antigravity", "grok"];
+pub const PROVIDERS: &[&str] = &["claude", "codex", "cursor", "antigravity", "grok", "kiro"];
 
 /// Fetch usage for one provider. `None` when the name is not a known provider,
 /// which lets a caller tell "unknown provider" apart from "provider failed".
@@ -29,6 +29,9 @@ pub async fn fetch_provider(name: &str) -> Option<Result<ProviderUsage, String>>
             .await
             .map_err(|err| err.to_string()),
         "grok" => crate::grok::local_usage::fetch_local_usage()
+            .await
+            .map_err(|err| err.to_string()),
+        "kiro" => crate::kiro::local_usage::fetch_local_usage()
             .await
             .map_err(|err| err.to_string()),
         _ => return None,

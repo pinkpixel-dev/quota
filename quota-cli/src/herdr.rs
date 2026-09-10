@@ -65,7 +65,7 @@ fn agent_pane_from(entry: &Value) -> Option<AgentPane> {
 /// unmatched kind is silently skipped, which looks identical to a broken
 /// provider. `gemini` is deliberately absent. It is the Gemini Code Assist CLI,
 /// a different OAuth client from Antigravity's, and the Antigravity provider
-/// only handles its own. `kiro` waits for its provider to exist.
+/// only handles its own.
 pub fn provider_for_agent_kind(kind: &str) -> Option<&'static str> {
     match kind.trim().to_ascii_lowercase().as_str() {
         "claude" | "claude-code" | "anthropic" => Some("claude"),
@@ -73,6 +73,7 @@ pub fn provider_for_agent_kind(kind: &str) -> Option<&'static str> {
         "cursor" => Some("cursor"),
         "agy" | "antigravity" | "antigravity-cli" => Some("antigravity"),
         "grok" => Some("grok"),
+        "kiro" => Some("kiro"),
         _ => None,
     }
 }

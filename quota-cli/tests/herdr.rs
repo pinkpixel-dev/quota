@@ -37,6 +37,7 @@ fn maps_every_agent_kind_that_has_a_provider() {
     assert_eq!(provider_for_agent_kind("cursor"), Some("cursor"));
     assert_eq!(provider_for_agent_kind("grok"), Some("grok"));
     assert_eq!(provider_for_agent_kind("agy"), Some("antigravity"));
+    assert_eq!(provider_for_agent_kind("kiro"), Some("kiro"));
 }
 
 #[test]
@@ -66,8 +67,7 @@ fn gemini_is_not_treated_as_antigravity() {
 
 #[test]
 fn unmapped_agent_kinds_report_no_provider() {
-    // Kiro is a real Herdr agent kind with no provider yet.
-    assert_eq!(provider_for_agent_kind("kiro"), None);
+    assert_eq!(provider_for_agent_kind("opencode"), None);
     assert_eq!(provider_for_agent_kind("nonsense"), None);
 }
 
