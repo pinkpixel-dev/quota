@@ -7,6 +7,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+pub mod local;
+
 const DATA_DIR: &str = ".quota";
 const ACCOUNTS_DIR: &str = "claude_accounts";
 const ACCOUNTS_INDEX_FILE: &str = "claude_accounts.json";
