@@ -68,7 +68,7 @@ Feel free to place `$quota` wherever it fits your layout better. These are just 
 
 ## Optional: a keybinding to refresh on demand
 
-The plugin refreshes automatically when a Claude pane's status changes, and it also re-checks the cache periodically. If you want a manual refresh you can trigger anytime, add a keybinding for the `refresh` action:
+The plugin only ever runs `quota-cli` in two situations: the event hook (meant to fire when a Claude pane's status changes, though that event name isn't confirmed yet) and the manual `refresh` action below. There's no timer running in the background. Each time `quota-cli herdr report` does run, it serves a cached value unless that value is older than 120 seconds, in which case it fetches a fresh one. That means the number you see can lag a real change by up to about two minutes. If you want it immediately, add a keybinding for the `refresh` action, which always bypasses the cache:
 
 ```toml
 [[keys.command]]
