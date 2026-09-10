@@ -2,3 +2,4 @@
 //! desktop app and the standalone CLI can build from it.
 
 pub mod usage;
+pub mod claude;

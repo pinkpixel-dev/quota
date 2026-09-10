@@ -2822,6 +2822,7 @@ dependencies = [
  "chrono",
  "dirs 5.0.1",
  "md5",
+ "quota-core",
  "rand 0.8.6",
  "reqwest 0.12.28",
  "rusqlite",
@@ -2833,6 +2834,23 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-opener",
  "tiny_http",
+ "tokio",
+ "urlencoding",
+]
+
+[[package]]
+name = "quota-core"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "dirs 5.0.1",
+ "md5",
+ "rand 0.8.6",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "sha2",
  "tokio",
  "urlencoding",
 ]
