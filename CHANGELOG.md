@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented here.
 
+## 1.5.0 - September 10, 2026
+
+### 🖥️ quota-cli
+
+- Added a new standalone binary, `quota-cli`, separate from the desktop app.
+- `quota-cli usage [--json]` prints your Claude 5h and weekly usage, read directly from the Claude Code CLI's own locally stored credentials at `~/.claude/.credentials.json`. It needs no OAuth flow of its own and no running desktop app.
+- `quota-cli herdr report [--force]` pushes that same usage onto Herdr panes and workspaces as a metadata token, so it can show up in a Herdr sidebar row. It caches the value and only re-fetches when the cache goes stale or `--force` is passed.
+- The Claude credential reader is strictly read-only. It never refreshes or rewrites `~/.claude/.credentials.json`, since doing so would rotate the refresh token and break the Claude Code CLI's own session.
+
+### 🔌 Herdr Plugin
+
+- Added `herdr-plugin/`, a Herdr plugin package with a manifest (`herdr-plugin.toml`) and a README, that shows Claude usage in the Herdr sidebar next to your panes and workspaces.
+- The plugin declares one action, `refresh`, and one event hook, both of which run `quota-cli` to fetch and report usage.
+- See [`herdr-plugin/README.md`](herdr-plugin/README.md) for installation and setup.
+
+### 🧱 Internal Crate Extraction
+
+- Extracted the Claude provider logic out of `src-tauri/src/claude.rs` into a new plain Rust crate, `quota-core`, with no Tauri dependency. `quota-core` is now the single implementation of Claude OAuth, token refresh, quota parsing, and the local Claude Code credential reader.
+- `src-tauri/src/claude.rs` is now a thin file of `#[tauri::command]` wrappers over `quota-core::claude`, and `quota-cli` depends on the same crate. Desktop behavior is unchanged.
+- `quota-core` and `quota-cli` are plain path dependencies rather than Cargo workspace members, to keep `src-tauri/target` as the only Rust build output directory the release scripts and CI workflow rely on.
+
+### 🏷️ Versioning
+
+- Bumped the desktop app to `1.5.0`. The VS Code/OpenVSX extension stays at `1.2.0`. `quota-core`, `quota-cli`, and the Herdr plugin manifest start their own `0.1.0` version lines.
+
 ## 1.4.0 - September 6, 2026
 
 ### ✨ Tray Usage

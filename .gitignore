@@ -5,6 +5,8 @@ node_modules/
 dist/
 target/
 src-tauri/target/
+/quota-core/target
+/quota-cli/target
 
 # Logs
 *.log

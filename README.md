@@ -65,7 +65,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 
 ## Installation
 
-Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.4.0` is currently prepared locally and has not been published yet.
+Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.5.0` is currently prepared locally and has not been published yet.
 
 Or install from source:
 
@@ -93,6 +93,10 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
 
 If Codex, Claude Code, or Grok authorization expires, Quota keeps the account and its last safe quota data visible. Use the Reauthenticate action in the desktop account card or extension panel to renew access without disconnecting the account first.
+
+## Herdr Plugin
+
+If you use Herdr, `herdr-plugin/` shows your Claude usage right in the sidebar, next to the panes and workspaces where you're using it. It runs on a small standalone binary, `quota-cli`, so it works without the desktop app installed or running. See [`herdr-plugin/README.md`](herdr-plugin/README.md) for installation and setup.
 
 ## Contributing
 
