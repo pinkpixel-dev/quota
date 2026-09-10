@@ -49,6 +49,26 @@ async fn run_usage(json: bool) {
 async fn run_herdr_report(force: bool) {
     use quota_cli::herdr;
 
+    // Check which panes need a number before touching the cache or the
+    // network. A user running no Claude panes at all should never fetch,
+    // and never log an error, on every agent-status event.
+    let panes = match herdr::list_agent_panes() {
+        Ok(panes) => panes,
+        Err(err) => {
+            eprintln!("{}", err);
+            std::process::exit(1);
+        }
+    };
+
+    let reportable_panes: Vec<_> = panes
+        .into_iter()
+        .filter(|pane| herdr::provider_for_agent_kind(&pane.agent).is_some())
+        .collect();
+
+    if reportable_panes.is_empty() {
+        return;
+    }
+
     let state_dir = std::env::var("HERDR_PLUGIN_STATE_DIR")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| std::env::temp_dir().join("quota-herdr"));
@@ -85,7 +105,7 @@ async fn run_herdr_report(force: bool) {
                 }
                 None => {
                     eprintln!("Claude usage returned no numbers to show");
-                    return;
+                    std::process::exit(1);
                 }
             },
             Err(err) => {
@@ -94,7 +114,9 @@ async fn run_herdr_report(force: bool) {
                 eprintln!("{}", err);
                 match cached {
                     Some(cache) => cache.token,
-                    None => return,
+                    None => {
+                        std::process::exit(1);
+                    }
                 }
             }
         }
@@ -105,20 +127,9 @@ async fn run_herdr_report(force: bool) {
         }
     };
 
-    let panes = match herdr::list_agent_panes() {
-        Ok(panes) => panes,
-        Err(err) => {
-            eprintln!("{}", err);
-            std::process::exit(1);
-        }
-    };
-
     let mut reported_workspaces: Vec<String> = Vec::new();
 
-    for pane in panes {
-        if herdr::provider_for_agent_kind(&pane.agent).is_none() {
-            continue;
-        }
+    for pane in reportable_panes {
         if let Err(err) = herdr::report_pane_token(&pane.pane_id, &source, &token) {
             eprintln!("{}", err);
         }
