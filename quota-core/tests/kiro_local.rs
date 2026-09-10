@@ -1,5 +1,5 @@
 use quota_core::kiro::local::{
-    local_profile_path, read_local_credentials_at, LocalCredentialError,
+    local_profile_path, read_cli_credentials_at, read_local_credentials_at, LocalCredentialError,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -232,4 +232,103 @@ fn a_token_with_no_expiry_is_never_treated_as_expired() {
 
     assert_eq!(credentials.expires_at, None);
     assert!(!credentials.is_expired_at(i64::MAX));
+}
+
+/// Build a database shaped like the one the Kiro CLI keeps its token in.
+fn cli_database(dir: &Path, key: &str, value: &str) -> PathBuf {
+    let path = dir.join("data.sqlite3");
+    let connection = rusqlite::Connection::open(&path).expect("create db");
+    connection
+        .execute("CREATE TABLE auth_kv (key TEXT PRIMARY KEY, value TEXT)", [])
+        .expect("create table");
+    connection
+        .execute(
+            "INSERT INTO auth_kv (key, value) VALUES (?1, ?2)",
+            rusqlite::params![key, value],
+        )
+        .expect("insert row");
+    path
+}
+
+#[test]
+fn reads_the_token_the_cli_keeps_in_its_database() {
+    // The CLI refreshes here and never touches the SSO cache file, so a machine
+    // can have a working CLI and a months-old SSO copy at the same time.
+    let dir = temp_dir("cli-db");
+    let path = cli_database(
+        &dir,
+        "kirocli:social:token",
+        r#"{"access_token":"kiro-cli-token","expires_at":"2026-10-01T00:00:00Z","refresh_token":"r","provider":"github","profile_arn":"arn:aws:codewhisperer:us-east-1:1:profile/CLI"}"#,
+    );
+
+    let credentials = read_cli_credentials_at(&path).expect("read credentials");
+
+    assert_eq!(credentials.access_token, "kiro-cli-token");
+    assert_eq!(
+        credentials.profile_arn,
+        "arn:aws:codewhisperer:us-east-1:1:profile/CLI"
+    );
+    assert_eq!(credentials.expires_at, Some(1790812800));
+}
+
+#[test]
+fn matches_the_token_row_whatever_the_login_method_is_called() {
+    // The middle segment names the sign-in method, so an enterprise login uses
+    // a different key than a social one.
+    let dir = temp_dir("cli-db-idc");
+    let path = cli_database(
+        &dir,
+        "kirocli:idc:token",
+        r#"{"access_token":"t","profile_arn":"arn:aws:codewhisperer:us-east-1:1:profile/A"}"#,
+    );
+
+    assert!(read_cli_credentials_at(&path).is_ok());
+}
+
+#[test]
+fn a_database_with_no_token_row_is_not_found_rather_than_an_error() {
+    let dir = temp_dir("cli-db-empty");
+    let path = dir.join("data.sqlite3");
+    let connection = rusqlite::Connection::open(&path).expect("create db");
+    connection
+        .execute("CREATE TABLE auth_kv (key TEXT PRIMARY KEY, value TEXT)", [])
+        .expect("create table");
+
+    match read_cli_credentials_at(&path) {
+        Err(LocalCredentialError::NotFound) => {}
+        other => panic!("expected NotFound, got {:?}", other),
+    }
+}
+
+#[test]
+fn an_absent_database_is_not_found() {
+    let dir = temp_dir("cli-db-absent");
+
+    match read_cli_credentials_at(&dir.join("nope.sqlite3")) {
+        Err(LocalCredentialError::NotFound) => {}
+        other => panic!("expected NotFound, got {:?}", other),
+    }
+}
+
+#[test]
+fn the_cli_database_is_never_opened_for_writing() {
+    // The database belongs to the user's own CLI, which writes to it on every
+    // refresh. Taking a write lock here could block their session.
+    let dir = temp_dir("cli-db-readonly");
+    let path = cli_database(
+        &dir,
+        "kirocli:social:token",
+        r#"{"access_token":"t","profile_arn":"arn:aws:codewhisperer:us-east-1:1:profile/A"}"#,
+    );
+    let mut permissions = fs::metadata(&path).expect("metadata").permissions();
+    permissions.set_readonly(true);
+    fs::set_permissions(&path, permissions).expect("set readonly");
+
+    let result = read_cli_credentials_at(&path);
+
+    assert!(
+        result.is_ok(),
+        "a read-only file must still be readable: {:?}",
+        result.err()
+    );
 }

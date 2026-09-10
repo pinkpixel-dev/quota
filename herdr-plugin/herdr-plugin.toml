@@ -3,13 +3,34 @@ name = "Quota"
 version = "0.1.0"
 min_herdr_version = "0.9.0"
 platforms = ["linux", "macos", "windows"]
-description = "Show Claude 5h and weekly usage in the agents sidebar."
+description = "Show AI usage for Claude, Codex, Cursor, Antigravity, Grok, and Kiro in the agents sidebar."
 
 [[actions]]
 id = "refresh"
 title = "Refresh Quota usage"
 command = ["quota-cli", "herdr", "report", "--force"]
 
+# Herdr has no periodic event, so every number on screen is the result of one of
+# the hooks below. Restoring a session fires no pane activity, which without
+# this leaves the sidebar blank until the user touches something.
+[[startup]]
+command = ["quota-cli", "herdr", "report"]
+
+# A pane that has just started an agent has no number yet, and waiting for its
+# first status change can take a while.
 [[events]]
+id = "quota-agent-detected"
+on = "pane.agent_detected"
+command = ["quota-cli", "herdr", "report"]
+
+[[events]]
+id = "quota-agent-status-changed"
 on = "pane.agent_status_changed"
+command = ["quota-cli", "herdr", "report"]
+
+# Cheap in the common case, because a report inside the cache TTL makes no
+# network request at all, and it keeps the pane the user is looking at current.
+[[events]]
+id = "quota-pane-focused"
+on = "pane.focused"
 command = ["quota-cli", "herdr", "report"]

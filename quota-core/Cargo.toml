@@ -23,3 +23,7 @@ urlencoding = "2"
 # than in a file. Defaults cover Secret Service on Linux and Credential Manager
 # on Windows; macOS needs its own store enabled.
 keyring = { version = "4", features = ["apple-native-keyring-store"] }
+# Reads the Kiro CLI's token, which it keeps in a SQLite database rather than
+# in the SSO cache file its IDE writes. Bundled so the build does not depend on
+# a system SQLite being present.
+rusqlite = { version = "0.31", features = ["bundled"] }

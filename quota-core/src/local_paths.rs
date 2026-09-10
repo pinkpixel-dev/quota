@@ -32,3 +32,9 @@ pub fn provider_home(env_var: &str, default_dir_name: &str) -> Option<PathBuf> {
 pub fn config_home() -> Option<PathBuf> {
     provider_home("XDG_CONFIG_HOME", ".config")
 }
+
+/// Resolve the XDG data directory, for CLIs that keep durable state under
+/// `~/.local/share/<name>`.
+pub fn data_home() -> Option<PathBuf> {
+    provider_home("XDG_DATA_HOME", ".local/share")
+}

@@ -1,10 +1,15 @@
 //! Read-only access to the credentials the Kiro CLI and IDE store locally.
 //!
-//! Kiro signs in through AWS SSO and leaves its token in the shared SSO cache
-//! at `~/.aws/sso/cache/kiro-auth-token.json`, not in a directory of its own.
-//! The usage call also needs a profile ARN, which the IDE writes to a
-//! `profile.json` under its own settings directory and which the token itself
-//! usually carries too.
+//! Kiro has two credential stores, and they are not the same one. The CLI keeps
+//! its token in a SQLite database at `~/.local/share/kiro-cli/data.sqlite3`,
+//! under an `auth_kv` row, and refreshes it there. The IDE signs in through AWS
+//! SSO and leaves its token in the shared cache at
+//! `~/.aws/sso/cache/kiro-auth-token.json`. A machine can hold both, with the
+//! SSO copy left stale for months while the CLI stays current, so the database
+//! is read first.
+//!
+//! The usage call also needs a profile ARN. Both stores carry one, and the IDE
+//! additionally writes a `profile.json` under its settings directory.
 //!
 //! Quota never refreshes or rewrites either file. The refresh token here backs
 //! the user's own Kiro session, so a rejected token is reported rather than
@@ -14,7 +19,12 @@ use serde_json::Value;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-/// The AWS SSO cache entry Kiro writes its token into.
+/// The SQLite database the Kiro CLI keeps its token in.
+pub fn local_cli_database_path() -> Option<PathBuf> {
+    crate::local_paths::data_home().map(|data| data.join("kiro-cli").join("data.sqlite3"))
+}
+
+/// The AWS SSO cache entry the Kiro IDE writes its token into.
 pub fn local_auth_token_path() -> Option<PathBuf> {
     dirs::home_dir().map(|home| {
         home.join(".aws")
@@ -136,24 +146,30 @@ pub fn read_local_credentials_at(
         .map(read_json)
         .transpose()?;
 
-    let access_token = pick_string(Some(&auth_token), &[&["accessToken"], &["access_token"]])
+    credentials_from(&auth_token, profile.as_ref())
+}
+
+/// Pull the fields both stores carry. The CLI writes snake_case and the SSO
+/// cache camelCase, so every name is tried.
+fn credentials_from(
+    token: &Value,
+    profile: Option<&Value>,
+) -> Result<LocalKiroCredentials, LocalCredentialError> {
+    let access_token = pick_string(Some(token), &[&["accessToken"], &["access_token"]])
         .ok_or_else(|| LocalCredentialError::Malformed("no access token".to_string()))?;
 
     // The profile is preferred because the IDE rewrites it when the user
-    // switches subscription, while the cached token can lag behind.
-    let profile_arn = pick_string(profile.as_ref(), &[&["arn"], &["profileArn"]])
+    // switches subscription, while a cached token can lag behind.
+    let profile_arn = pick_string(profile, &[&["arn"], &["profileArn"]])
         .or_else(|| {
             pick_string(
-                Some(&auth_token),
+                Some(token),
                 &[&["profileArn"], &["profile_arn"], &["arn"]],
             )
         })
         .ok_or(LocalCredentialError::NoProfileArn)?;
 
-    let expires_at = pick_timestamp(
-        Some(&auth_token),
-        &[&["expiresAt"], &["expires_at"]],
-    );
+    let expires_at = pick_timestamp(Some(token), &[&["expiresAt"], &["expires_at"]]);
 
     Ok(LocalKiroCredentials {
         access_token,
@@ -162,8 +178,56 @@ pub fn read_local_credentials_at(
     })
 }
 
+/// Read the token the Kiro CLI keeps in its SQLite database.
+///
+/// Opened read-only. The database belongs to the user's own CLI, which writes
+/// to it whenever it refreshes, and Quota must never take a write lock on it.
+pub fn read_cli_credentials_at(path: &Path) -> Result<LocalKiroCredentials, LocalCredentialError> {
+    if !path.exists() {
+        return Err(LocalCredentialError::NotFound);
+    }
+
+    let connection = rusqlite::Connection::open_with_flags(
+        path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )
+    .map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
+
+    // The middle segment names the login method, `social` for a GitHub or
+    // Google sign-in and something else for an enterprise one, so it is matched
+    // rather than assumed.
+    let raw: String = connection
+        .query_row(
+            "SELECT value FROM auth_kv WHERE key LIKE 'kirocli:%:token' LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|err| match err {
+            rusqlite::Error::QueryReturnedNoRows => LocalCredentialError::NotFound,
+            other => LocalCredentialError::Unreadable(other.to_string()),
+        })?;
+
+    let token: Value = serde_json::from_str(&raw).map_err(|err| {
+        LocalCredentialError::Malformed(format!(
+            "JSON error at line {} column {}",
+            err.line(),
+            err.column()
+        ))
+    })?;
+
+    credentials_from(&token, None)
+}
+
 /// Convenience wrapper over the default paths.
+///
+/// The CLI database wins when it has a token, because that is the store the
+/// agent in a Herdr pane actually authenticates with.
 pub fn read_local_credentials() -> Result<LocalKiroCredentials, LocalCredentialError> {
+    let from_cli = local_cli_database_path().map(|path| read_cli_credentials_at(&path));
+    if let Some(Ok(credentials)) = from_cli {
+        return Ok(credentials);
+    }
+
     let auth_token_path = local_auth_token_path()
         .ok_or_else(|| LocalCredentialError::Unreadable("no home directory".to_string()))?;
     let profile_path = local_profile_path();

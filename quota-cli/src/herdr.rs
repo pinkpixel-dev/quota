@@ -136,8 +136,12 @@ pub fn list_agent_panes() -> Result<Vec<AgentPane>, String> {
     parse_agent_list(&String::from_utf8_lossy(&output.stdout))
 }
 
-/// Push one display token onto a pane. The TTL is set slightly above the
-/// refresh interval so a value never blinks out between reports.
+/// Push one display token onto a pane.
+///
+/// No TTL is set, so the value persists until the next report replaces it.
+/// Herdr has no periodic event, and these reports are driven by pane activity,
+/// so a TTL means the number silently disappears from an idle sidebar with
+/// nothing scheduled to put it back.
 pub fn report_pane_token(pane_id: &str, source: &str, token: &str) -> Result<(), String> {
     let status = ProcessCommand::new(herdr_binary())
         .args([
@@ -148,8 +152,6 @@ pub fn report_pane_token(pane_id: &str, source: &str, token: &str) -> Result<(),
             source,
             "--token",
             &format!("quota={}", token),
-            "--ttl-ms",
-            "600000",
         ])
         .status()
         .map_err(|err| format!("could not run herdr pane report-metadata: {}", err))?;
@@ -175,8 +177,6 @@ pub fn report_workspace_token(
             source,
             "--token",
             &format!("quota={}", token),
-            "--ttl-ms",
-            "600000",
         ])
         .status()
         .map_err(|err| format!("could not run herdr workspace report-metadata: {}", err))?;
