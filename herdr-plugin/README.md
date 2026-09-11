@@ -27,8 +27,6 @@ If no pane in your session is running a supported agent, the plugin does nothing
 
 A workspace row only gets a token when every reportable pane in that workspace runs the same agent. The workspace row has no agent name on it, so in a mixed workspace any single number would look like it applied to all of them. The per-pane rows still show everything.
 
-`gemini` is deliberately not supported. It's the Gemini Code Assist CLI, which uses a different account from Antigravity's, and showing one account's usage on the other's pane would just be wrong.
-
 ## Installing quota-cli
 
 The plugin runs a small binary called `quota-cli` to read your usage and hand it to Herdr. It's published on crates.io:
@@ -37,24 +35,11 @@ The plugin runs a small binary called `quota-cli` to read your usage and hand it
 cargo install quota-cli
 ```
 
-Kiro's credentials live in a SQLite database that's compiled from bundled C source, so the build needs a working C compiler.
-
-Alternatively, prebuilt binaries for Linux, macOS, and Windows are attached to the `quota-cli-v*` [releases](https://github.com/pinkpixel-dev/quota/releases). Unpack the archive for your platform and put `quota-cli` somewhere on your `PATH`:
-
-```bash
-mkdir -p ~/.local/bin
-cp quota-cli ~/.local/bin/quota-cli
-```
-
-Either way, make sure the directory is actually on your shell's `PATH`. The plugin manifest invokes `quota-cli` by name, so Herdr needs to be able to find it the same way your shell would.
-
-You can check it works before going near Herdr:
+### CLI usage
 
 ```bash
 quota-cli usage
 ```
-
-That prints a line per provider, with the time until each window resets when the provider reports one:
 
 ```text
 claude   5h 98% (resets in 4h 58m) · Wk 35% (resets in 3d 9h)
@@ -62,27 +47,15 @@ codex    5h 100% (resets in 4h 59m) · Wk 95% (resets in 4d 6h)
 cursor   Plan 100% (resets in 8d 3h)
 ```
 
-Anything you're not signed into says so instead of showing a number. Kiro reports no reset time, so its windows show the percent alone. The sidebar token stays percent-only, because the sidebar row is much narrower than a terminal.
+### **You must install `quota-cli` first for the plugin to work.**
 
 ## Installing the plugin
 
-With `quota-cli` on your `PATH`, link this plugin into Herdr:
+With `quota-cli`installed, link this plugin into Herdr:
 
 ```bash
 herdr plugin install pinkpixel-dev/quota/herdr-plugin
 ```
-
-That's the repository shorthand Herdr uses for GitHub installs: the `herdr-plugin` subdirectory of `pinkpixel-dev/quota`. Herdr will report back whether the plugin registered cleanly.
-
-The plugin declares no build command, which is deliberate. Installing it does not build or install `quota-cli` for you, so do that first.
-
-If you're working from a local checkout instead, point it at the plugin directory:
-
-```bash
-herdr plugin link /path/to/quota/herdr-plugin
-```
-
-The plugin uses a startup hook and three event hooks: `pane.agent_detected`, `pane.agent_status_changed`, and `pane.focused`. All four are real in Herdr 0.9.0. If a future Herdr release renames or drops one, linking will warn about an unrecognized event name, and the manual `refresh` action below still works either way.
 
 ## Adding the sidebar rows
 
@@ -102,7 +75,7 @@ For the spaces sidebar:
 rows = [["state_icon", "machine", "workspace", "tab"], ["agent", "$quota"]]
 ```
 
-Feel free to place `$quota` wherever it fits your layout better. These are just starting points, not requirements. After editing the config, reload it with `herdr server reload-config`.
+Feel free to place `$quota` wherever it fits your layout better. After editing the config, reload it with `herdr server reload-config`.
 
 ## Optional: a keybinding to refresh on demand
 
@@ -152,3 +125,21 @@ herdr plugin log list --plugin pinkpixel.quota
 ```
 
 That shows the plugin's recent invocations, including exit codes and any error output, which is usually enough to tell you what went wrong.
+
+## Alternative Installation
+
+Prebuilt binaries for Linux, macOS, and Windows are attached to the `quota-cli-v*` [releases](https://github.com/pinkpixel-dev/quota/releases). Unpack the archive for your platform and put `quota-cli` somewhere on your `PATH`:
+
+```bash
+mkdir -p ~/.local/bin
+cp quota-cli ~/.local/bin/quota-cli
+```
+
+Make sure the directory is actually on your shell's `PATH`. The plugin manifest invokes `quota-cli` by name, so Herdr needs to be able to find it the same way your shell would.
+
+If you're working from a local checkout, point it at the plugin directory:
+
+```bash
+herdr plugin link /path/to/quota/herdr-plugin
+```
+
