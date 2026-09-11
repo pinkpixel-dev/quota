@@ -17,6 +17,7 @@ async fn main() {
         Command::Help => println!("{}", HELP),
         Command::Usage { json } => run_usage(json).await,
         Command::HerdrReport { force } => run_herdr_report(force).await,
+        Command::HerdrWatch { interval_secs } => run_herdr_watch(interval_secs).await,
     }
 }
 
@@ -76,20 +77,56 @@ async fn run_usage(json: bool) {
     }
 }
 
+/// Why a single report produced no numbers.
+enum ReportFailure {
+    /// Herdr itself could not be asked what is on screen. Nothing was printed,
+    /// so the caller decides whether this is worth saying out loud.
+    Herdr(String),
+    /// Panes wanted numbers and none of them got one. The reasons were already
+    /// printed as they happened.
+    NothingReported,
+}
+
+/// Run the report once and exit the way the command always has: any failure is
+/// a non-zero exit, and a Herdr failure names itself on stderr first.
 async fn run_herdr_report(force: bool) {
+    if let Err(failure) = herdr_report_once(force).await {
+        if let ReportFailure::Herdr(message) = failure {
+            eprintln!("{}", message);
+        }
+        std::process::exit(1);
+    }
+}
+
+/// Report on an interval until the process is stopped.
+///
+/// Herdr has no periodic event, so nothing inside Herdr can drive this. The
+/// loop deliberately does not force a fetch: the interval is longer than the
+/// cache TTL, so the cache is already stale by the time each cycle runs, and a
+/// forced fetch would only add requests when something else refreshed in
+/// between.
+async fn run_herdr_watch(interval_secs: u64) {
+    let interval = std::time::Duration::from_secs(interval_secs);
+
+    loop {
+        // A failed cycle is never fatal here. Herdr can be restarted, and a
+        // provider can be signed back into, without the watcher being restarted
+        // along with it.
+        if let Err(ReportFailure::Herdr(message)) = herdr_report_once(false).await {
+            eprintln!("{}", message);
+        }
+        tokio::time::sleep(interval).await;
+    }
+}
+
+async fn herdr_report_once(force: bool) -> Result<(), ReportFailure> {
     use quota_cli::herdr;
     use std::collections::BTreeMap;
 
     // Check which panes need a number before touching the cache or the
     // network. A user running no agent we can report on should never fetch,
     // and never log an error, on every agent-status event.
-    let panes = match herdr::list_agent_panes() {
-        Ok(panes) => panes,
-        Err(err) => {
-            eprintln!("{}", err);
-            std::process::exit(1);
-        }
-    };
+    let panes = herdr::list_agent_panes().map_err(ReportFailure::Herdr)?;
 
     let reportable_panes: Vec<_> = panes
         .into_iter()
@@ -99,7 +136,7 @@ async fn run_herdr_report(force: bool) {
         .collect();
 
     if reportable_panes.is_empty() {
-        return;
+        return Ok(());
     }
 
     let state_dir = std::env::var("HERDR_PLUGIN_STATE_DIR")
@@ -169,8 +206,10 @@ async fn run_herdr_report(force: bool) {
         }
     }
 
-    if !any_report_succeeded {
-        std::process::exit(1);
+    if any_report_succeeded {
+        Ok(())
+    } else {
+        Err(ReportFailure::NothingReported)
     }
 }
 

@@ -95,6 +95,42 @@ Pick whatever key combination makes sense for your setup. `prefix+u` is just an 
 
 Once a token is reported it stays on the pane until something replaces it. It won't quietly disappear while you're idle.
 
+## Optional: keeping the numbers moving on their own
+
+A keybinding still needs you to press it. If you'd rather the sidebar just stayed current, `quota-cli` can do the refreshing itself:
+
+```bash
+quota-cli herdr watch
+```
+
+That reports, waits, and reports again until you stop it. The interval defaults to 300 seconds, and `--interval SECONDS` changes it. Anything under 120 seconds is refused, because a cycle inside the cache window serves the number it already has and fetches nothing.
+
+The plugin doesn't start this for you. Herdr's plugin hooks are meant for bounded, one-shot work rather than long-running processes, and a watcher started from a hook would need to survive restarts and avoid running twice over. Keeping it a command you run means you decide whether it runs at all, and you can see it when it misbehaves.
+
+Run it in a pane, or wire it into whatever already starts things on your machine. A systemd user service is the usual choice on Linux:
+
+```ini
+[Unit]
+Description=Quota usage in the Herdr sidebar
+
+[Service]
+ExecStart=%h/.cargo/bin/quota-cli herdr watch --interval 300
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+Save that as `~/.config/systemd/user/quota-herdr.service`, then:
+
+```bash
+systemctl --user enable --now quota-herdr.service
+```
+
+One thing to know: started this way, the watcher runs outside Herdr, so it doesn't get the plugin's environment. It falls back to a cache in your temp directory instead of the plugin's state directory, which works fine but means it and the plugin keep separate caches. Both report the same numbers to the same panes.
+
+If Herdr isn't running yet, the watcher says so and keeps going, so it's safe to start either one first.
+
 ## Reading your credentials
 
 This plugin reads each agent CLI's locally stored credentials to work out your usage. Those reads are strictly read-only. Nothing here refreshes, rewrites, or rotates a credential file, because doing that would risk invalidating the session your own CLI depends on.

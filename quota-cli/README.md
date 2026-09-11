@@ -47,6 +47,16 @@ quota-cli herdr report [--force]
 
 This pushes usage into the [Herdr](https://herdr.dev) sidebar as a metadata token, so each pane shows the numbers for the agent it is actually running. It is meant to be driven by the plugin in [`herdr-plugin/`](https://github.com/pinkpixel-dev/quota/tree/main/herdr-plugin) rather than run by hand. Only providers with a pane on screen are fetched, and without `--force` each one serves a cached value until that cache goes stale.
 
+Herdr has no periodic event, so nothing inside Herdr can keep those numbers moving on its own. `watch` is the answer to that:
+
+```bash
+quota-cli herdr watch [--interval SECONDS]
+```
+
+It reports, sleeps, and reports again until you stop it. The interval defaults to 300 seconds and cannot go below 120, because a cycle inside the cache TTL would serve the value it already has and fetch nothing new. It does not force a fetch, since the cache is stale by the time each cycle runs anyway.
+
+A failed cycle is not fatal. If Herdr is not running, or a provider is signed out, the reason goes to stderr and the next cycle still happens. That does mean a persistent problem repeats in the log once per interval.
+
 ## Where the credentials come from
 
 | Provider | Source |

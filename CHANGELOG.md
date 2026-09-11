@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented here.
 
+## quota-cli 0.2.0 - September 11, 2026
+
+Ships only in the `quota-cli` crate. The desktop app and the VS Code extension are unchanged.
+
+### 🖥️ quota-cli
+
+- Added `quota-cli herdr watch [--interval SECONDS]`, which reports usage into the Herdr sidebar on a loop until you stop it. Herdr has no periodic event, so nothing inside Herdr could keep the numbers moving on its own. This is the piece that can.
+- The interval defaults to 300 seconds and anything below 120 is refused, with the reason: a cycle inside the cache TTL serves the value it already has and makes no request. The loop never forces a fetch, since the cache is stale by the time each cycle runs.
+- A failed cycle no longer has to end the run. A stopped Herdr or a signed-out provider gets logged and the next cycle still happens, so the watcher survives both without being restarted.
+- `quota-cli herdr report` behaves exactly as before, including its exit codes and error messages. The loop and the one-shot command share the same reporting path.
+
+### 🔌 Herdr Plugin
+
+- The plugin manifest is unchanged and still starts nothing in the background. Periodic reporting is opt-in and user-started, because Herdr's plugin hooks are meant for bounded, one-shot work rather than long-running processes.
+- The plugin README now covers running the watcher, including a systemd user service example, and notes that a watcher started outside Herdr uses its own cache in the temp directory rather than the plugin's state directory.
+
 ## 1.5.0 - September 10, 2026
 
 ### 🖥️ quota-cli
