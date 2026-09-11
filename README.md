@@ -96,7 +96,15 @@ If Codex, Claude Code, or Grok authorization expires, Quota keeps the account an
 
 ## Herdr Plugin
 
-If you use Herdr, `herdr-plugin/` shows your Claude usage right in the sidebar, next to the panes and workspaces where you're using it. It runs on a small standalone binary, `quota-cli`, so it works without the desktop app installed or running. See [`herdr-plugin/README.md`](herdr-plugin/README.md) for installation and setup.
+If you use Herdr, `herdr-plugin/` shows your AI usage right in the sidebar, next to the panes and workspaces where you're using it. Each pane shows the numbers for the agent it's actually running, so a Claude pane and a Codex pane each show their own.
+
+It covers Claude, Codex, Cursor, Antigravity, Grok, and Kiro, reading each one's credentials from wherever that agent's own CLI already stored them. It runs on a small standalone binary, `quota-cli`, so it works without the desktop app installed or running. That binary is also useful on its own:
+
+```bash
+quota-cli usage
+```
+
+See [`herdr-plugin/README.md`](herdr-plugin/README.md) for installation and setup.
 
 ## Contributing
 

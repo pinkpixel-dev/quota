@@ -31,6 +31,8 @@ const require = createRequire(import.meta.url);
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const tauriDir = path.join(repoRoot, 'src-tauri');
+const coreDir = path.join(repoRoot, 'quota-core');
+const cliDir = path.join(repoRoot, 'quota-cli');
 const bundleRoot = path.join(tauriDir, 'target', 'release', 'bundle');
 const checksumFile = path.join(repoRoot, 'SHA256SUMS.txt');
 
@@ -154,7 +156,12 @@ function typecheck() {
 }
 
 function rustTests() {
-  run('cargo', ['test', '--quiet'], { cwd: tauriDir });
+  // Each crate has its own target directory, because they are path
+  // dependencies rather than workspace members, so each needs its own run.
+  // Without quota-core and quota-cli here, a broken provider ships.
+  for (const cwd of [tauriDir, coreDir, cliDir]) {
+    run('cargo', ['test', '--quiet'], { cwd });
+  }
 }
 
 function bundle(options) {

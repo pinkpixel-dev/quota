@@ -7,14 +7,37 @@ All notable changes to this project will be documented here.
 ### 🖥️ quota-cli
 
 - Added a new standalone binary, `quota-cli`, separate from the desktop app.
-- `quota-cli usage [--json]` prints your Claude 5h and weekly usage, read directly from the Claude Code CLI's own locally stored credentials at `~/.claude/.credentials.json`. It needs no OAuth flow of its own and no running desktop app.
-- `quota-cli herdr report [--force]` pushes that same usage onto Herdr panes and workspaces as a metadata token, so it can show up in a Herdr sidebar row. It caches the value and only re-fetches when the cache goes stale or `--force` is passed.
-- The Claude credential reader is strictly read-only. It never refreshes or rewrites `~/.claude/.credentials.json`, since doing so would rotate the refresh token and break the Claude Code CLI's own session.
+- `quota-cli usage [--json]` prints usage for every provider you are signed into, read directly from each agent CLI's own locally stored credentials. It needs no OAuth flow of its own and no running desktop app.
+- Six providers are supported: Claude, Codex, Cursor, Antigravity, Grok, and Kiro. A provider you are not signed into reports why, and the command still succeeds as long as one provider reports.
+- `quota-cli herdr report [--force]` pushes that usage onto Herdr panes and workspaces as a metadata token, so it can show up in a Herdr sidebar row. Each pane gets the number for the agent it is actually running.
+- Every credential reader is strictly read-only. None of them refresh, rewrite, or rotate the files they read, since doing so would invalidate the session your own agent CLI depends on. Antigravity is the single exception: Google does not rotate its refresh token, so a fresh access token is held in memory for one request and nothing is written to disk.
+
+### 📊 Providers
+
+- **Claude** reads `~/.claude/.credentials.json` and reports the rolling 5 hour and weekly windows.
+- **Codex** reads `~/.codex/auth.json`, honoring `CODEX_HOME`, and derives its window labels from the window lengths the API reports rather than assuming them.
+- **Cursor** reads `~/.config/cursor/auth.json`, written by the Cursor CLI. This is a different store from the Cursor IDE's SQLite database, and the two can hold different accounts.
+- **Antigravity** reads the Antigravity CLI's token from the OS keyring, falling back to `~/.gemini/oauth_creds.json`. Only Antigravity's own OAuth client is used, chosen by the id token's `aud` claim.
+- **Grok** reads `~/.grok/auth.json`, honoring `GROK_HOME`, and derives the remaining percent from the credit figures the billing API sends. A plan with no allocation says so rather than showing a blank.
+- **Kiro** reads the Kiro CLI's token from `~/.local/share/kiro-cli/data.sqlite3`, falling back to the AWS SSO cache at `~/.aws/sso/cache/kiro-auth-token.json` that the Kiro IDE writes. Credit and bonus pools each get their own window.
 
 ### 🔌 Herdr Plugin
 
-- Added `herdr-plugin/`, a Herdr plugin package with a manifest (`herdr-plugin.toml`) and a README, that shows Claude usage in the Herdr sidebar next to your panes and workspaces.
-- The plugin declares one action, `refresh`, and one event hook, both of which run `quota-cli` to fetch and report usage.
+- The plugin now covers every agent kind that has a provider, not just Claude. Herdr's aliases are handled, so Antigravity arrives as `agy`, `antigravity`, or `antigravity-cli`, and Claude as `claude`, `claude-code`, or `anthropic`.
+- `gemini` is deliberately not mapped. It is the Gemini Code Assist CLI, a different OAuth client from Antigravity's, and reporting one account's usage on the other's pane would be wrong.
+- Added a startup hook and two more event hooks, `pane.agent_detected` and `pane.focused`, so the sidebar fills in after a Herdr restart and when a new agent starts.
+- A workspace row is only reported when every reportable pane in that workspace runs the same provider. The workspace row carries no agent name, so a mixed workspace gets per-pane numbers instead.
+
+### 🐛 Fixes
+
+- Usage tokens no longer disappear from an idle sidebar. They were reported with a ten minute TTL, and since Herdr has no periodic event, nothing re-reported them before that TTL lapsed. Tokens now persist until they are replaced.
+- The token cache is now one file per provider. A single shared file let panes running different agents overwrite each other on every status change.
+- One pane described in an unexpected shape no longer blanks every pane. The agent list is read field by field instead of through a struct with required fields, and falls back to the agent session when a pane omits its kind.
+
+### 🧩 Plugin Package
+
+- Added `herdr-plugin/`, a Herdr plugin package with a manifest (`herdr-plugin.toml`) and a README, that shows AI usage in the Herdr sidebar next to your panes and workspaces.
+- The plugin declares one action, `refresh`, a startup hook, and three event hooks, all of which run `quota-cli` to fetch and report usage.
 - See [`herdr-plugin/README.md`](herdr-plugin/README.md) for installation and setup.
 
 ### 🧱 Internal Crate Extraction
@@ -22,6 +45,11 @@ All notable changes to this project will be documented here.
 - Extracted the Claude provider logic out of `src-tauri/src/claude.rs` into a new plain Rust crate, `quota-core`, with no Tauri dependency. `quota-core` is now the single implementation of Claude OAuth, token refresh, quota parsing, and the local Claude Code credential reader.
 - `src-tauri/src/claude.rs` is now a thin file of `#[tauri::command]` wrappers over `quota-core::claude`, and `quota-cli` depends on the same crate. Desktop behavior is unchanged.
 - `quota-core` and `quota-cli` are plain path dependencies rather than Cargo workspace members, to keep `src-tauri/target` as the only Rust build output directory the release scripts and CI workflow rely on.
+
+### 🧹 Maintenance
+
+- The release build now runs `cargo test` in `quota-core` and `quota-cli` as well as `src-tauri`. Each crate has its own target directory, so each needs its own run, and without this nothing in either new crate was gated before a release.
+- The Windows workflow caches Rust artifacts for all three crates instead of `src-tauri` alone.
 
 ### 🏷️ Versioning
 
