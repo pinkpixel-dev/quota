@@ -8,6 +8,7 @@ All notable changes to this project will be documented here.
 
 - Added a new standalone binary, `quota-cli`, separate from the desktop app.
 - `quota-cli usage [--json]` prints usage for every provider you are signed into, read directly from each agent CLI's own locally stored credentials. It needs no OAuth flow of its own and no running desktop app.
+- A lapsed Kiro token now says so accurately. It used to read "Sign in to Kiro again", which asked for work you do not have to do. The Kiro CLI only refreshes its token when it has a reason to call the service, so the stored token lapses whenever Kiro sits idle, and using Kiro again refreshes it. The message now says that.
 - The text report shows when each window resets, the same information the desktop app shows, as a countdown like `5h 47% (resets in 2h 14m)`. Claude, Codex, Cursor, Antigravity, and Grok all report a reset time. Kiro does not, so its windows show the percent alone. The Herdr sidebar token is unchanged, since the sidebar row is too narrow to fit it.
 - Six providers are supported: Claude, Codex, Cursor, Antigravity, Grok, and Kiro. A provider you are not signed into reports why, and the command still succeeds as long as one provider reports.
 - `quota-cli herdr report [--force]` pushes that usage onto Herdr panes and workspaces as a metadata token, so it can show up in a Herdr sidebar row. Each pane gets the number for the agent it is actually running.

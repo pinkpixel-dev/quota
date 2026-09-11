@@ -213,6 +213,13 @@ pub enum LocalUsageError {
     Credentials(LocalCredentialError),
     /// The cached token lapsed. Reported without a request, because Kiro
     /// answers a lapsed token with the same 403 it uses for a disabled account.
+    ///
+    /// This is the normal resting state of an idle machine, not a sign-out. The
+    /// Kiro CLI refreshes its token only when it has a reason to call the
+    /// service, so the stored one lapses whenever Kiro sits unused, and using
+    /// Kiro again rewrites it. Quota never refreshes it: that token backs the
+    /// user's own session, and rotating it would leave their CLI holding a dead
+    /// one.
     Expired,
     Unauthorized,
     /// Kiro answers 403 for an account that has been disabled, which is worth
@@ -227,7 +234,7 @@ impl std::fmt::Display for LocalUsageError {
             Self::Credentials(inner) => write!(formatter, "{}", inner),
             Self::Expired => write!(
                 formatter,
-                "The stored Kiro token has expired. Sign in to Kiro again."
+                "The stored Kiro token has lapsed. Kiro refreshes it the next time you use Kiro."
             ),
             Self::Unauthorized => write!(
                 formatter,

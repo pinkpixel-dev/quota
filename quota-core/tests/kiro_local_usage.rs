@@ -1,4 +1,4 @@
-use quota_core::kiro::local_usage::{normalize_usage_response, usage_url_for_profile_arn};
+use quota_core::kiro::local_usage::{normalize_usage_response, usage_url_for_profile_arn, LocalUsageError};
 use serde_json::json;
 
 fn breakdown(limit: f64, used: f64) -> serde_json::Value {
@@ -147,4 +147,30 @@ fn the_profile_arn_is_url_encoded_into_the_query() {
     let url = usage_url_for_profile_arn("arn:aws:codewhisperer:us-east-1:1:profile/ABC");
 
     assert!(url.contains("profileArn=arn%3Aaws%3Acodewhisperer"));
+}
+
+/// A lapsed token is what an idle machine looks like, not a sign-out. The Kiro
+/// CLI refreshes on use, so telling the user to sign in again asks for work
+/// they do not have to do.
+#[test]
+fn a_lapsed_token_tells_the_user_to_use_kiro_not_to_sign_in_again() {
+    let message = LocalUsageError::Expired.to_string();
+
+    assert!(
+        message.contains("next time you use Kiro"),
+        "expected the message to point at using Kiro, got: {}",
+        message
+    );
+    assert!(
+        !message.contains("Sign in"),
+        "a lapsed token does not need a new sign-in, got: {}",
+        message
+    );
+}
+
+/// A rejected token is the case that does need a new sign-in, so the two must
+/// not collapse into the same advice.
+#[test]
+fn a_rejected_token_still_asks_for_a_new_sign_in() {
+    assert!(LocalUsageError::Unauthorized.to_string().contains("Sign in to Kiro again"));
 }
