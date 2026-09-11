@@ -5,6 +5,10 @@ description = "Read AI usage from locally stored agent CLI credentials."
 authors = ["Pink Pixel <admin@pinkpixel.dev>"]
 license = "Apache-2.0"
 repository = "https://github.com/pinkpixel-dev/quota"
+homepage = "https://pinkpixel.dev"
+readme = "README.md"
+keywords = ["usage", "quota", "claude", "codex", "herdr"]
+categories = ["command-line-utilities", "development-tools"]
 edition = "2021"
 
 [lib]
@@ -16,7 +20,7 @@ name = "quota-cli"
 path = "src/main.rs"
 
 [dependencies]
-quota-core = { path = "../quota-core" }
+quota-core = { path = "../quota-core", version = "0.1.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

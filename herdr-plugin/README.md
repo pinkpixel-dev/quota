@@ -8,11 +8,7 @@ The plugin reports a compact usage token onto every pane running an agent it has
 
 Each pane gets the numbers for the agent it's actually running, so a Claude pane and a Codex pane show their own figures side by side:
 
-```text
-● claude   5h 62% · Wk 38%
-● codex    5h 100% · Wk 95%
-● cursor   Plan 100%
-```
+![The Quota plugin rendering usage tokens in the Herdr agents sidebar](../screenshots/screenshot_herdr.png)
 
 The labels differ by provider, because the providers themselves measure different things:
 
@@ -35,23 +31,22 @@ A workspace row only gets a token when every reportable pane in that workspace r
 
 ## Installing quota-cli
 
-The plugin runs a small binary called `quota-cli` to read your usage and hand it to Herdr. There's no published release binary for `quota-cli` yet, so right now you build it from source.
-
-From the root of the [quota](https://github.com/pinkpixel-dev/quota) repository:
+The plugin runs a small binary called `quota-cli` to read your usage and hand it to Herdr. It's published on crates.io:
 
 ```bash
-cd quota-cli
-cargo build --release
+cargo install quota-cli
 ```
 
-That produces `target/release/quota-cli`. Copy it somewhere on your `PATH`, for example:
+Kiro's credentials live in a SQLite database that's compiled from bundled C source, so the build needs a working C compiler.
+
+Alternatively, prebuilt binaries for Linux, macOS, and Windows are attached to the `quota-cli-v*` [releases](https://github.com/pinkpixel-dev/quota/releases). Unpack the archive for your platform and put `quota-cli` somewhere on your `PATH`:
 
 ```bash
 mkdir -p ~/.local/bin
-cp target/release/quota-cli ~/.local/bin/quota-cli
+cp quota-cli ~/.local/bin/quota-cli
 ```
 
-Make sure `~/.local/bin` (or wherever you put it) is actually on your shell's `PATH`. The plugin manifest invokes `quota-cli` by name, so Herdr needs to be able to find it the same way your shell would.
+Either way, make sure the directory is actually on your shell's `PATH`. The plugin manifest invokes `quota-cli` by name, so Herdr needs to be able to find it the same way your shell would.
 
 You can check it works before going near Herdr:
 
@@ -69,8 +64,6 @@ cursor   Plan 100% (resets in 8d 3h)
 
 Anything you're not signed into says so instead of showing a number. Kiro reports no reset time, so its windows show the percent alone. The sidebar token stays percent-only, because the sidebar row is much narrower than a terminal.
 
-Once a release binary exists, this section will be updated with a direct download step. For now, building from source is the only supported path.
-
 ## Installing the plugin
 
 With `quota-cli` on your `PATH`, link this plugin into Herdr:
@@ -79,7 +72,11 @@ With `quota-cli` on your `PATH`, link this plugin into Herdr:
 herdr plugin install pinkpixel-dev/quota/herdr-plugin
 ```
 
-Herdr will report back whether the plugin linked cleanly. If you're working from a local checkout instead, point it at the plugin directory:
+That's the repository shorthand Herdr uses for GitHub installs: the `herdr-plugin` subdirectory of `pinkpixel-dev/quota`. Herdr will report back whether the plugin registered cleanly.
+
+The plugin declares no build command, which is deliberate. Installing it does not build or install `quota-cli` for you, so do that first.
+
+If you're working from a local checkout instead, point it at the plugin directory:
 
 ```bash
 herdr plugin link /path/to/quota/herdr-plugin

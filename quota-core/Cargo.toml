@@ -5,6 +5,10 @@ description = "Shared AI usage provider logic for Quota."
 authors = ["Pink Pixel <admin@pinkpixel.dev>"]
 license = "Apache-2.0"
 repository = "https://github.com/pinkpixel-dev/quota"
+homepage = "https://pinkpixel.dev"
+readme = "README.md"
+keywords = ["usage", "quota", "claude", "codex", "cli"]
+categories = ["api-bindings", "command-line-utilities"]
 edition = "2021"
 
 [dependencies]

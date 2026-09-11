@@ -94,17 +94,48 @@ Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), pr
 
 If Codex, Claude Code, or Grok authorization expires, Quota keeps the account and its last safe quota data visible. Use the Reauthenticate action in the desktop account card or extension panel to renew access without disconnecting the account first.
 
-## Herdr Plugin
+## Quota CLI
 
-If you use Herdr, `herdr-plugin/` shows your AI usage right in the sidebar, next to the panes and workspaces where you're using it. Each pane shows the numbers for the agent it's actually running, so a Claude pane and a Codex pane each show their own.
+`quota-cli` is a separate Rust binary that prints the same usage numbers in your terminal. It reads each provider's credentials from wherever that provider's own CLI already stored them, so there's no sign-in step and no account to connect. It doesn't need the desktop app installed or running.
 
-It covers Claude, Codex, Cursor, Antigravity, Grok, and Kiro, reading each one's credentials from wherever that agent's own CLI already stored them. It runs on a small standalone binary, `quota-cli`, so it works without the desktop app installed or running. That binary is also useful on its own:
+```bash
+cargo install quota-cli
+```
+
+Kiro's credentials live in a SQLite database that's compiled from bundled C source, so the build needs a working C compiler. If you'd rather not build anything, prebuilt binaries for Linux, macOS, and Windows are attached to the `quota-cli-v*` [releases](https://github.com/pinkpixel-dev/quota/releases). Download the archive for your platform, unpack it, and put `quota-cli` somewhere on your `PATH`.
+
+Then:
 
 ```bash
 quota-cli usage
 ```
 
-See [`herdr-plugin/README.md`](herdr-plugin/README.md) for installation and setup.
+```text
+claude       5h 98% (resets in 4h 58m) · Wk 35% (resets in 3d 9h)
+codex        5h 100% (resets in 4h 59m) · Wk 95% (resets in 4d 6h)
+cursor       Plan 100% (resets in 8d 3h)
+antigravity  5h 100% (resets in 4h 59m) · Wk 97% (resets in 6d 17h)
+grok         no credit allocation
+kiro         Credits 100% · Bonus 100%
+```
+
+Percentages are what you have left. Reset times show when a provider reports one. Anything you're not signed into says so instead of showing a number. Add `--json` for scripting.
+
+It covers Claude, Codex, Cursor, Antigravity, Grok, and Kiro. GitHub Copilot is desktop-only for now. Every reader is strictly read-only: nothing is refreshed, rewritten, or rotated, because those tokens back your own agent sessions.
+
+See [`quota-cli/README.md`](quota-cli/README.md) for the full command reference and where each provider's credentials come from. The shared provider logic is published separately as [`quota-core`](https://crates.io/crates/quota-core).
+
+## Herdr Plugin
+
+If you use Herdr, `herdr-plugin/` shows your AI usage right in the sidebar, next to the panes and workspaces where you're using it. Each pane shows the numbers for the agent it's actually running, so a Claude pane and a Codex pane each show their own.
+
+The plugin is a thin wrapper around `quota-cli`, so install that first, then:
+
+```bash
+herdr plugin install pinkpixel-dev/quota/herdr-plugin
+```
+
+See [`herdr-plugin/README.md`](herdr-plugin/README.md) for setup and troubleshooting.
 
 ## Contributing
 

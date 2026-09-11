@@ -8,6 +8,9 @@ All notable changes to this project will be documented here.
 
 - Added a new standalone binary, `quota-cli`, separate from the desktop app.
 - `quota-cli usage [--json]` prints usage for every provider you are signed into, read directly from each agent CLI's own locally stored credentials. It needs no OAuth flow of its own and no running desktop app.
+- `quota-cli` is on crates.io. Install it with `cargo install quota-cli` instead of building from a checkout. The shared provider logic is published alongside it as `quota-core`, mostly so the CLI can depend on it; if you want the tool, you want `quota-cli`.
+- Prebuilt `quota-cli` binaries for Linux, macOS, and Windows are now built by CI and attached to `quota-cli-v*` releases, with checksums. Tags for the CLI are namespaced so they cannot be confused with the desktop app's.
+- The Herdr plugin installs with `herdr plugin install pinkpixel-dev/quota/herdr-plugin`. Install `quota-cli` first, since the plugin declares no build command and only shells out to the binary.
 - A lapsed Kiro token now says so accurately. It used to read "Sign in to Kiro again", which asked for work you do not have to do. The Kiro CLI only refreshes its token when it has a reason to call the service, so the stored token lapses whenever Kiro sits idle, and using Kiro again refreshes it. The message now says that.
 - The text report shows when each window resets, the same information the desktop app shows, as a countdown like `5h 47% (resets in 2h 14m)`. Claude, Codex, Cursor, Antigravity, and Grok all report a reset time. Kiro does not, so its windows show the percent alone. The Herdr sidebar token is unchanged, since the sidebar row is too narrow to fit it.
 - Six providers are supported: Claude, Codex, Cursor, Antigravity, Grok, and Kiro. A provider you are not signed into reports why, and the command still succeeds as long as one provider reports.
