@@ -59,7 +59,15 @@ You can check it works before going near Herdr:
 quota-cli usage
 ```
 
-That prints a line per provider. Anything you're not signed into says so instead of showing a number.
+That prints a line per provider, with the time until each window resets when the provider reports one:
+
+```text
+claude   5h 98% (resets in 4h 58m) · Wk 35% (resets in 3d 9h)
+codex    5h 100% (resets in 4h 59m) · Wk 95% (resets in 4d 6h)
+cursor   Plan 100% (resets in 8d 3h)
+```
+
+Anything you're not signed into says so instead of showing a number. Kiro reports no reset time, so its windows show the percent alone. The sidebar token stays percent-only, because the sidebar row is much narrower than a terminal.
 
 Once a release binary exists, this section will be updated with a direct download step. For now, building from source is the only supported path.
 

@@ -8,6 +8,7 @@ All notable changes to this project will be documented here.
 
 - Added a new standalone binary, `quota-cli`, separate from the desktop app.
 - `quota-cli usage [--json]` prints usage for every provider you are signed into, read directly from each agent CLI's own locally stored credentials. It needs no OAuth flow of its own and no running desktop app.
+- The text report shows when each window resets, the same information the desktop app shows, as a countdown like `5h 47% (resets in 2h 14m)`. Claude, Codex, Cursor, Antigravity, and Grok all report a reset time. Kiro does not, so its windows show the percent alone. The Herdr sidebar token is unchanged, since the sidebar row is too narrow to fit it.
 - Six providers are supported: Claude, Codex, Cursor, Antigravity, Grok, and Kiro. A provider you are not signed into reports why, and the command still succeeds as long as one provider reports.
 - `quota-cli herdr report [--force]` pushes that usage onto Herdr panes and workspaces as a metadata token, so it can show up in a Herdr sidebar row. Each pane gets the number for the agent it is actually running.
 - Every credential reader is strictly read-only. None of them refresh, rewrite, or rotate the files they read, since doing so would invalidate the session your own agent CLI depends on. Antigravity is the single exception: Google does not rotate its refresh token, so a fresh access token is held in memory for one request and nothing is written to disk.

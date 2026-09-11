@@ -51,10 +51,16 @@ async fn run_usage(json: bool) {
             .max()
             .unwrap_or(0);
 
+        // One clock reading for the whole report, so two windows that reset at
+        // the same moment cannot render as different durations.
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_secs() as i64)
+            .unwrap_or(0);
+
         for (name, result) in &reports {
             let detail = match result {
-                Ok(usage) => usage
-                    .compact_token()
+                Ok(usage) => quota_cli::render::usage_detail(usage, now)
                     .unwrap_or_else(|| "no usage numbers reported".to_string()),
                 Err(message) => message.clone(),
             };
