@@ -95,6 +95,7 @@ async function refresh(showToast = false, options = {}) {
     }
     snapshot = await loadSnapshot();
     statusBar.update(snapshot, config);
+    (0, panel_1.updateQuotaPanel)(snapshot, config);
     if (showToast) {
         const reauthenticationProviders = new Set(snapshot.tracks
             .filter((track) => (0, authError_1.isReauthenticationRequired)(track.error))

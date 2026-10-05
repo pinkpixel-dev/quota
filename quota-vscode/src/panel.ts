@@ -545,7 +545,7 @@ async function runPanelCommand(command: string): Promise<void> {
 
 export async function showQuotaPanel(snapshot: QuotaSnapshot, config: QuotaConfiguration): Promise<void> {
   if (panel) {
-    panel.reveal(vscode.ViewColumn.Beside);
+    panel.reveal(panel.viewColumn);
   } else {
     panel = vscode.window.createWebviewPanel(
       'quota.panel',
@@ -564,4 +564,8 @@ export async function showQuotaPanel(snapshot: QuotaSnapshot, config: QuotaConfi
   }
 
   panel.webview.html = renderHtml(panel.webview, snapshot, config);
+}
+
+export function updateQuotaPanel(snapshot: QuotaSnapshot, config: QuotaConfiguration): void {
+  if (panel) panel.webview.html = renderHtml(panel.webview, snapshot, config);
 }

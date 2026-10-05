@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented here.
 
+## quota-vscode 1.2.1 - October 5, 2026
+
+Ships only in the VS Code extension. The desktop app and `quota-cli` are unchanged.
+
+### 🐛 Fixes
+
+- An open Quota panel now updates on every auto-refresh. Before, the timer only updated the status bar, so the panel kept showing old "Updated" times and percents until you reopened it ([#10](https://github.com/pinkpixel-dev/quota/issues/10)).
+- Refresh, Connect, and Disconnect in the panel no longer move the Quota tab into the other editor group. The panel stays where you put it. A brand new panel still opens beside your current editor.
+
+### 🏷️ Versioning
+
+- Bumped the extension to `1.2.1`.
+
 ## quota-cli 0.2.0 - September 11, 2026
 
 Ships only in the `quota-cli` crate. The desktop app and the VS Code extension are unchanged.

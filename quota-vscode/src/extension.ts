@@ -9,7 +9,7 @@ import { readConfiguration } from './configuration';
 import { GitHubCopilotProvider } from './githubCopilotProvider';
 import { GrokProvider } from './grokProvider';
 import { KiroProvider } from './kiroProvider';
-import { showQuotaPanel } from './panel';
+import { showQuotaPanel, updateQuotaPanel } from './panel';
 import { loadQuotaSnapshot } from './summary';
 import { QuotaStatusBar } from './statusBar';
 import type { QuotaConfiguration, QuotaSnapshot } from './types';
@@ -58,6 +58,7 @@ async function refresh(showToast = false, options: { refreshProviders?: boolean 
   }
   snapshot = await loadSnapshot();
   statusBar.update(snapshot, config);
+  updateQuotaPanel(snapshot, config);
 
   if (showToast) {
     const reauthenticationProviders = new Set(

@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.showQuotaPanel = showQuotaPanel;
+exports.updateQuotaPanel = updateQuotaPanel;
 // @env node
 const crypto = __importStar(require("node:crypto"));
 const vscode = __importStar(require("vscode"));
@@ -547,7 +548,7 @@ async function runPanelCommand(command) {
 }
 async function showQuotaPanel(snapshot, config) {
     if (panel) {
-        panel.reveal(vscode.ViewColumn.Beside);
+        panel.reveal(panel.viewColumn);
     }
     else {
         panel = vscode.window.createWebviewPanel('quota.panel', 'Quota', vscode.ViewColumn.Beside, { enableScripts: true });
@@ -560,5 +561,9 @@ async function showQuotaPanel(snapshot, config) {
         });
     }
     panel.webview.html = renderHtml(panel.webview, snapshot, config);
+}
+function updateQuotaPanel(snapshot, config) {
+    if (panel)
+        panel.webview.html = renderHtml(panel.webview, snapshot, config);
 }
 //# sourceMappingURL=panel.js.map
