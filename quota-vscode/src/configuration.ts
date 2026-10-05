@@ -23,6 +23,9 @@ const TRACK_IDS: TrackId[] = [
   'grok.credits',
   'grok.monthlySpend',
   'grok.onDemand',
+  'opencodeGo.fiveHour',
+  'opencodeGo.weekly',
+  'opencodeGo.monthly',
 ];
 
 function isProviderId(value: string): value is ProviderId {

@@ -11,6 +11,7 @@ export const PROVIDER_LABELS: Record<ProviderId, string> = {
   antigravity: 'Antigravity',
   kiro: 'Kiro',
   grok: 'Grok',
+  opencodeGo: 'OpenCode Go',
 };
 
 export const PROVIDER_ORDER: ProviderId[] = [
@@ -20,6 +21,7 @@ export const PROVIDER_ORDER: ProviderId[] = [
   'antigravity',
   'kiro',
   'grok',
+  'opencodeGo',
 ];
 
 export const CANONICAL_TRACK_ORDER: TrackId[] = [
@@ -41,6 +43,9 @@ export const CANONICAL_TRACK_ORDER: TrackId[] = [
   'grok.credits',
   'grok.monthlySpend',
   'grok.onDemand',
+  'opencodeGo.fiveHour',
+  'opencodeGo.weekly',
+  'opencodeGo.monthly',
 ];
 
 export const TRACK_LABELS: Record<TrackId, string> = {
@@ -62,6 +67,9 @@ export const TRACK_LABELS: Record<TrackId, string> = {
   'grok.credits': 'Credit window',
   'grok.monthlySpend': 'Monthly spend',
   'grok.onDemand': 'On-demand spend',
+  'opencodeGo.fiveHour': '5h usage',
+  'opencodeGo.weekly': 'Weekly usage',
+  'opencodeGo.monthly': 'Monthly usage',
 };
 
 export const TRACK_STATUS_BAR_LABEL: Record<TrackId, string> = {
@@ -83,4 +91,7 @@ export const TRACK_STATUS_BAR_LABEL: Record<TrackId, string> = {
   'grok.credits': 'Grok:Credits',
   'grok.monthlySpend': 'Grok:Month',
   'grok.onDemand': 'Grok:OnDemand',
+  'opencodeGo.fiveHour': 'Go:5h',
+  'opencodeGo.weekly': 'Go:Wk',
+  'opencodeGo.monthly': 'Go:Mo',
 };

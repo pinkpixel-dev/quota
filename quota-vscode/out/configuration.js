@@ -56,6 +56,9 @@ const TRACK_IDS = [
     'grok.credits',
     'grok.monthlySpend',
     'grok.onDemand',
+    'opencodeGo.fiveHour',
+    'opencodeGo.weekly',
+    'opencodeGo.monthly',
 ];
 function isProviderId(value) {
     return constants_1.PROVIDER_ORDER.includes(value);

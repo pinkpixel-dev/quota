@@ -1,4 +1,4 @@
-export type ProviderId = 'githubCopilot' | 'codex' | 'claude' | 'antigravity' | 'kiro' | 'grok';
+export type ProviderId = 'githubCopilot' | 'codex' | 'claude' | 'antigravity' | 'kiro' | 'grok' | 'opencodeGo';
 
 export type StatusBarDisplayMode = 'percentUsed' | 'percentRemaining';
 
@@ -22,7 +22,10 @@ export type TrackId =
   | 'kiro.promptCredits'
   | 'grok.credits'
   | 'grok.monthlySpend'
-  | 'grok.onDemand';
+  | 'grok.onDemand'
+  | 'opencodeGo.fiveHour'
+  | 'opencodeGo.weekly'
+  | 'opencodeGo.monthly';
 
 export interface QuotaConfiguration {
   dataSource: QuotaDataSource;

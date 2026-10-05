@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented here.
 
+## 1.6.0 and quota-vscode 1.3.0 - October 5, 2026
+
+Adds OpenCode Go to the desktop app and the VS Code extension ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` is unchanged.
+
+### 📊 Providers
+
+- Added OpenCode Go. It connects with a Go API key from the OpenCode console instead of a sign-in flow, since OpenCode doesn't offer one for other apps.
+- Quota checks the key against OpenCode before saving it, so a mistyped key never turns into a broken account. A rejected key and a key without a Go subscription each get their own error message.
+- Each account shows 5-hour, weekly, and monthly usage with reset times, the same percentages the OpenCode console shows.
+- Accounts take an optional name. Without one, the label is the last four characters of the key.
+- Usage comes from `https://opencode.ai/zen/go/v1/usage`, which OpenCode hasn't documented yet. If they change it, this provider may need a quick update.
+
+### 🖥️ Desktop
+
+- OpenCode Go appears on the dashboard, its own accounts page, the provider order and visibility settings, the tray menu, low-quota notifications, and the safe account summary export.
+- Add a key from the Integrations page. The form has an Open console button that opens `https://opencode.ai/auth`, which is now on the app's allowed-URL list.
+- Saved OpenCode Go account files are readable only by your user on Linux and macOS (`0600`), because they hold the API key.
+
+### 🧩 VS Code Extension
+
+- Added `Quota: Connect OpenCode Go`, `Quota: Refresh OpenCode Go`, and `Quota: Disconnect OpenCode Go`, plus Connect and Disconnect buttons in the panel.
+- Connect asks for the key in a hidden input box and stores it in VS Code SecretStorage.
+- New status bar track IDs: `opencodeGo.fiveHour`, `opencodeGo.weekly`, and `opencodeGo.monthly`.
+- The `desktopSummary` data source now reads OpenCode Go accounts from the desktop app's safe summary export.
+- If you've customized `quota.providers.enabled`, add `"opencodeGo"` to the list to see it in the panel.
+
+### 🏷️ Versioning
+
+- Bumped the desktop app to `1.6.0` and the extension to `1.3.0`.
+
 ## quota-vscode 1.2.1 - October 5, 2026
 
 Ships only in the VS Code extension. The desktop app and `quota-cli` are unchanged.

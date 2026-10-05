@@ -9,6 +9,7 @@ pub mod external_open;
 mod github_copilot;
 pub mod grok;
 pub mod kiro;
+pub mod opencode_go;
 mod tray;
 
 #[derive(Serialize)]
@@ -117,7 +118,12 @@ pub fn run() {
             grok::grok_oauth_login_cancel,
             grok::refresh_grok_account,
             grok::refresh_all_grok_accounts,
-            grok::delete_grok_account
+            grok::delete_grok_account,
+            opencode_go::list_opencode_go_accounts,
+            opencode_go::add_opencode_go_account,
+            opencode_go::refresh_opencode_go_account,
+            opencode_go::refresh_all_opencode_go_accounts,
+            opencode_go::delete_opencode_go_account
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quota");

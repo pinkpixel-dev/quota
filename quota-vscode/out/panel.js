@@ -76,8 +76,8 @@ function toPanelTrack(track, config) {
     };
 }
 function renderProviderAction(provider, label, connected, requiresReauthentication = false) {
-    const connectCommand = provider === 'githubCopilot' ? 'connectGitHubCopilot' : provider === 'codex' ? 'connectCodex' : provider === 'claude' ? 'connectClaude' : provider === 'antigravity' ? 'connectAntigravity' : provider === 'kiro' ? 'connectKiro' : 'connectGrok';
-    const disconnectCommand = provider === 'githubCopilot' ? 'disconnectGitHubCopilot' : provider === 'codex' ? 'disconnectCodex' : provider === 'claude' ? 'disconnectClaude' : provider === 'antigravity' ? 'disconnectAntigravity' : provider === 'kiro' ? 'disconnectKiro' : 'disconnectGrok';
+    const connectCommand = provider === 'githubCopilot' ? 'connectGitHubCopilot' : provider === 'codex' ? 'connectCodex' : provider === 'claude' ? 'connectClaude' : provider === 'antigravity' ? 'connectAntigravity' : provider === 'kiro' ? 'connectKiro' : provider === 'grok' ? 'connectGrok' : 'connectOpenCodeGo';
+    const disconnectCommand = provider === 'githubCopilot' ? 'disconnectGitHubCopilot' : provider === 'codex' ? 'disconnectCodex' : provider === 'claude' ? 'disconnectClaude' : provider === 'antigravity' ? 'disconnectAntigravity' : provider === 'kiro' ? 'disconnectKiro' : provider === 'grok' ? 'disconnectGrok' : 'disconnectOpenCodeGo';
     if (!connected) {
         return `<button type="button" class="secondary" data-command="${connectCommand}">Connect ${label}</button>`;
     }
@@ -92,6 +92,8 @@ function displayTrackLabel(label) {
         return '5h';
     if (lower === 'weekly window' || lower === 'weekly usage')
         return 'Weekly';
+    if (lower === 'monthly usage')
+        return 'Monthly';
     if (lower === 'gemini models')
         return 'Gemini 5h';
     if (lower === 'gemini models weekly')
@@ -150,6 +152,7 @@ function renderEmpty(snapshot) {
         <button type="button" class="secondary" data-command="connectAntigravity">Connect Antigravity</button>
         <button type="button" class="secondary" data-command="connectKiro">Connect Kiro</button>
         <button type="button" class="secondary" data-command="connectGrok">Connect Grok</button>
+        <button type="button" class="secondary" data-command="connectOpenCodeGo">Connect OpenCode Go</button>
       </div>
     </section>
   `;
@@ -471,6 +474,7 @@ function renderHtml(webview, snapshot, config) {
       ${renderProviderAction('antigravity', 'Antigravity', connectedProviders.has('antigravity'))}
       ${renderProviderAction('kiro', 'Kiro', connectedProviders.has('kiro'))}
       ${renderProviderAction('grok', 'Grok', connectedProviders.has('grok'), reauthenticationProviders.has('grok'))}
+      ${renderProviderAction('opencodeGo', 'OpenCode Go', connectedProviders.has('opencodeGo'))}
     </nav>
     ${tracks.length > 0 ? `<section class="list">${tracks.map(renderTrack).join('')}</section>` : renderEmpty(snapshot)}
   </main>
@@ -537,6 +541,14 @@ async function runPanelCommand(command) {
             return;
         case 'disconnectGrok':
             await vscode.commands.executeCommand('quota.disconnectGrok');
+            await vscode.commands.executeCommand('quota.openPanel');
+            return;
+        case 'connectOpenCodeGo':
+            await vscode.commands.executeCommand('quota.connectOpenCodeGo');
+            await vscode.commands.executeCommand('quota.openPanel');
+            return;
+        case 'disconnectOpenCodeGo':
+            await vscode.commands.executeCommand('quota.disconnectOpenCodeGo');
             await vscode.commands.executeCommand('quota.openPanel');
             return;
         case 'settings':

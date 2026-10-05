@@ -54,6 +54,7 @@ const ALLOWED_HOSTS: &[&str] = &[
     "claude.com",
     "cursor.com",
     "github.com",
+    "opencode.ai",
 ];
 
 /// Returns the host of an `https://` URL, without the port or any credentials.
@@ -229,6 +230,7 @@ mod tests {
             "https://cursor.com/loginDeepControl?uuid=1",
             "https://accounts.x.ai/oauth2/device?user_code=ABCD-EFGH",
             "https://auth.x.ai/oauth2/device?user_code=ABCD-EFGH",
+            "https://opencode.ai/auth",
         ] {
             assert!(validate_url(url).is_ok(), "should allow {url}");
         }

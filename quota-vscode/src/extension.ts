@@ -9,6 +9,7 @@ import { readConfiguration } from './configuration';
 import { GitHubCopilotProvider } from './githubCopilotProvider';
 import { GrokProvider } from './grokProvider';
 import { KiroProvider } from './kiroProvider';
+import { OpenCodeGoProvider } from './opencodeGoProvider';
 import { showQuotaPanel, updateQuotaPanel } from './panel';
 import { loadQuotaSnapshot } from './summary';
 import { QuotaStatusBar } from './statusBar';
@@ -23,6 +24,7 @@ let claudeProvider: ClaudeProvider;
 let antigravityProvider: AntigravityProvider;
 let kiroProvider: KiroProvider;
 let grokProvider: GrokProvider;
+let openCodeGoProvider: OpenCodeGoProvider;
 let refreshTimer: NodeJS.Timeout | undefined;
 let lastManualRefreshAt = 0;
 
@@ -38,6 +40,7 @@ async function loadSnapshot(): Promise<QuotaSnapshot> {
     ...(await antigravityProvider.getTracks()),
     ...(await kiroProvider.getTracks()),
     ...(await grokProvider.getTracks()),
+    ...(await openCodeGoProvider.getTracks()),
   ];
   return {
     sourcePath: 'VS Code extension accounts',
@@ -55,6 +58,7 @@ async function refresh(showToast = false, options: { refreshProviders?: boolean 
     if (await antigravityProvider.hasAccounts()) await antigravityProvider.refreshAll();
     if (await kiroProvider.hasAccounts()) await kiroProvider.refreshAll();
     if (await grokProvider.hasAccounts()) await grokProvider.refreshAll();
+    if (await openCodeGoProvider.hasAccounts()) await openCodeGoProvider.refreshAll();
   }
   snapshot = await loadSnapshot();
   statusBar.update(snapshot, config);
@@ -140,6 +144,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   antigravityProvider = new AntigravityProvider(context);
   kiroProvider = new KiroProvider(context);
   grokProvider = new GrokProvider(context);
+  openCodeGoProvider = new OpenCodeGoProvider(context);
   config = readConfiguration();
   snapshot = await loadSnapshot();
   statusBar.update(snapshot, config);
@@ -314,6 +319,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand('quota.disconnectGrok', async () => {
       await grokProvider.disconnect();
+      await refresh(false, { refreshProviders: false });
+    }),
+    vscode.commands.registerCommand('quota.connectOpenCodeGo', async () => {
+      try {
+        const account = await openCodeGoProvider.connect();
+        if (account) await refresh(true, { refreshProviders: false });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`OpenCode Go connection failed: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand('quota.refreshOpenCodeGo', async () => {
+      try {
+        if (!checkManualRefreshCooldown()) return;
+        await openCodeGoProvider.refreshAll();
+        await refresh(true, { refreshProviders: false });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`OpenCode Go refresh failed: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand('quota.disconnectOpenCodeGo', async () => {
+      await openCodeGoProvider.disconnect();
       await refresh(false, { refreshProviders: false });
     }),
     vscode.workspace.onDidChangeConfiguration(async (event) => {

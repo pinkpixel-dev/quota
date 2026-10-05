@@ -51,6 +51,7 @@ function accountLabel(account: Record<string, unknown>): string {
     ?? asString(account.githubEmail)
     ?? asString(account.displayName)
     ?? asString(account.name)
+    ?? asString(account.label)
     ?? 'Connected account'
   );
 }
@@ -289,6 +290,30 @@ function tracksFromGrok(accounts: Record<string, unknown>[]): QuotaTrack[] {
   });
 }
 
+function tracksFromOpenCodeGo(accounts: Record<string, unknown>[]): QuotaTrack[] {
+  const windows: Array<[TrackId, string, string]> = [
+    ['opencodeGo.fiveHour', 'fiveHour', '5h usage'],
+    ['opencodeGo.weekly', 'weekly', 'Weekly usage'],
+    ['opencodeGo.monthly', 'monthly', 'Monthly usage'],
+  ];
+
+  return accounts.flatMap((account) => {
+    const usage = isRecord(account.usage) ? account.usage : {};
+    return windows.map(([id, key, label]) => {
+      const window = isRecord(usage[key]) ? usage[key] : {};
+      return makeTrack(
+        id,
+        'opencodeGo',
+        account,
+        label,
+        asNumber(window.usedPercent),
+        asNumber(window.remainingPercent),
+        normalizeTimestamp(window.resetAt),
+      );
+    });
+  });
+}
+
 export function payloadToTracks(payload: SafeSummaryPayload): QuotaTrack[] {
   const providers = isRecord(payload.providers) ? payload.providers : {};
 
@@ -299,6 +324,7 @@ export function payloadToTracks(payload: SafeSummaryPayload): QuotaTrack[] {
     ...tracksFromAntigravity(asArray(providers.antigravity)),
     ...tracksFromKiro(asArray(providers.kiro)),
     ...tracksFromGrok(asArray(providers.grok)),
+    ...tracksFromOpenCodeGo(asArray(providers.opencodeGo)),
   ].filter((track) => track.percentUsed != null || track.percentRemaining != null || track.valueLabel || track.error);
 }
 

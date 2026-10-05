@@ -19,6 +19,7 @@ Currently Quota supports the following providers:
 - Kiro
 - Cursor
 - Grok
+- OpenCode Go
 
 Every provider saves its raw auth info in the Rust backend and only secure account & usage information are sent to the React frontend.
 
@@ -65,7 +66,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 
 ## Installation
 
-Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.5.0` is currently prepared locally and has not been published yet.
+Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.6.0` is currently prepared locally and has not been published yet.
 
 Or install from source:
 
@@ -93,6 +94,15 @@ The Quota VSIX is located in `quota-vscode/`. It is a separate TypeScript extens
 Once the .vsix file is downloaded, open your ide (VSCode, Antigravity, Kiro), press F1, and type in "Extensions: Install from VSIX".
 
 If Codex, Claude Code, or Grok authorization expires, Quota keeps the account and its last safe quota data visible. Use the Reauthenticate action in the desktop account card or extension panel to renew access without disconnecting the account first.
+
+## OpenCode Go
+
+OpenCode Go doesn't have a sign-in flow for other apps, so you connect it with your Go API key instead. Grab the key from the [OpenCode console](https://opencode.ai/auth), then:
+
+- **Desktop:** open Integrations, click **Add key** on the OpenCode Go row, and paste it in. The name field is optional. Leave it blank and the account shows up as the last four characters of the key.
+- **VS Code:** run `Quota: Connect OpenCode Go` and paste the key when it asks.
+
+Quota checks the key before saving it, then shows your 5-hour, weekly, and monthly usage as percentages, the same numbers the OpenCode console shows. Usage comes from an endpoint OpenCode doesn't document yet, so if they change it, this provider might need a quick update. `quota-cli` doesn't support OpenCode Go yet.
 
 ## Quota CLI
 

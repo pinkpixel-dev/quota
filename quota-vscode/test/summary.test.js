@@ -32,3 +32,28 @@ test('payloadToTracks emits Codex five-hour and weekly usage windows', () => {
   assert.equal(tracks[1].percentRemaining, 11);
   assert.equal(tracks[1].resetAt, 1772341200000);
 });
+
+test('payloadToTracks reads OpenCode Go windows from the desktop export', () => {
+  const tracks = payloadToTracks({
+    providers: {
+      opencodeGo: [
+        {
+          label: 'Work',
+          usage: {
+            fiveHour: { usedPercent: 12, remainingPercent: 88, resetAt: 1790957937 },
+            weekly: { usedPercent: 78, remainingPercent: 22, resetAt: null },
+            monthly: { usedPercent: null, remainingPercent: null, resetAt: null },
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(tracks.length, 2);
+  assert.equal(tracks[0].id, 'opencodeGo.fiveHour');
+  assert.equal(tracks[0].accountLabel, 'Work');
+  assert.equal(tracks[0].percentUsed, 12);
+  assert.equal(tracks[0].resetAt, 1790957937000);
+  assert.equal(tracks[1].id, 'opencodeGo.weekly');
+  assert.equal(tracks[1].percentRemaining, 22);
+});

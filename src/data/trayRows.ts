@@ -5,6 +5,7 @@ import type { CursorAccountSummary } from './cursor';
 import type { GitHubCopilotAccountSummary } from './githubCopilot';
 import type { GrokAccountSummary } from './grok';
 import type { KiroAccountSummary } from './kiro';
+import type { OpenCodeGoAccountSummary } from './opencodeGo';
 
 export type TrayProviderKey =
   | 'githubCopilot'
@@ -13,7 +14,8 @@ export type TrayProviderKey =
   | 'claude'
   | 'kiro'
   | 'cursor'
-  | 'grok';
+  | 'grok'
+  | 'opencodeGo';
 
 export interface TrayUsageAccounts {
   githubCopilot: GitHubCopilotAccountSummary[];
@@ -23,6 +25,7 @@ export interface TrayUsageAccounts {
   kiro: KiroAccountSummary[];
   cursor: CursorAccountSummary[];
   grok: GrokAccountSummary[];
+  opencodeGo: OpenCodeGoAccountSummary[];
 }
 
 function clampPercent(value: number): number {
@@ -133,6 +136,14 @@ function formatGrokRows(accounts: GrokAccountSummary[]): string[] {
   });
 }
 
+function formatOpenCodeGoRows(accounts: OpenCodeGoAccountSummary[]): string[] {
+  return accounts.map((account) => compactRow('OpenCode Go', account.label, [
+    remaining('5h', account.usage.fiveHour.remainingPercent),
+    remaining('Week', account.usage.weekly.remainingPercent),
+    remaining('Month', account.usage.monthly.remainingPercent),
+  ]));
+}
+
 export function buildTrayUsageRows(
   accounts: TrayUsageAccounts,
   providerOrder: readonly TrayProviderKey[],
@@ -145,6 +156,7 @@ export function buildTrayUsageRows(
     kiro: () => formatKiroRows(accounts.kiro),
     cursor: () => formatCursorRows(accounts.cursor),
     grok: () => formatGrokRows(accounts.grok),
+    opencodeGo: () => formatOpenCodeGoRows(accounts.opencodeGo),
   };
 
   return providerOrder.flatMap((provider) => formatters[provider]());

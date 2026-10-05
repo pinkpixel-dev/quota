@@ -61,4 +61,12 @@ export const integrations: IntegrationSummary[] = [
       'xAI OIDC device-code login with local ~/.grok/auth.json import; usage from the Grok CLI billing endpoint.',
     iconPath: '/brand-icons/grok.svg',
   },
+
+  {
+    name: 'OpenCode Go',
+    description: 'OpenCode Go subscription usage across the 5-hour, weekly, and monthly limits.',
+    status: 'reference',
+    referenceHint: 'Paste a Go API key from the OpenCode console; usage from the undocumented /zen/go/v1/usage endpoint.',
+    iconPath: '/brand-icons/opencode.svg',
+  },
 ];

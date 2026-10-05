@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Github,
   Grid2X2,
+  KeyRound,
   LockKeyhole,
   Palette,
   Pin,
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { OpenCodeGoKeyForm } from './components/OpenCodeGoKeyForm';
 import { ReauthenticationAlert } from './components/ReauthenticationAlert';
 import {
   cancelAntigravityOAuthLogin,
@@ -117,6 +119,14 @@ import {
   type GrokAccountSummary,
   type GrokOAuthStartResponse,
 } from './data/grok';
+import {
+  addOpenCodeGoAccount,
+  deleteOpenCodeGoAccount,
+  listOpenCodeGoAccounts,
+  refreshAllOpenCodeGoAccounts,
+  type OpenCodeGoAccountSummary,
+  type OpenCodeGoWindow,
+} from './data/opencodeGo';
 import { integrations } from './data/integrations';
 import { listenForTrayRefresh, updateTrayMenu } from './data/tray';
 import { buildTrayUsageRows, type TrayProviderKey } from './data/trayRows';
@@ -131,7 +141,8 @@ type AppView =
   | 'claude-accounts'
   | 'kiro-accounts'
   | 'cursor-accounts'
-  | 'grok-accounts';
+  | 'grok-accounts'
+  | 'opencode-go-accounts';
 
 export type ViewMode = 'default' | 'compact' | 'list';
 type ThemeMode = 'system' | 'dark' | 'light';
@@ -144,6 +155,7 @@ const CLAUDE_ICON = '/brand-icons/claude.svg';
 const KIRO_ICON = '/brand-icons/kiro.svg';
 const CURSOR_ICON = '/brand-icons/cursor.svg';
 const GROK_ICON = '/brand-icons/grok.svg';
+const OPENCODE_ICON = '/brand-icons/opencode.svg';
 const DASHBOARD_VIEW_MODE_KEY = 'quota.dashboardViewMode';
 const ACCOUNT_PAGES_VIEW_MODE_KEY = 'quota.accountPagesViewMode';
 const THEME_MODE_KEY = 'quota.themeMode';
@@ -162,7 +174,7 @@ const MIN_NOTIFICATION_THRESHOLD = 1;
 const MAX_NOTIFICATION_THRESHOLD = 99;
 const VIEW_MODES: ViewMode[] = ['default', 'compact', 'list'];
 const THEME_MODES: ThemeMode[] = ['system', 'dark', 'light'];
-const DEFAULT_PROVIDER_ORDER: ProviderKey[] = ['githubCopilot', 'codex', 'antigravity', 'claude', 'kiro', 'cursor', 'grok'];
+const DEFAULT_PROVIDER_ORDER: ProviderKey[] = ['githubCopilot', 'codex', 'antigravity', 'claude', 'kiro', 'cursor', 'grok', 'opencodeGo'];
 const PROVIDERS: Array<{ key: ProviderKey; name: string; iconPath: string }> = [
   { key: 'githubCopilot', name: 'GitHub Copilot', iconPath: GITHUB_COPILOT_ICON },
   { key: 'codex', name: 'Codex', iconPath: CODEX_ICON },
@@ -171,6 +183,7 @@ const PROVIDERS: Array<{ key: ProviderKey; name: string; iconPath: string }> = [
   { key: 'kiro', name: 'Kiro', iconPath: KIRO_ICON },
   { key: 'cursor', name: 'Cursor', iconPath: CURSOR_ICON },
   { key: 'grok', name: 'Grok', iconPath: GROK_ICON },
+  { key: 'opencodeGo', name: 'OpenCode Go', iconPath: OPENCODE_ICON },
 ];
 
 function readStoredViewMode(key: string): ViewMode {
@@ -374,6 +387,7 @@ function collectQuotaMetrics(
   kiroAccounts: KiroAccountSummary[],
   cursorAccounts: CursorAccountSummary[],
   grokAccounts: GrokAccountSummary[],
+  openCodeGoAccounts: OpenCodeGoAccountSummary[],
 ): QuotaMetric[] {
   const metrics: QuotaMetric[] = [];
 
@@ -455,6 +469,19 @@ function collectQuotaMetrics(
     }
   }
 
+  for (const a of openCodeGoAccounts) {
+    const windows: Array<[string, string, OpenCodeGoWindow]> = [
+      ['fiveHour', '5 Hour Limit', a.usage.fiveHour],
+      ['weekly', 'Weekly Limit', a.usage.weekly],
+      ['monthly', 'Monthly Limit', a.usage.monthly],
+    ];
+    for (const [key, metricLabel, window] of windows) {
+      if (window.remainingPercent != null) {
+        metrics.push({ key: `opencodeGo:${a.id}:${key}`, accountLabel: `OpenCode Go (${a.label})`, metricLabel, remaining: window.remainingPercent });
+      }
+    }
+  }
+
   return metrics;
 }
 
@@ -495,6 +522,7 @@ export function App() {
   const [kiroAccounts, setKiroAccounts] = useState<KiroAccountSummary[]>([]);
   const [cursorAccounts, setCursorAccounts] = useState<CursorAccountSummary[]>([]);
   const [grokAccounts, setGrokAccounts] = useState<GrokAccountSummary[]>([]);
+  const [openCodeGoAccounts, setOpenCodeGoAccounts] = useState<OpenCodeGoAccountSummary[]>([]);
   const [copilotLogin, setCopilotLogin] = useState<GitHubCopilotOAuthStartResponse | null>(null);
   const [codexLogin, setCodexLogin] = useState<CodexOAuthStartResponse | null>(null);
   const [antigravityLogin, setAntigravityLogin] = useState<AntigravityOAuthStartResponse | null>(null);
@@ -511,6 +539,7 @@ export function App() {
   const [kiroBusy, setKiroBusy] = useState(false);
   const [cursorBusy, setCursorBusy] = useState(false);
   const [grokBusy, setGrokBusy] = useState(false);
+  const [openCodeGoBusy, setOpenCodeGoBusy] = useState(false);
   const [copilotError, setCopilotError] = useState<string | null>(null);
   const [codexError, setCodexError] = useState<string | null>(null);
   const [antigravityError, setAntigravityError] = useState<string | null>(null);
@@ -518,6 +547,8 @@ export function App() {
   const [kiroError, setKiroError] = useState<string | null>(null);
   const [cursorError, setCursorError] = useState<string | null>(null);
   const [grokError, setGrokError] = useState<string | null>(null);
+  const [openCodeGoError, setOpenCodeGoError] = useState<string | null>(null);
+  const [openCodeGoFormOpen, setOpenCodeGoFormOpen] = useState(false);
   const [trayRefreshing, setTrayRefreshing] = useState(false);
   const autoRefreshRunningRef = useRef(false);
   const autoRefreshTickRef = useRef<() => Promise<void>>(async () => {});
@@ -527,7 +558,7 @@ export function App() {
   const notificationCheckActiveRef = useRef(false);
 
   const connectedCount =
-    copilotAccounts.length + codexAccounts.length + antigravityAccounts.length + claudeAccounts.length + kiroAccounts.length + cursorAccounts.length + grokAccounts.length;
+    copilotAccounts.length + codexAccounts.length + antigravityAccounts.length + claudeAccounts.length + kiroAccounts.length + cursorAccounts.length + grokAccounts.length + openCodeGoAccounts.length;
   const trayUsageRows = useMemo(() => buildTrayUsageRows({
     githubCopilot: copilotAccounts,
     codex: codexAccounts,
@@ -536,6 +567,7 @@ export function App() {
     kiro: kiroAccounts,
     cursor: cursorAccounts,
     grok: grokAccounts,
+    opencodeGo: openCodeGoAccounts,
   }, providerOrder), [
     copilotAccounts,
     codexAccounts,
@@ -544,6 +576,7 @@ export function App() {
     kiroAccounts,
     cursorAccounts,
     grokAccounts,
+    openCodeGoAccounts,
     providerOrder,
   ]);
 
@@ -555,6 +588,7 @@ export function App() {
     void loadKiroAccounts();
     void loadCursorAccounts();
     void loadGrokAccounts();
+    void loadOpenCodeGoAccounts();
   }, []);
 
   useEffect(() => {
@@ -676,6 +710,65 @@ export function App() {
       setGrokError(null);
     } catch (error) {
       setGrokError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function loadOpenCodeGoAccounts() {
+    try {
+      setOpenCodeGoAccounts(await listOpenCodeGoAccounts());
+      setOpenCodeGoError(null);
+    } catch (error) {
+      setOpenCodeGoError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function addOpenCodeGo(apiKey: string, name: string): Promise<boolean> {
+    setOpenCodeGoBusy(true);
+    try {
+      const account = await addOpenCodeGoAccount(apiKey, name);
+      setOpenCodeGoAccounts((accounts) => [account, ...accounts.filter((item) => item.id !== account.id)]);
+      setOpenCodeGoError(null);
+      setOpenCodeGoFormOpen(false);
+      return true;
+    } catch (error) {
+      setOpenCodeGoError(error instanceof Error ? error.message : String(error));
+      return false;
+    } finally {
+      setOpenCodeGoBusy(false);
+    }
+  }
+
+  async function refreshAllOpenCodeGo() {
+    setOpenCodeGoBusy(true);
+    try {
+      setOpenCodeGoAccounts(await refreshAllOpenCodeGoAccounts());
+      setOpenCodeGoError(null);
+    } catch (error) {
+      setOpenCodeGoError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setOpenCodeGoBusy(false);
+    }
+  }
+
+  async function openOpenCodeGoConsole(url: string) {
+    try {
+      await openExternalUrl(url);
+      setOpenCodeGoError(null);
+    } catch (error) {
+      setOpenCodeGoError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function removeOpenCodeGoAccount(accountId: string) {
+    setOpenCodeGoBusy(true);
+    try {
+      await deleteOpenCodeGoAccount(accountId);
+      setOpenCodeGoAccounts((accounts) => accounts.filter((item) => item.id !== accountId));
+      setOpenCodeGoError(null);
+    } catch (error) {
+      setOpenCodeGoError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setOpenCodeGoBusy(false);
     }
   }
 
@@ -1459,6 +1552,7 @@ export function App() {
       if (kiroAccounts.length > 0 && !kiroBusy) refreshTasks.push(refreshAllKiro);
       if (cursorAccounts.length > 0 && !cursorBusy) refreshTasks.push(refreshAllCursor);
       if (grokAccounts.length > 0 && !grokBusy) refreshTasks.push(refreshAllGrok);
+      if (openCodeGoAccounts.length > 0 && !openCodeGoBusy) refreshTasks.push(refreshAllOpenCodeGo);
 
       for (const refreshTask of refreshTasks) {
         await refreshTask();
@@ -1518,7 +1612,7 @@ export function App() {
     if (!notificationsEnabled || !notificationCheckActiveRef.current) return;
 
     const metrics = collectQuotaMetrics(
-      copilotAccounts, codexAccounts, antigravityAccounts, claudeAccounts, kiroAccounts, cursorAccounts, grokAccounts,
+      copilotAccounts, codexAccounts, antigravityAccounts, claudeAccounts, kiroAccounts, cursorAccounts, grokAccounts, openCodeGoAccounts,
     );
 
     for (const metric of metrics) {
@@ -1536,7 +1630,7 @@ export function App() {
         notifiedMetricsRef.current.delete(metric.key);
       }
     }
-  }, [copilotAccounts, codexAccounts, antigravityAccounts, claudeAccounts, kiroAccounts, cursorAccounts, grokAccounts, notificationsEnabled, notificationThreshold]);
+  }, [copilotAccounts, codexAccounts, antigravityAccounts, claudeAccounts, kiroAccounts, cursorAccounts, grokAccounts, openCodeGoAccounts, notificationsEnabled, notificationThreshold]);
 
   async function handleNotificationsEnabledChange(enabled: boolean) {
     setNotificationsEnabled(enabled);
@@ -1574,6 +1668,7 @@ export function App() {
         kiro: kiroAccounts.length,
         cursor: cursorAccounts.length,
         grok: grokAccounts.length,
+        opencodeGo: openCodeGoAccounts.length,
       },
       providers: {
         githubCopilot: copilotAccounts,
@@ -1583,6 +1678,7 @@ export function App() {
         kiro: kiroAccounts,
         cursor: cursorAccounts,
         grok: grokAccounts,
+        opencodeGo: openCodeGoAccounts,
       },
     };
     const json = JSON.stringify(payload, null, 2);
@@ -1652,6 +1748,7 @@ export function App() {
             kiroAccounts={kiroAccounts}
             cursorAccounts={cursorAccounts}
             grokAccounts={grokAccounts}
+            openCodeGoAccounts={openCodeGoAccounts}
             copilotBusy={copilotBusy}
             codexBusy={codexBusy}
             antigravityBusy={antigravityBusy}
@@ -1659,6 +1756,7 @@ export function App() {
             kiroBusy={kiroBusy}
             cursorBusy={cursorBusy}
             grokBusy={grokBusy}
+            openCodeGoBusy={openCodeGoBusy}
             copilotError={copilotError}
             codexError={codexError}
             antigravityError={antigravityError}
@@ -1666,6 +1764,7 @@ export function App() {
             kiroError={kiroError}
             cursorError={cursorError}
             grokError={grokError}
+            openCodeGoError={openCodeGoError}
             onRefreshAllCopilot={refreshAllCopilot}
             onRefreshCopilotAccount={refreshCopilotAccount}
             onRemoveCopilotAccount={removeCopilotAccount}
@@ -1690,6 +1789,8 @@ export function App() {
             onRefreshGrokAccount={refreshGrok}
             onRemoveGrokAccount={removeGrokAccount}
             onReauthenticateGrok={startGrokAuth}
+            onRefreshAllOpenCodeGo={refreshAllOpenCodeGo}
+            onRemoveOpenCodeGoAccount={removeOpenCodeGoAccount}
             onOpenIntegrations={() => setView('integrations')}
             onOpenCopilotAccounts={() => setView('github-copilot-accounts')}
             onOpenCodexAccounts={() => setView('codex-accounts')}
@@ -1698,6 +1799,7 @@ export function App() {
             onOpenKiroAccounts={() => setView('kiro-accounts')}
             onOpenCursorAccounts={() => setView('cursor-accounts')}
             onOpenGrokAccounts={() => setView('grok-accounts')}
+            onOpenOpenCodeGoAccounts={() => setView('opencode-go-accounts')}
           />
         ) : view === 'settings' ? (
           <SettingsView
@@ -1823,6 +1925,19 @@ export function App() {
             onReauthenticate={startGrokAuth}
             onTogglePinnedAccount={togglePinnedAccount}
           />
+        ) : view === 'opencode-go-accounts' ? (
+          <OpenCodeGoAccountsView
+            viewMode={accountPagesViewMode}
+            accounts={openCodeGoAccounts}
+            busy={openCodeGoBusy}
+            error={openCodeGoError}
+            pinnedAccounts={pinnedAccounts}
+            onBack={() => setView('dashboard')}
+            onOpenIntegrations={() => setView('integrations')}
+            onRefreshAll={refreshAllOpenCodeGo}
+            onRemoveAccount={removeOpenCodeGoAccount}
+            onTogglePinnedAccount={togglePinnedAccount}
+          />
         ) : (
           <IntegrationsView
             connectedCount={connectedCount}
@@ -1832,6 +1947,13 @@ export function App() {
             kiroConnectedCount={kiroAccounts.length}
             cursorConnectedCount={cursorAccounts.length}
             grokConnectedCount={grokAccounts.length}
+            openCodeGoConnectedCount={openCodeGoAccounts.length}
+            openCodeGoError={openCodeGoError}
+            openCodeGoFormOpen={openCodeGoFormOpen}
+            onStartOpenCodeGo={() => setOpenCodeGoFormOpen(true)}
+            onAddOpenCodeGo={addOpenCodeGo}
+            onCancelOpenCodeGo={() => setOpenCodeGoFormOpen(false)}
+            onOpenOpenCodeGoConsole={openOpenCodeGoConsole}
             copilotBusy={copilotBusy}
             codexBusy={codexBusy}
             antigravityBusy={antigravityBusy}
@@ -1839,6 +1961,7 @@ export function App() {
             kiroBusy={kiroBusy}
             cursorBusy={cursorBusy}
             grokBusy={grokBusy}
+            openCodeGoBusy={openCodeGoBusy}
             copilotError={copilotError}
             codexError={codexError}
             antigravityError={antigravityError}
@@ -2274,6 +2397,7 @@ interface DashboardViewProps {
   kiroAccounts: KiroAccountSummary[];
   cursorAccounts: CursorAccountSummary[];
   grokAccounts: GrokAccountSummary[];
+  openCodeGoAccounts: OpenCodeGoAccountSummary[];
   copilotBusy: boolean;
   codexBusy: boolean;
   antigravityBusy: boolean;
@@ -2281,6 +2405,7 @@ interface DashboardViewProps {
   kiroBusy: boolean;
   cursorBusy: boolean;
   grokBusy: boolean;
+  openCodeGoBusy: boolean;
   copilotError: string | null;
   codexError: string | null;
   antigravityError: string | null;
@@ -2288,6 +2413,7 @@ interface DashboardViewProps {
   kiroError: string | null;
   cursorError: string | null;
   grokError: string | null;
+  openCodeGoError: string | null;
   onRefreshAllCopilot: () => void;
   onRefreshCopilotAccount: (accountId: string) => void;
   onRemoveCopilotAccount: (accountId: string) => void;
@@ -2312,6 +2438,8 @@ interface DashboardViewProps {
   onRefreshGrokAccount: (accountId: string) => void;
   onRemoveGrokAccount: (accountId: string) => void;
   onReauthenticateGrok: () => void;
+  onRefreshAllOpenCodeGo: () => void;
+  onRemoveOpenCodeGoAccount: (accountId: string) => void;
   onOpenIntegrations: () => void;
   onOpenCopilotAccounts: () => void;
   onOpenCodexAccounts: () => void;
@@ -2320,6 +2448,7 @@ interface DashboardViewProps {
   onOpenKiroAccounts: () => void;
   onOpenCursorAccounts: () => void;
   onOpenGrokAccounts: () => void;
+  onOpenOpenCodeGoAccounts: () => void;
 }
 
 function DashboardView({
@@ -2335,6 +2464,7 @@ function DashboardView({
   kiroAccounts,
   cursorAccounts,
   grokAccounts,
+  openCodeGoAccounts,
   copilotBusy,
   codexBusy,
   antigravityBusy,
@@ -2342,6 +2472,7 @@ function DashboardView({
   kiroBusy,
   cursorBusy,
   grokBusy,
+  openCodeGoBusy,
   copilotError,
   codexError,
   antigravityError,
@@ -2349,6 +2480,7 @@ function DashboardView({
   kiroError,
   cursorError,
   grokError,
+  openCodeGoError,
   onRefreshAllCopilot,
   onRefreshCopilotAccount,
   onRemoveCopilotAccount,
@@ -2373,6 +2505,8 @@ function DashboardView({
   onRefreshGrokAccount,
   onRemoveGrokAccount,
   onReauthenticateGrok,
+  onRefreshAllOpenCodeGo,
+  onRemoveOpenCodeGoAccount,
   onOpenIntegrations,
   onOpenCopilotAccounts,
   onOpenCodexAccounts,
@@ -2381,6 +2515,7 @@ function DashboardView({
   onOpenKiroAccounts,
   onOpenCursorAccounts,
   onOpenGrokAccounts,
+  onOpenOpenCodeGoAccounts,
 }: DashboardViewProps) {
   const visibleCopilotAccounts = getVisibleAccounts(copilotAccounts, pinnedAccounts);
   const visibleCodexAccounts = getVisibleAccounts(codexAccounts, pinnedAccounts);
@@ -2389,6 +2524,7 @@ function DashboardView({
   const visibleKiroAccounts = getVisibleAccounts(kiroAccounts, pinnedAccounts);
   const visibleCursorAccounts = getVisibleAccounts(cursorAccounts, pinnedAccounts);
   const visibleGrokAccounts = getVisibleAccounts(grokAccounts, pinnedAccounts);
+  const visibleOpenCodeGoAccounts = getVisibleAccounts(openCodeGoAccounts, pinnedAccounts);
   const hasAccounts =
     copilotAccounts.length > 0 ||
     codexAccounts.length > 0 ||
@@ -2396,7 +2532,8 @@ function DashboardView({
     claudeAccounts.length > 0 ||
     kiroAccounts.length > 0 ||
     cursorAccounts.length > 0 ||
-    grokAccounts.length > 0;
+    grokAccounts.length > 0 ||
+    openCodeGoAccounts.length > 0;
 
   return (
     <div className={`page-stack dashboard-view dashboard-view--${viewMode}`}>
@@ -2415,6 +2552,7 @@ function DashboardView({
                 onRefreshAllKiro();
                 onRefreshAllCursor();
                 onRefreshAllGrok();
+                onRefreshAllOpenCodeGo();
               }}
               disabled={
                 (copilotBusy || copilotAccounts.length === 0) &&
@@ -2423,7 +2561,8 @@ function DashboardView({
                 (claudeBusy || claudeAccounts.length === 0) &&
                 (kiroBusy || kiroAccounts.length === 0) &&
                 (cursorBusy || cursorAccounts.length === 0) &&
-                (grokBusy || grokAccounts.length === 0)
+                (grokBusy || grokAccounts.length === 0) &&
+                (openCodeGoBusy || openCodeGoAccounts.length === 0)
               }
             >
               <RefreshCcw size={15} />
@@ -2444,6 +2583,7 @@ function DashboardView({
       {kiroError ? <p className="account-panel__error">{kiroError}</p> : null}
       {cursorError ? <p className="account-panel__error">{cursorError}</p> : null}
       {grokError ? <p className="account-panel__error">{grokError}</p> : null}
+      {openCodeGoError ? <p className="account-panel__error">{openCodeGoError}</p> : null}
 
       <ProviderSummaryGrid
         copilotCount={copilotAccounts.length}
@@ -2453,6 +2593,7 @@ function DashboardView({
         kiroCount={kiroAccounts.length}
         cursorCount={cursorAccounts.length}
         grokCount={grokAccounts.length}
+        openCodeGoCount={openCodeGoAccounts.length}
         providerOrder={providerOrder}
         onOpenCopilotAccounts={onOpenCopilotAccounts}
         onOpenCodexAccounts={onOpenCodexAccounts}
@@ -2461,6 +2602,7 @@ function DashboardView({
         onOpenKiroAccounts={onOpenKiroAccounts}
         onOpenCursorAccounts={onOpenCursorAccounts}
         onOpenGrokAccounts={onOpenGrokAccounts}
+        onOpenOpenCodeGoAccounts={onOpenOpenCodeGoAccounts}
       />
 
       {!hasAccounts ? (
@@ -2772,6 +2914,48 @@ function DashboardView({
                     onRefresh={() => onRefreshGrokAccount(account.id)}
                     onRemove={() => onRemoveGrokAccount(account.id)}
                     onReauthenticate={onReauthenticateGrok}
+                    onTogglePin={() => onTogglePinnedAccount(account.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {openCodeGoAccounts.length > 0 && !hiddenProviders.has('opencodeGo') ? (
+            <section
+              className="provider-section"
+              aria-labelledby="opencode-go-section-title"
+              style={{ order: getProviderOrderIndex(providerOrder, 'opencodeGo') }}
+            >
+              <div className="provider-section__header">
+                <div>
+                  <span className="provider-section__eyebrow">Connected provider</span>
+                  <h2 id="opencode-go-section-title">
+                    <BrandIcon src={OPENCODE_ICON} alt="" size="small" />
+                    OpenCode Go
+                  </h2>
+                </div>
+                <div className="button-row">
+                  <button type="button" onClick={onRefreshAllOpenCodeGo} disabled={openCodeGoBusy || openCodeGoAccounts.length === 0}>
+                    <RefreshCcw size={15} />
+                    Refresh
+                  </button>
+                  <button type="button" onClick={onOpenOpenCodeGoAccounts}>
+                    <Users size={15} />
+                    View all accounts
+                  </button>
+                </div>
+              </div>
+
+              <div className="dashboard-grid">
+                {visibleOpenCodeGoAccounts.map((account) => (
+                  <OpenCodeGoUsageCard
+                    key={account.id}
+                    account={account}
+                    busy={openCodeGoBusy}
+                    pinned={pinnedAccounts.has(account.id)}
+                    dashboardMode={true}
+                    onRemove={() => onRemoveOpenCodeGoAccount(account.id)}
                     onTogglePin={() => onTogglePinnedAccount(account.id)}
                   />
                 ))}
@@ -3345,6 +3529,95 @@ function GrokAccountsView({
   );
 }
 
+interface OpenCodeGoAccountsViewProps {
+  viewMode: ViewMode;
+  accounts: OpenCodeGoAccountSummary[];
+  busy: boolean;
+  error: string | null;
+  pinnedAccounts: Set<string>;
+  onBack: () => void;
+  onOpenIntegrations: () => void;
+  onRefreshAll: () => void;
+  onRemoveAccount: (accountId: string) => void;
+  onTogglePinnedAccount: (accountId: string) => void;
+}
+
+function OpenCodeGoAccountsView({
+  viewMode,
+  accounts,
+  busy,
+  error,
+  pinnedAccounts,
+  onBack,
+  onOpenIntegrations,
+  onRefreshAll,
+  onRemoveAccount,
+  onTogglePinnedAccount,
+}: OpenCodeGoAccountsViewProps) {
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title="OpenCode Go Accounts"
+        description="Connected OpenCode Go keys with safe usage summaries."
+        action={
+          <div className="button-row">
+            <button type="button" onClick={onBack}>
+              <ArrowLeft size={15} />
+              Dashboard
+            </button>
+            <button type="button" onClick={onRefreshAll} disabled={busy || accounts.length === 0}>
+              <RefreshCcw size={15} />
+              Refresh all
+            </button>
+            <button type="button" className="button-primary" onClick={onOpenIntegrations}>
+              <Plus size={15} />
+              Add account
+            </button>
+          </div>
+        }
+      />
+
+      {error ? <p className="account-panel__error">{error}</p> : null}
+
+      <section className="account-view-toolbar" aria-label="OpenCode Go account summary">
+        <div>
+          <span>Total accounts</span>
+          <strong>{accounts.length}</strong>
+        </div>
+        <div>
+          <span>Provider</span>
+          <strong>OpenCode Go</strong>
+        </div>
+      </section>
+
+      {accounts.length === 0 ? (
+        <div className="empty-state empty-state--large">
+          <BrandIcon src={OPENCODE_ICON} alt="" size="large" />
+          <strong>No OpenCode Go accounts connected.</strong>
+          <span>Add an OpenCode Go API key and this page will show its usage.</span>
+          <button type="button" className="button-primary" onClick={onOpenIntegrations}>
+            <Plus size={15} />
+            Open integrations
+          </button>
+        </div>
+      ) : (
+        <section className={`accounts-grid accounts-grid--${viewMode}`} aria-label="All OpenCode Go accounts">
+          {accounts.map((account) => (
+            <OpenCodeGoUsageCard
+              key={account.id}
+              account={account}
+              busy={busy}
+              pinned={pinnedAccounts.has(account.id)}
+              onRemove={() => onRemoveAccount(account.id)}
+              onTogglePin={() => onTogglePinnedAccount(account.id)}
+            />
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
 interface ProviderSummaryGridProps {
   copilotCount: number;
   codexCount: number;
@@ -3353,6 +3626,7 @@ interface ProviderSummaryGridProps {
   kiroCount: number;
   cursorCount: number;
   grokCount: number;
+  openCodeGoCount: number;
   providerOrder: ProviderKey[];
   onOpenCopilotAccounts: () => void;
   onOpenCodexAccounts: () => void;
@@ -3361,6 +3635,7 @@ interface ProviderSummaryGridProps {
   onOpenKiroAccounts: () => void;
   onOpenCursorAccounts: () => void;
   onOpenGrokAccounts: () => void;
+  onOpenOpenCodeGoAccounts: () => void;
 }
 
 function ProviderSummaryGrid({
@@ -3371,6 +3646,7 @@ function ProviderSummaryGrid({
   kiroCount,
   cursorCount,
   grokCount,
+  openCodeGoCount,
   providerOrder,
   onOpenCopilotAccounts,
   onOpenCodexAccounts,
@@ -3379,8 +3655,9 @@ function ProviderSummaryGrid({
   onOpenKiroAccounts,
   onOpenCursorAccounts,
   onOpenGrokAccounts,
+  onOpenOpenCodeGoAccounts,
 }: ProviderSummaryGridProps) {
-  const totalCount = copilotCount + codexCount + antigravityCount + claudeCount + kiroCount + cursorCount + grokCount;
+  const totalCount = copilotCount + codexCount + antigravityCount + claudeCount + kiroCount + cursorCount + grokCount + openCodeGoCount;
   const providerSummaries = PROVIDERS.map((provider) => {
     const connected =
       provider.key === 'githubCopilot'
@@ -3395,7 +3672,9 @@ function ProviderSummaryGrid({
                 ? kiroCount
                 : provider.key === 'cursor'
                   ? cursorCount
-                  : grokCount;
+                  : provider.key === 'grok'
+                    ? grokCount
+                    : openCodeGoCount;
     const openAccounts =
       provider.key === 'githubCopilot'
         ? onOpenCopilotAccounts
@@ -3409,7 +3688,9 @@ function ProviderSummaryGrid({
                 ? onOpenKiroAccounts
                 : provider.key === 'cursor'
                   ? onOpenCursorAccounts
-                  : onOpenGrokAccounts;
+                  : provider.key === 'grok'
+                    ? onOpenGrokAccounts
+                    : onOpenOpenCodeGoAccounts;
 
     return { ...provider, connected, openAccounts };
   }).sort((a, b) => getProviderOrderIndex(providerOrder, a.key) - getProviderOrderIndex(providerOrder, b.key));
@@ -3462,6 +3743,7 @@ interface IntegrationsViewProps {
   kiroBusy: boolean;
   cursorBusy: boolean;
   grokBusy: boolean;
+  openCodeGoBusy: boolean;
   copilotError: string | null;
   codexError: string | null;
   antigravityError: string | null;
@@ -3513,6 +3795,13 @@ interface IntegrationsViewProps {
   onCancelGrokAuth: () => void;
   onClaudeCallbackInputChange: (value: string) => void;
   onClaudeEmailHintChange: (value: string) => void;
+  openCodeGoConnectedCount: number;
+  openCodeGoError: string | null;
+  openCodeGoFormOpen: boolean;
+  onStartOpenCodeGo: () => void;
+  onAddOpenCodeGo: (apiKey: string, name: string) => Promise<boolean>;
+  onCancelOpenCodeGo: () => void;
+  onOpenOpenCodeGoConsole: (url: string) => void;
 }
 
 function IntegrationsView({
@@ -3530,6 +3819,7 @@ function IntegrationsView({
   kiroBusy,
   cursorBusy,
   grokBusy,
+  openCodeGoBusy,
   copilotError,
   codexError,
   antigravityError,
@@ -3581,6 +3871,13 @@ function IntegrationsView({
   onCancelGrokAuth,
   onClaudeCallbackInputChange,
   onClaudeEmailHintChange,
+  openCodeGoConnectedCount,
+  openCodeGoError,
+  openCodeGoFormOpen,
+  onStartOpenCodeGo,
+  onAddOpenCodeGo,
+  onCancelOpenCodeGo,
+  onOpenOpenCodeGoConsole,
 }: IntegrationsViewProps) {
   return (
     <div className="page-stack">
@@ -3596,6 +3893,7 @@ function IntegrationsView({
       {kiroError ? <p className="account-panel__error">{kiroError}</p> : null}
       {cursorError ? <p className="account-panel__error">{cursorError}</p> : null}
       {grokError ? <p className="account-panel__error">{grokError}</p> : null}
+      {openCodeGoError ? <p className="account-panel__error">{openCodeGoError}</p> : null}
 
       {copilotLogin ? (
         <div className="auth-panel">
@@ -3776,6 +4074,15 @@ function IntegrationsView({
         </div>
       ) : null}
 
+      {openCodeGoFormOpen ? (
+        <OpenCodeGoKeyForm
+          busy={openCodeGoBusy}
+          onOpenConsole={onOpenOpenCodeGoConsole}
+          onSubmit={onAddOpenCodeGo}
+          onCancel={onCancelOpenCodeGo}
+        />
+      ) : null}
+
       <section className="integration-list" aria-label="Available integrations">
         {integrations.map((integration) => {
           const isCopilot = integration.name === 'GitHub Copilot';
@@ -3785,7 +4092,8 @@ function IntegrationsView({
           const isKiro = integration.name === 'Kiro';
           const isCursor = integration.name === 'Cursor';
           const isGrok = integration.name === 'Grok';
-          const copilotCount = connectedCount - codexConnectedCount - antigravityConnectedCount - claudeConnectedCount - kiroConnectedCount - cursorConnectedCount - grokConnectedCount;
+          const isOpenCodeGo = integration.name === 'OpenCode Go';
+          const copilotCount = connectedCount - codexConnectedCount - antigravityConnectedCount - claudeConnectedCount - kiroConnectedCount - cursorConnectedCount - grokConnectedCount - openCodeGoConnectedCount;
           return (
             <article className="integration-row" key={integration.name}>
               <div className="integration-row__icon">
@@ -3809,7 +4117,9 @@ function IntegrationsView({
                                 ? `${cursorConnectedCount} connected`
                                 : isGrok
                                   ? `${grokConnectedCount} connected`
-                                  : integration.status}
+                                  : isOpenCodeGo
+                                    ? `${openCodeGoConnectedCount} connected`
+                                    : integration.status}
                   </span>
                 </div>
                 <p>{integration.description}</p>
@@ -3879,6 +4189,11 @@ function IntegrationsView({
                     Import local
                   </button>
                 </div>
+              ) : isOpenCodeGo ? (
+                <button type="button" className="button-primary" onClick={onStartOpenCodeGo} disabled={openCodeGoBusy || openCodeGoFormOpen}>
+                  <KeyRound size={15} />
+                  Add key
+                </button>
               ) : (
                 <button type="button" disabled>
                   Planned
@@ -4290,6 +4605,61 @@ function AntigravityMetricRow({ label, window }: AntigravityMetricRowProps) {
       </div>
       <div className="usage-metric__meta">{formatResetLine(window.resetAt)}</div>
     </div>
+  );
+}
+
+interface OpenCodeGoUsageCardProps {
+  account: OpenCodeGoAccountSummary;
+  busy: boolean;
+  pinned: boolean;
+  dashboardMode?: boolean;
+  onRemove: () => void;
+  onTogglePin: () => void;
+}
+
+function roundedOpenCodeGoWindow(window: OpenCodeGoWindow) {
+  return {
+    remainingPercent: window.remainingPercent == null ? null : Math.round(window.remainingPercent),
+    resetAt: window.resetAt,
+  };
+}
+
+function OpenCodeGoUsageCard({ account, busy, pinned, dashboardMode = false, onRemove, onTogglePin }: OpenCodeGoUsageCardProps) {
+  return (
+    <article className="usage-card">
+      <div className="usage-card__header">
+        <div>
+          <span className="usage-card__provider">
+            <BrandIcon src={OPENCODE_ICON} alt="" size="small" />
+            OpenCode Go
+          </span>
+          <h2>{account.label}</h2>
+        </div>
+        <div className="button-row usage-card__actions">
+          {(!dashboardMode || pinned) ? (
+            <button
+              type="button"
+              className={pinned ? 'usage-card__pin usage-card__pin--pinned' : 'usage-card__pin'}
+              onClick={onTogglePin}
+              aria-label={pinned ? 'Unpin account from dashboard' : 'Pin account to dashboard'}
+            >
+              {pinned ? <PinOff size={14} /> : <Pin size={14} />}
+            </button>
+          ) : null}
+          <button type="button" onClick={onRemove} disabled={busy} aria-label="Remove OpenCode Go account">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div className="usage-card__rows">
+        <AntigravityMetricRow label="5 Hour Limit" window={roundedOpenCodeGoWindow(account.usage.fiveHour)} />
+        <AntigravityMetricRow label="Weekly Limit" window={roundedOpenCodeGoWindow(account.usage.weekly)} />
+        <AntigravityMetricRow label="Monthly Limit" window={roundedOpenCodeGoWindow(account.usage.monthly)} />
+      </div>
+
+      {account.quotaQueryLastError ? <p className="usage-card__error">{account.quotaQueryLastError}</p> : null}
+    </article>
   );
 }
 

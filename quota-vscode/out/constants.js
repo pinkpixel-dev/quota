@@ -10,6 +10,7 @@ exports.PROVIDER_LABELS = {
     antigravity: 'Antigravity',
     kiro: 'Kiro',
     grok: 'Grok',
+    opencodeGo: 'OpenCode Go',
 };
 exports.PROVIDER_ORDER = [
     'githubCopilot',
@@ -18,6 +19,7 @@ exports.PROVIDER_ORDER = [
     'antigravity',
     'kiro',
     'grok',
+    'opencodeGo',
 ];
 exports.CANONICAL_TRACK_ORDER = [
     'githubCopilot.premium',
@@ -38,6 +40,9 @@ exports.CANONICAL_TRACK_ORDER = [
     'grok.credits',
     'grok.monthlySpend',
     'grok.onDemand',
+    'opencodeGo.fiveHour',
+    'opencodeGo.weekly',
+    'opencodeGo.monthly',
 ];
 exports.TRACK_LABELS = {
     'githubCopilot.premium': 'Premium requests',
@@ -58,6 +63,9 @@ exports.TRACK_LABELS = {
     'grok.credits': 'Credit window',
     'grok.monthlySpend': 'Monthly spend',
     'grok.onDemand': 'On-demand spend',
+    'opencodeGo.fiveHour': '5h usage',
+    'opencodeGo.weekly': 'Weekly usage',
+    'opencodeGo.monthly': 'Monthly usage',
 };
 exports.TRACK_STATUS_BAR_LABEL = {
     'githubCopilot.premium': 'Copilot:Premium',
@@ -78,5 +86,8 @@ exports.TRACK_STATUS_BAR_LABEL = {
     'grok.credits': 'Grok:Credits',
     'grok.monthlySpend': 'Grok:Month',
     'grok.onDemand': 'Grok:OnDemand',
+    'opencodeGo.fiveHour': 'Go:5h',
+    'opencodeGo.weekly': 'Go:Wk',
+    'opencodeGo.monthly': 'Go:Mo',
 };
 //# sourceMappingURL=constants.js.map
