@@ -28,6 +28,12 @@ Adds OpenCode Go to the desktop app and the VS Code extension ([#7](https://gith
 - The `desktopSummary` data source now reads OpenCode Go accounts from the desktop app's safe summary export.
 - If you've customized `quota.providers.enabled`, add `"opencodeGo"` to the list to see it in the panel.
 
+### 🧹 Maintenance
+
+- Updated the desktop app's npm and Rust dependencies within their existing version ranges. Tauri moves from 2.11 to 2.12 on both the JavaScript and Rust sides, along with React 19.3, `rustls` 0.23.45, and `tokio` 1.53.
+- `npm audit` is clean for the desktop app. The four fixed advisories (`postcss`, `nanoid`, `browserslist`, `baseline-browser-mapping`) were all in build tooling and never shipped in the app.
+- Fixed the `undici`, `qs`, and `brace-expansion` advisories in the extension's packaging tools. Three remain (`markdown-it`, `linkify-it`, and `@vscode/vsce` itself) until `@vscode/vsce` 4. The extension has no runtime dependencies, so none of these are in the VSIX.
+
 ### 🏷️ Versioning
 
 - Bumped the desktop app to `1.6.0` and the extension to `1.3.0`.
