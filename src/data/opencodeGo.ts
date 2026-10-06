@@ -4,6 +4,7 @@ export interface OpenCodeGoWindow {
   usedPercent: number | null;
   remainingPercent: number | null;
   resetAt: number | null;
+  startsOnFirstUse: boolean;
 }
 
 export interface OpenCodeGoUsage {

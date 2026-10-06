@@ -4,6 +4,9 @@ exports.parseOpenCodeGoUsage = parseOpenCodeGoUsage;
 exports.openCodeGoErrorMessage = openCodeGoErrorMessage;
 exports.maskOpenCodeGoKey = maskOpenCodeGoKey;
 const WINDOW_KEYS = ['rolling', 'weekly', 'monthly'];
+const ROLLING_WINDOW_MS = 5 * 60 * 60 * 1000;
+// Allows for the request round trip and small clock differences.
+const ROLLING_PLACEHOLDER_TOLERANCE_MS = 120_000;
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -21,11 +24,22 @@ function parseWindow(raw) {
     };
 }
 /**
+ * An unused rolling window comes back as 0% with a reset a full five hours
+ * out, which is only a placeholder. A window that has really started resets
+ * sooner than that.
+ */
+function markUnstartedRolling(window, nowMs) {
+    const unused = window.percentUsed == null || window.percentUsed === 0;
+    const fullWindowAhead = window.resetAt != null
+        && window.resetAt - nowMs >= ROLLING_WINDOW_MS - ROLLING_PLACEHOLDER_TOLERANCE_MS;
+    return unused && fullWindowAhead ? { ...window, resetAt: undefined, startsOnFirstUse: true } : window;
+}
+/**
  * Parse `GET https://opencode.ai/zen/go/v1/usage`. The endpoint is undocumented,
  * so every field is optional, and a body with none of the three windows throws
  * instead of quietly reading as 0% used.
  */
-function parseOpenCodeGoUsage(raw) {
+function parseOpenCodeGoUsage(raw, nowMs = Date.now()) {
     const usage = isRecord(raw) ? raw.usage : undefined;
     if (!isRecord(usage))
         throw new Error('OpenCode Go usage response did not include usage windows.');
@@ -33,7 +47,7 @@ function parseOpenCodeGoUsage(raw) {
     for (const key of WINDOW_KEYS) {
         const window = parseWindow(usage[key]);
         if (window)
-            summary[key] = window;
+            summary[key] = key === 'rolling' ? markUnstartedRolling(window, nowMs) : window;
     }
     if (!summary.rolling && !summary.weekly && !summary.monthly) {
         throw new Error('OpenCode Go usage response did not include usage windows.');

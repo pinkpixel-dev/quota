@@ -56,6 +56,7 @@ function track(account, id, label, window) {
         percentUsed: window?.percentUsed,
         percentRemaining: window?.percentUsed == null ? undefined : 100 - window.percentUsed,
         resetAt: window?.resetAt ?? null,
+        resetLabel: window?.startsOnFirstUse ? 'Starts on first use' : undefined,
         updatedAt: account.usageUpdatedAt,
         error: account.quotaQueryLastError ?? null,
     };

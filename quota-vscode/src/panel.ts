@@ -4,7 +4,7 @@ import * as crypto from 'node:crypto';
 import * as vscode from 'vscode';
 
 import { isReauthenticationRequired } from './authError';
-import { PROVIDER_ORDER } from './constants';
+import { CANONICAL_TRACK_ORDER, PROVIDER_ORDER } from './constants';
 import { displayPercent, formatPercent, formatReset, formatUpdated } from './format';
 import type { ProviderId, QuotaConfiguration, QuotaSnapshot, QuotaTrack } from './types';
 
@@ -54,7 +54,7 @@ function toPanelTrack(track: QuotaTrack, config: QuotaConfiguration): PanelTrack
     percentLabel: trackPercentLabel(track, config),
     percentUsed: track.percentUsed,
     percentRemaining: track.percentRemaining,
-    resetLabel: formatReset(track.resetAt),
+    resetLabel: track.resetLabel ?? formatReset(track.resetAt),
     updatedLabel: formatUpdated(track.updatedAt),
     error: track.error,
   };
@@ -97,7 +97,10 @@ function visibleTracks(snapshot: QuotaSnapshot, config: QuotaConfiguration): Pan
     .filter((track) => enabled.has(track.providerId))
     .sort((a, b) => {
       const providerSort = PROVIDER_ORDER.indexOf(a.providerId) - PROVIDER_ORDER.indexOf(b.providerId);
-      return providerSort === 0 ? a.label.localeCompare(b.label) : providerSort;
+      if (providerSort !== 0) return providerSort;
+      // Keep a provider's windows in a fixed order, shortest first, instead of alphabetical.
+      const trackSort = CANONICAL_TRACK_ORDER.indexOf(a.id) - CANONICAL_TRACK_ORDER.indexOf(b.id);
+      return trackSort === 0 ? a.label.localeCompare(b.label) : trackSort;
     })
     .map((track) => toPanelTrack(track, config));
 }

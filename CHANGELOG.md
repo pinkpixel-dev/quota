@@ -28,6 +28,12 @@ Adds OpenCode Go to the desktop app and the VS Code extension ([#7](https://gith
 - The `desktopSummary` data source now reads OpenCode Go accounts from the desktop app's safe summary export.
 - If you've customized `quota.providers.enabled`, add `"opencodeGo"` to the list to see it in the panel.
 
+### 🐛 Fixes
+
+- The Windows desktop app no longer opens a terminal window next to Quota. Closing that window used to quit the app. Release builds now run as a normal Windows GUI app, and this fix applies to every earlier Windows release too.
+- An OpenCode Go 5-hour window that hasn't started yet now says "Starts on first use", like the OpenCode console, instead of showing a made-up reset time five hours out.
+- The VS Code panel lists each provider's windows in a fixed order, shortest first, instead of alphabetically. OpenCode Go used to show Monthly before Weekly. Claude Code and Grok tracks may also appear in a slightly different order than before.
+
 ### 🧹 Maintenance
 
 - Updated the desktop app's npm and Rust dependencies within their existing version ranges. Tauri moves from 2.11 to 2.12 on both the JavaScript and Rust sides, along with React 19.3, `rustls` 0.23.45, and `tokio` 1.53.

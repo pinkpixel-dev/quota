@@ -4587,9 +4587,10 @@ function AntigravityQuotaGroup({ title, weekly, fiveHour }: AntigravityQuotaGrou
 interface AntigravityMetricRowProps {
   label: string;
   window: AntigravityQuotaWindow;
+  resetLabel?: string;
 }
 
-function AntigravityMetricRow({ label, window }: AntigravityMetricRowProps) {
+function AntigravityMetricRow({ label, window, resetLabel }: AntigravityMetricRowProps) {
   const remaining = window.remainingPercent;
   const remainingPercent = remaining == null ? null : Math.max(0, Math.min(100, remaining));
   const toneClass = remainingPercent != null && remainingPercent <= 20 ? ' usage-metric--remaining-low' : '';
@@ -4603,7 +4604,7 @@ function AntigravityMetricRow({ label, window }: AntigravityMetricRowProps) {
       <div className="usage-metric__bar" aria-hidden="true">
         <span style={{ width: `${remainingPercent ?? 0}%` }} />
       </div>
-      <div className="usage-metric__meta">{formatResetLine(window.resetAt)}</div>
+      <div className="usage-metric__meta">{resetLabel ?? formatResetLine(window.resetAt)}</div>
     </div>
   );
 }
@@ -4653,7 +4654,11 @@ function OpenCodeGoUsageCard({ account, busy, pinned, dashboardMode = false, onR
       </div>
 
       <div className="usage-card__rows">
-        <AntigravityMetricRow label="5 Hour Limit" window={roundedOpenCodeGoWindow(account.usage.fiveHour)} />
+        <AntigravityMetricRow
+          label="5 Hour Limit"
+          window={roundedOpenCodeGoWindow(account.usage.fiveHour)}
+          resetLabel={account.usage.fiveHour.startsOnFirstUse ? 'Starts on first use' : undefined}
+        />
         <AntigravityMetricRow label="Weekly Limit" window={roundedOpenCodeGoWindow(account.usage.weekly)} />
         <AntigravityMetricRow label="Monthly Limit" window={roundedOpenCodeGoWindow(account.usage.monthly)} />
       </div>

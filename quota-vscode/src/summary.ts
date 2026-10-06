@@ -301,7 +301,7 @@ function tracksFromOpenCodeGo(accounts: Record<string, unknown>[]): QuotaTrack[]
     const usage = isRecord(account.usage) ? account.usage : {};
     return windows.map(([id, key, label]) => {
       const window = isRecord(usage[key]) ? usage[key] : {};
-      return makeTrack(
+      const track = makeTrack(
         id,
         'opencodeGo',
         account,
@@ -310,6 +310,7 @@ function tracksFromOpenCodeGo(accounts: Record<string, unknown>[]): QuotaTrack[]
         asNumber(window.remainingPercent),
         normalizeTimestamp(window.resetAt),
       );
+      return window.startsOnFirstUse === true ? { ...track, resetLabel: 'Starts on first use' } : track;
     });
   });
 }

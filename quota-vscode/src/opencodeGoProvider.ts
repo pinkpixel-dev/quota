@@ -47,6 +47,7 @@ function track(account: OpenCodeGoAccount, id: TrackId, label: string, window: O
     percentUsed: window?.percentUsed,
     percentRemaining: window?.percentUsed == null ? undefined : 100 - window.percentUsed,
     resetAt: window?.resetAt ?? null,
+    resetLabel: window?.startsOnFirstUse ? 'Starts on first use' : undefined,
     updatedAt: account.usageUpdatedAt,
     error: account.quotaQueryLastError ?? null,
   };

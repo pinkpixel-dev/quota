@@ -53,3 +53,29 @@ test('openCodeGoErrorMessage explains rejected keys and missing subscriptions', 
 test('maskOpenCodeGoKey shows only the last four characters', () => {
   assert.equal(maskOpenCodeGoKey('  sk-test-abcd1234  '), 'Go key ••••1234');
 });
+
+test('parseOpenCodeGoUsage treats a full unused rolling window as not started', () => {
+  const now = Date.parse('2026-10-02T12:00:00.000Z');
+  const summary = parseOpenCodeGoUsage({
+    usage: { rolling: { status: 'ok', percent: 0, resetsAt: '2026-10-02T17:00:00.000Z' } },
+  }, now);
+
+  assert.equal(summary.rolling.startsOnFirstUse, true);
+  assert.equal(summary.rolling.resetAt, undefined);
+  assert.equal(summary.rolling.percentUsed, 0);
+});
+
+test('parseOpenCodeGoUsage keeps the reset for a rolling window that has started', () => {
+  const now = Date.parse('2026-10-02T12:00:00.000Z');
+  const used = parseOpenCodeGoUsage({
+    usage: { rolling: { percent: 3, resetsAt: '2026-10-02T17:00:00.000Z' } },
+  }, now);
+  assert.equal(used.rolling.startsOnFirstUse, undefined);
+  assert.equal(used.rolling.resetAt, Date.parse('2026-10-02T17:00:00.000Z'));
+
+  const partial = parseOpenCodeGoUsage({
+    usage: { rolling: { percent: 0, resetsAt: '2026-10-02T14:00:00.000Z' } },
+  }, now);
+  assert.equal(partial.rolling.startsOnFirstUse, undefined);
+  assert.equal(partial.rolling.resetAt, Date.parse('2026-10-02T14:00:00.000Z'));
+});

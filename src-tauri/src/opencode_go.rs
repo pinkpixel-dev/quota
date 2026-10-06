@@ -12,6 +12,9 @@ const ACCOUNTS_INDEX_FILE: &str = "opencode_go_accounts.json";
 // same Go API key users paste into OpenCode's `/connect`.
 const OPENCODE_GO_USAGE_URL: &str = "https://opencode.ai/zen/go/v1/usage";
 const REQUEST_TIMEOUT_SECONDS: u64 = 15;
+const ROLLING_WINDOW_SECONDS: i64 = 5 * 60 * 60;
+// Allows for the request round trip and small clock differences.
+const ROLLING_PLACEHOLDER_TOLERANCE_SECONDS: i64 = 120;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct StoredOpenCodeGoAccount {
@@ -44,6 +47,11 @@ pub struct OpenCodeGoWindow {
     pub remaining_percent: Option<f64>,
     /// Unix seconds, matching the other providers' reset fields.
     pub reset_at: Option<i64>,
+    /// The rolling window hasn't been opened yet. The console shows "Starts on
+    /// first use" here, and `reset_at` is cleared because the API only sends a
+    /// placeholder of now plus five hours.
+    #[serde(default)]
+    pub starts_on_first_use: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -193,7 +201,7 @@ async fn fetch_usage(api_key: &str) -> Result<OpenCodeGoUsage, String> {
         .json()
         .await
         .map_err(|_| "OpenCode Go usage response was not valid JSON.".to_string())?;
-    parse_usage(&body)
+    parse_usage(&body, now_timestamp())
 }
 
 /// A user-readable message for a failed usage request. Never includes the body.
@@ -225,20 +233,37 @@ fn parse_window(raw: Option<&Value>) -> Option<OpenCodeGoWindow> {
         used_percent: used,
         remaining_percent: used.map(|value| 100.0 - value),
         reset_at,
+        starts_on_first_use: false,
     })
+}
+
+/// An unused rolling window comes back as 0% with a reset a full five hours
+/// out. A window that has really started resets sooner than that.
+fn mark_unstarted_rolling(window: &mut OpenCodeGoWindow, now: i64) {
+    let unused = window.used_percent.is_none_or(|value| value == 0.0);
+    let full_window_ahead = window.reset_at.is_some_and(|reset| {
+        reset - now >= ROLLING_WINDOW_SECONDS - ROLLING_PLACEHOLDER_TOLERANCE_SECONDS
+    });
+    if unused && full_window_ahead {
+        window.reset_at = None;
+        window.starts_on_first_use = true;
+    }
 }
 
 /// Parse `GET /zen/go/v1/usage`. Every field is optional because the endpoint
 /// is undocumented, but a body with none of the three windows is an error
 /// rather than a silent 0% used.
-fn parse_usage(body: &Value) -> Result<OpenCodeGoUsage, String> {
+fn parse_usage(body: &Value, now: i64) -> Result<OpenCodeGoUsage, String> {
     let missing = || "OpenCode Go usage response did not include usage windows.".to_string();
     let usage = body
         .get("usage")
         .filter(|value| value.is_object())
         .ok_or_else(missing)?;
 
-    let five_hour = parse_window(usage.get("rolling"));
+    let mut five_hour = parse_window(usage.get("rolling"));
+    if let Some(window) = five_hour.as_mut() {
+        mark_unstarted_rolling(window, now);
+    }
     let weekly = parse_window(usage.get("weekly"));
     let monthly = parse_window(usage.get("monthly"));
     if five_hour.is_none() && weekly.is_none() && monthly.is_none() {

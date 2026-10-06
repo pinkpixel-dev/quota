@@ -48,6 +48,8 @@ export interface QuotaTrack {
   percentRemaining?: number;
   valueLabel?: string;
   resetAt?: number | null;
+  /** Replaces the formatted reset time, for windows with nothing to count down. */
+  resetLabel?: string;
   updatedAt?: number | null;
   error?: string | null;
 }

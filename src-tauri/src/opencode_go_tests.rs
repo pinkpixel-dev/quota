@@ -1,6 +1,9 @@
 use super::*;
 use serde_json::json;
 
+// 2026-10-02T12:00:00Z, earlier than every reset in the fixtures below.
+const NOW: i64 = 1_790_942_400;
+
 fn temp_storage_dir(name: &str) -> PathBuf {
     let dir =
         std::env::temp_dir().join(format!("quota-opencode-go-{}-{}", name, std::process::id()));
@@ -31,7 +34,7 @@ fn parses_all_three_windows() {
             "weekly": { "status": "ok", "percent": 78, "resetsAt": "2026-10-05T00:00:00.000Z" },
             "monthly": { "status": "ok", "percent": 94, "resetsAt": "2026-10-11T12:22:02.000Z" }
         }
-    }))
+    }), NOW)
     .unwrap();
 
     assert_eq!(usage.five_hour.used_percent, Some(12.0));
@@ -43,13 +46,16 @@ fn parses_all_three_windows() {
 
 #[test]
 fn clamps_percents_and_tolerates_missing_reset() {
-    let usage = parse_usage(&json!({
-        "usage": {
-            "rolling": { "percent": 0, "resetsAt": null },
-            "weekly": { "percent": 104 },
-            "monthly": { "percent": -3, "resetsAt": "not a date" }
-        }
-    }))
+    let usage = parse_usage(
+        &json!({
+            "usage": {
+                "rolling": { "percent": 0, "resetsAt": null },
+                "weekly": { "percent": 104 },
+                "monthly": { "percent": -3, "resetsAt": "not a date" }
+            }
+        }),
+        NOW,
+    )
     .unwrap();
 
     assert_eq!(usage.five_hour.used_percent, Some(0.0));
@@ -61,9 +67,9 @@ fn clamps_percents_and_tolerates_missing_reset() {
 
 #[test]
 fn rejects_bodies_without_windows() {
-    assert!(parse_usage(&json!({})).is_err());
-    assert!(parse_usage(&json!({ "usage": {} })).is_err());
-    assert!(parse_usage(&json!({ "usage": "nope" })).is_err());
+    assert!(parse_usage(&json!({}), NOW).is_err());
+    assert!(parse_usage(&json!({ "usage": {} }), NOW).is_err());
+    assert!(parse_usage(&json!({ "usage": "nope" }), NOW).is_err());
 }
 
 #[test]
@@ -120,4 +126,39 @@ fn stores_lists_and_deletes_accounts_privately() {
     assert!(!account_path_in(&dir, "first").exists());
 
     let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn treats_a_full_unused_rolling_window_as_not_started() {
+    // Mirrors a real response: 0% used and a reset exactly five hours out.
+    let usage = parse_usage(
+        &json!({ "usage": { "rolling": { "status": "ok", "percent": 0, "resetsAt": "2026-10-02T17:00:00.000Z" } } }),
+        NOW,
+    )
+    .unwrap();
+
+    assert!(usage.five_hour.starts_on_first_use);
+    assert_eq!(usage.five_hour.reset_at, None);
+    assert_eq!(usage.five_hour.used_percent, Some(0.0));
+}
+
+#[test]
+fn keeps_the_reset_for_a_started_rolling_window() {
+    // Used, so the window is open even though the reset is far out.
+    let used = parse_usage(
+        &json!({ "usage": { "rolling": { "percent": 3, "resetsAt": "2026-10-02T17:00:00.000Z" } } }),
+        NOW,
+    )
+    .unwrap();
+    assert!(!used.five_hour.starts_on_first_use);
+    assert!(used.five_hour.reset_at.is_some());
+
+    // 0% but resetting in two hours, so it started three hours ago.
+    let partial = parse_usage(
+        &json!({ "usage": { "rolling": { "percent": 0, "resetsAt": "2026-10-02T14:00:00.000Z" } } }),
+        NOW,
+    )
+    .unwrap();
+    assert!(!partial.five_hour.starts_on_first_use);
+    assert_eq!(partial.five_hour.reset_at, Some(NOW + 2 * 60 * 60));
 }

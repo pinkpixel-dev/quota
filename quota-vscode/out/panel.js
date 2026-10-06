@@ -70,7 +70,7 @@ function toPanelTrack(track, config) {
         percentLabel: trackPercentLabel(track, config),
         percentUsed: track.percentUsed,
         percentRemaining: track.percentRemaining,
-        resetLabel: (0, format_1.formatReset)(track.resetAt),
+        resetLabel: track.resetLabel ?? (0, format_1.formatReset)(track.resetAt),
         updatedLabel: (0, format_1.formatUpdated)(track.updatedAt),
         error: track.error,
     };
@@ -110,7 +110,11 @@ function visibleTracks(snapshot, config) {
         .filter((track) => enabled.has(track.providerId))
         .sort((a, b) => {
         const providerSort = constants_1.PROVIDER_ORDER.indexOf(a.providerId) - constants_1.PROVIDER_ORDER.indexOf(b.providerId);
-        return providerSort === 0 ? a.label.localeCompare(b.label) : providerSort;
+        if (providerSort !== 0)
+            return providerSort;
+        // Keep a provider's windows in a fixed order, shortest first, instead of alphabetical.
+        const trackSort = constants_1.CANONICAL_TRACK_ORDER.indexOf(a.id) - constants_1.CANONICAL_TRACK_ORDER.indexOf(b.id);
+        return trackSort === 0 ? a.label.localeCompare(b.label) : trackSort;
     })
         .map((track) => toPanelTrack(track, config));
 }

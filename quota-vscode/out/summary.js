@@ -198,7 +198,8 @@ function tracksFromOpenCodeGo(accounts) {
         const usage = isRecord(account.usage) ? account.usage : {};
         return windows.map(([id, key, label]) => {
             const window = isRecord(usage[key]) ? usage[key] : {};
-            return makeTrack(id, 'opencodeGo', account, label, asNumber(window.usedPercent), asNumber(window.remainingPercent), normalizeTimestamp(window.resetAt));
+            const track = makeTrack(id, 'opencodeGo', account, label, asNumber(window.usedPercent), asNumber(window.remainingPercent), normalizeTimestamp(window.resetAt));
+            return window.startsOnFirstUse === true ? { ...track, resetLabel: 'Starts on first use' } : track;
         });
     });
 }

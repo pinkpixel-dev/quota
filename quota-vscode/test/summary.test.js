@@ -57,3 +57,22 @@ test('payloadToTracks reads OpenCode Go windows from the desktop export', () => 
   assert.equal(tracks[1].id, 'opencodeGo.weekly');
   assert.equal(tracks[1].percentRemaining, 22);
 });
+
+test('payloadToTracks labels an unstarted OpenCode Go rolling window', () => {
+  const tracks = payloadToTracks({
+    providers: {
+      opencodeGo: [
+        {
+          label: 'Work',
+          usage: {
+            fiveHour: { usedPercent: 0, remainingPercent: 100, resetAt: null, startsOnFirstUse: true },
+            weekly: { usedPercent: 1, remainingPercent: 99, resetAt: 1790957937, startsOnFirstUse: false },
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(tracks[0].resetLabel, 'Starts on first use');
+  assert.equal(tracks[1].resetLabel, undefined);
+});
