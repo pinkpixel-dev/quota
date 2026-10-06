@@ -113,7 +113,7 @@ Quota checks the key before saving it, then shows your 5-hour, weekly, and month
 cargo install quota-cli
 ```
 
-Kiro's credentials live in a SQLite database that's compiled from bundled C source, so the build needs a working C compiler. If you'd rather not build anything, prebuilt binaries for Linux, macOS, and Windows are attached to the `quota-cli-v*` [releases](https://github.com/pinkpixel-dev/quota/releases). Download the archive for your platform, unpack it, and put `quota-cli` somewhere on your `PATH`.
+Kiro's credentials live in a SQLite database that's compiled from bundled C source, so the build needs a working C compiler. If you'd rather not build anything, prebuilt binaries for Linux and Windows are attached to the `quota-cli-v*` [releases](https://github.com/pinkpixel-dev/quota/releases). Download the archive for your platform, unpack it, and put `quota-cli` somewhere on your `PATH`.
 
 Then:
 
