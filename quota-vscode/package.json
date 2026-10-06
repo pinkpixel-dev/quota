@@ -2,7 +2,7 @@
   "name": "quota-ai-usage-tracker",
   "displayName": "Quota: AI Usage Tracker",
   "description": "AI quota tracking for VS Code and compatible IDEs.",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "publisher": "pinkpixel",
   "icon": "icon.png",
   "private": true,
@@ -232,7 +232,7 @@
         },
         "quota.statusBar.display": {
           "type": "string",
-          "default": "percentUsed",
+          "default": "percentRemaining",
           "enum": [
             "percentUsed",
             "percentRemaining"

@@ -76,7 +76,7 @@ function readConfiguration() {
     const summaryPath = section.get('summaryPath', '').trim() || constants_1.DEFAULT_SUMMARY_PATH;
     const enabledProviders = readStringArray(section, 'providers.enabled').filter(isProviderId);
     const statusBarItems = readStringArray(section, 'statusBar.items').filter(isTrackId);
-    const statusBarDisplay = section.get('statusBar.display', 'percentUsed');
+    const statusBarDisplay = section.get('statusBar.display', 'percentRemaining');
     return {
         dataSource,
         summaryPath,

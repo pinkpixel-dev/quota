@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## 1.7.0 and quota-vscode 1.3.2 - October 6, 2026
+## 1.7.0 and quota-vscode 1.4.0 - October 6, 2026
 
 Adds a setting for showing usage as what's left or what's used, and makes every bar follow it ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` is unchanged.
 
@@ -18,10 +18,11 @@ Adds a setting for showing usage as what's left or what's used, and makes every 
 ### 🧩 VS Code Extension
 
 - The panel bars now fill the same way as the `quota.statusBar.display` setting. Before, the percent label switched between used and remaining, but the bar always showed used.
+- `quota.statusBar.display` now defaults to `percentRemaining`, so the extension matches the desktop app. If you never changed it, your status bar and panel switch from `% used` to `% left`. Set it back to `percentUsed` if you prefer the old view.
 
 ### 🏷️ Versioning
 
-- Bumped the desktop app to `1.7.0` and the extension to `1.3.2`.
+- Bumped the desktop app to `1.7.0` and the extension to `1.4.0`.
 
 ## 1.6.1 and quota-vscode 1.3.1 - October 6, 2026
 

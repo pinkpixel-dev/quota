@@ -111,7 +111,7 @@ Open `Quota: Open Settings` or edit your VS Code settings:
   ],
   "quota.statusBar.enabled": true,
   "quota.statusBar.items": ["codex.primary"],
-  "quota.statusBar.display": "percentUsed",
+  "quota.statusBar.display": "percentRemaining",
   "quota.statusBar.maxItems": 3
 }
 ```

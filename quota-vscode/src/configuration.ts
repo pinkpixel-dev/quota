@@ -47,7 +47,7 @@ export function readConfiguration(): QuotaConfiguration {
   const summaryPath = section.get<string>('summaryPath', '').trim() || DEFAULT_SUMMARY_PATH;
   const enabledProviders = readStringArray(section, 'providers.enabled').filter(isProviderId);
   const statusBarItems = readStringArray(section, 'statusBar.items').filter(isTrackId);
-  const statusBarDisplay = section.get<StatusBarDisplayMode>('statusBar.display', 'percentUsed');
+  const statusBarDisplay = section.get<StatusBarDisplayMode>('statusBar.display', 'percentRemaining');
 
   return {
     dataSource,
