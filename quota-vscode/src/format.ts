@@ -10,6 +10,12 @@ export function displayPercent(track: QuotaTrack, mode: StatusBarDisplayMode): n
   return track.percentUsed ?? (track.percentRemaining == null ? undefined : 100 - track.percentRemaining);
 }
 
+/** Panel meter width, filled by whichever percent the display setting shows. */
+export function meterPercent(track: QuotaTrack, mode: StatusBarDisplayMode): number {
+  const percent = displayPercent(track, mode);
+  return percent == null || !Number.isFinite(percent) ? 0 : Math.min(100, Math.max(0, Math.round(percent)));
+}
+
 export function statusBarIndicator(track: QuotaTrack): string {
   const remaining = displayPercent(track, 'percentRemaining');
   if (remaining == null || !Number.isFinite(remaining)) return '⚪';

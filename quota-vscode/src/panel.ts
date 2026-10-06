@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 
 import { isReauthenticationRequired } from './authError';
 import { CANONICAL_TRACK_ORDER, PROVIDER_ORDER } from './constants';
-import { displayPercent, formatPercent, formatReset, formatUpdated } from './format';
+import { displayPercent, formatPercent, formatReset, formatUpdated, meterPercent } from './format';
 import type { ProviderId, QuotaConfiguration, QuotaSnapshot, QuotaTrack } from './types';
 
 let panel: vscode.WebviewPanel | undefined;
@@ -19,6 +19,7 @@ interface PanelTrack {
   percentLabel: string;
   percentUsed: number | undefined;
   percentRemaining: number | undefined;
+  meterPercent: number;
   resetLabel: string;
   updatedLabel: string;
   error?: string | null;
@@ -54,6 +55,7 @@ function toPanelTrack(track: QuotaTrack, config: QuotaConfiguration): PanelTrack
     percentLabel: trackPercentLabel(track, config),
     percentUsed: track.percentUsed,
     percentRemaining: track.percentRemaining,
+    meterPercent: meterPercent(track, config.statusBarDisplay),
     resetLabel: track.resetLabel ?? formatReset(track.resetAt),
     updatedLabel: formatUpdated(track.updatedAt),
     error: track.error,
@@ -107,7 +109,6 @@ function visibleTracks(snapshot: QuotaSnapshot, config: QuotaConfiguration): Pan
 
 function renderTrack(track: PanelTrack): string {
   const used = track.percentUsed ?? (track.percentRemaining == null ? undefined : 100 - track.percentRemaining);
-  const width = used == null ? 0 : Math.min(100, Math.max(0, Math.round(used)));
   const isHot = used != null && used >= 90;
   const isWarn = used != null && used >= 70 && used < 90;
 
@@ -121,7 +122,7 @@ function renderTrack(track: PanelTrack): string {
         <div class="quota-percent ${isHot ? 'danger' : isWarn ? 'warn' : ''}">${escapeHtml(track.percentLabel)}</div>
       </div>
       <div class="meter" aria-hidden="true">
-        <div class="meter-fill ${isHot ? 'danger' : isWarn ? 'warn' : ''}" style="width: ${width}%"></div>
+        <div class="meter-fill ${isHot ? 'danger' : isWarn ? 'warn' : ''}" style="width: ${track.meterPercent}%"></div>
       </div>
       <div class="quota-meta">
         <span>${escapeHtml(track.resetLabel)}</span>

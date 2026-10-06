@@ -570,20 +570,16 @@ code {
   background: var(--danger);
 }
 
-.usage-metric--remaining .usage-metric__line strong {
-  color: var(--success);
-}
-
-.usage-metric--remaining .usage-metric__bar span {
-  background: var(--success);
-}
-
 .usage-metric--remaining-low .usage-metric__line strong {
   color: var(--danger);
 }
 
 .usage-metric--remaining-low .usage-metric__bar span {
   background: var(--danger);
+}
+
+.usage-metric--inactive .usage-metric__line strong {
+  color: var(--subtle);
 }
 
 .usage-metric--credits .usage-metric__line strong {

@@ -54,6 +54,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 - Dashboard Layouts: Default, Compact, List
 - List-mode account actions stay anchored to the far-right edge for easier removal
 - Theme Modes: System, Dark, Light
+- Show usage as Remaining or Used: one setting for every usage bar, percentage, and tray line
 - Safe JSON Export for account summaries
 - Opt-in auto refresh with a configurable interval
 - System tray with compact usage for every connected account, background refresh, and click-to-restore behavior

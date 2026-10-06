@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented here.
 
+## 1.7.0 and quota-vscode 1.3.2 - October 6, 2026
+
+Adds a setting for showing usage as what's left or what's used, and makes every bar follow it ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` is unchanged.
+
+### 🖥️ Desktop
+
+- New **Show usage as** setting under Settings, Appearance: Remaining (the default) or Used. It changes the percentage, the `left`/`used` label, and how the bar fills on every card, on both the dashboard and the account pages.
+- The tray menu follows the same setting, so a line like `5h 82% left` becomes `5h 18% used`.
+- Cards used to disagree with each other. Codex and Claude showed what was left, Copilot and Cursor showed what was used, Antigravity and OpenCode Go showed a bare percent, and Kiro showed percent used next to a bar filled by what was left. They all match now.
+- Count and dollar rows like Copilot `12 / 300` or Grok `$4.10 / $20.00` keep their text, but their bars follow the setting too.
+- Any percentage row turns red once 20% or less is left, in either mode. Before, only some cards did this.
+- Low-quota notifications still trigger on what's left, so your threshold means the same thing whichever mode you pick.
+
+### 🧩 VS Code Extension
+
+- The panel bars now fill the same way as the `quota.statusBar.display` setting. Before, the percent label switched between used and remaining, but the bar always showed used.
+
+### 🏷️ Versioning
+
+- Bumped the desktop app to `1.7.0` and the extension to `1.3.2`.
+
 ## 1.6.1 and quota-vscode 1.3.1 - October 6, 2026
 
 This is the first public release of the OpenCode Go work ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). Desktop `1.6.0` and extension `1.3.0` only went out as two test builds, so everything listed under 1.6.0 below ships for the first time here, including the Windows console window fix, "Starts on first use", and the VS Code track order fix that came out of beta testing. `quota-cli` is unchanged.

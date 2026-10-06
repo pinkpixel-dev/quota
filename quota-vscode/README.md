@@ -66,7 +66,7 @@ Each track shows:
 
 - Provider and quota name
 - Connected account label
-- Percent used or percent remaining
+- Percent used or percent remaining, following `quota.statusBar.display`. The bar fills the same way, so it tracks whichever number you're looking at
 - Reset time when available
 - Last updated time
 - Provider connect, disconnect, refresh, and settings actions

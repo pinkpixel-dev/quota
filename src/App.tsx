@@ -31,6 +31,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { OpenCodeGoKeyForm } from './components/OpenCodeGoKeyForm';
 import { ReauthenticationAlert } from './components/ReauthenticationAlert';
+import { UsageDisplayControl } from './components/UsageDisplayControl';
+import { UsageDisplayContext, UsageMetric, usedPercentOf } from './components/UsageMetric';
+import { readStoredUsageDisplayMode, storeUsageDisplayMode, type UsageDisplayMode } from './data/usageDisplay';
 import {
   cancelAntigravityOAuthLogin,
   completeAntigravityOAuthLogin,
@@ -508,6 +511,7 @@ function getVisibleAccounts<T extends { id: string }>(accounts: T[], pinnedAccou
 export function App() {
   const [view, setView] = useState<AppView>('dashboard');
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => readStoredThemeMode());
+  const [usageDisplayMode, setUsageDisplayMode] = useState<UsageDisplayMode>(() => readStoredUsageDisplayMode());
   const [dashboardViewMode, setDashboardViewMode] = useState<ViewMode>(() => readStoredViewMode(DASHBOARD_VIEW_MODE_KEY));
   const [accountPagesViewMode, setAccountPagesViewMode] = useState<ViewMode>(() => readStoredViewMode(ACCOUNT_PAGES_VIEW_MODE_KEY));
   const [providerOrder, setProviderOrder] = useState<ProviderKey[]>(() => readStoredProviderOrder());
@@ -568,7 +572,7 @@ export function App() {
     cursor: cursorAccounts,
     grok: grokAccounts,
     opencodeGo: openCodeGoAccounts,
-  }, providerOrder), [
+  }, providerOrder, usageDisplayMode), [
     copilotAccounts,
     codexAccounts,
     antigravityAccounts,
@@ -578,6 +582,7 @@ export function App() {
     grokAccounts,
     openCodeGoAccounts,
     providerOrder,
+    usageDisplayMode,
   ]);
 
   useEffect(() => {
@@ -649,6 +654,10 @@ export function App() {
     media.addEventListener('change', applyTheme);
     return () => media.removeEventListener('change', applyTheme);
   }, [themeMode]);
+
+  useEffect(() => {
+    storeUsageDisplayMode(usageDisplayMode);
+  }, [usageDisplayMode]);
 
   async function loadCopilotAccounts() {
     try {
@@ -1694,335 +1703,340 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar" aria-label="Quota navigation">
-        <div className="brand">
-          <img src="/icon.png" alt="" className="brand__icon" />
-          <div>
-            <span className="brand__name">Quota</span>
-            <span className="brand__meta">Track AI usage</span>
+    <UsageDisplayContext.Provider value={usageDisplayMode}>
+      <main className="app-shell">
+        <aside className="sidebar" aria-label="Quota navigation">
+          <div className="brand">
+            <img src="/icon.png" alt="" className="brand__icon" />
+            <div>
+              <span className="brand__name">Quota</span>
+              <span className="brand__meta">Track AI usage</span>
+            </div>
           </div>
-        </div>
 
-        <nav className="nav-list" aria-label="Main sections">
-          <button
-            type="button"
-            className={`nav-list__item ${view === 'dashboard' ? 'nav-list__item--active' : ''}`}
-            onClick={() => setView('dashboard')}
-          >
-            <Grid2X2 size={17} />
-            Dashboard
-          </button>
-          <button
-            type="button"
-            className={`nav-list__item ${view === 'integrations' ? 'nav-list__item--active' : ''}`}
-            onClick={() => setView('integrations')}
-          >
-            <Plus size={17} />
-            Integrations
-          </button>
-          <button
-            type="button"
-            className={`nav-list__item ${view === 'settings' ? 'nav-list__item--active' : ''}`}
-            onClick={() => setView('settings')}
-          >
-            <Settings size={17} />
-            Settings
-          </button>
-        </nav>
+          <nav className="nav-list" aria-label="Main sections">
+            <button
+              type="button"
+              className={`nav-list__item ${view === 'dashboard' ? 'nav-list__item--active' : ''}`}
+              onClick={() => setView('dashboard')}
+            >
+              <Grid2X2 size={17} />
+              Dashboard
+            </button>
+            <button
+              type="button"
+              className={`nav-list__item ${view === 'integrations' ? 'nav-list__item--active' : ''}`}
+              onClick={() => setView('integrations')}
+            >
+              <Plus size={17} />
+              Integrations
+            </button>
+            <button
+              type="button"
+              className={`nav-list__item ${view === 'settings' ? 'nav-list__item--active' : ''}`}
+              onClick={() => setView('settings')}
+            >
+              <Settings size={17} />
+              Settings
+            </button>
+          </nav>
 
-      </aside>
+        </aside>
 
-      <section className="content">
-        {view === 'dashboard' ? (
-          <DashboardView
-            viewMode={dashboardViewMode}
-            providerOrder={providerOrder}
-            pinnedAccounts={pinnedAccounts}
-            hiddenProviders={hiddenProviders}
-            onTogglePinnedAccount={togglePinnedAccount}
-            copilotAccounts={copilotAccounts}
-            codexAccounts={codexAccounts}
-            antigravityAccounts={antigravityAccounts}
-            claudeAccounts={claudeAccounts}
-            kiroAccounts={kiroAccounts}
-            cursorAccounts={cursorAccounts}
-            grokAccounts={grokAccounts}
-            openCodeGoAccounts={openCodeGoAccounts}
-            copilotBusy={copilotBusy}
-            codexBusy={codexBusy}
-            antigravityBusy={antigravityBusy}
-            claudeBusy={claudeBusy}
-            kiroBusy={kiroBusy}
-            cursorBusy={cursorBusy}
-            grokBusy={grokBusy}
-            openCodeGoBusy={openCodeGoBusy}
-            copilotError={copilotError}
-            codexError={codexError}
-            antigravityError={antigravityError}
-            claudeError={claudeError}
-            kiroError={kiroError}
-            cursorError={cursorError}
-            grokError={grokError}
-            openCodeGoError={openCodeGoError}
-            onRefreshAllCopilot={refreshAllCopilot}
-            onRefreshCopilotAccount={refreshCopilotAccount}
-            onRemoveCopilotAccount={removeCopilotAccount}
-            onRefreshAllCodex={refreshAllCodex}
-            onRefreshCodexAccount={refreshCodex}
-            onRemoveCodexAccount={removeCodexAccount}
-            onReauthenticateCodex={startCodexAuth}
-            onRefreshAllAntigravity={refreshAllAntigravity}
-            onRefreshAntigravityAccount={refreshAntigravity}
-            onRemoveAntigravityAccount={removeAntigravityAccount}
-            onRefreshAllClaude={refreshAllClaude}
-            onRefreshClaudeAccount={refreshClaude}
-            onRemoveClaudeAccount={removeClaudeAccount}
-            onReauthenticateClaude={startClaudeAuth}
-            onRefreshAllKiro={refreshAllKiro}
-            onRefreshKiroAccount={refreshKiro}
-            onRemoveKiroAccount={removeKiroAccount}
-            onRefreshAllCursor={refreshAllCursor}
-            onRefreshCursorAccount={refreshCursor}
-            onRemoveCursorAccount={removeCursorAccount}
-            onRefreshAllGrok={refreshAllGrok}
-            onRefreshGrokAccount={refreshGrok}
-            onRemoveGrokAccount={removeGrokAccount}
-            onReauthenticateGrok={startGrokAuth}
-            onRefreshAllOpenCodeGo={refreshAllOpenCodeGo}
-            onRemoveOpenCodeGoAccount={removeOpenCodeGoAccount}
-            onOpenIntegrations={() => setView('integrations')}
-            onOpenCopilotAccounts={() => setView('github-copilot-accounts')}
-            onOpenCodexAccounts={() => setView('codex-accounts')}
-            onOpenAntigravityAccounts={() => setView('antigravity-accounts')}
-            onOpenClaudeAccounts={() => setView('claude-accounts')}
-            onOpenKiroAccounts={() => setView('kiro-accounts')}
-            onOpenCursorAccounts={() => setView('cursor-accounts')}
-            onOpenGrokAccounts={() => setView('grok-accounts')}
-            onOpenOpenCodeGoAccounts={() => setView('opencode-go-accounts')}
-          />
-        ) : view === 'settings' ? (
-          <SettingsView
-            connectedCount={connectedCount}
-            themeMode={themeMode}
-            dashboardViewMode={dashboardViewMode}
-            accountPagesViewMode={accountPagesViewMode}
-            autoRefreshEnabled={autoRefreshEnabled}
-            autoRefreshIntervalSeconds={autoRefreshIntervalSeconds}
-            providerOrder={providerOrder}
-            hiddenProviders={hiddenProviders}
-            onThemeModeChange={setThemeMode}
-            onDashboardViewModeChange={setDashboardViewMode}
-            onAccountPagesViewModeChange={setAccountPagesViewMode}
-            onAutoRefreshEnabledChange={setAutoRefreshEnabled}
-            onAutoRefreshIntervalSecondsChange={(value) => setAutoRefreshIntervalSeconds(clampAutoRefreshIntervalSeconds(value))}
-            onMoveProvider={(provider, direction) => setProviderOrder((order) => moveProvider(order, provider, direction))}
-            onToggleHiddenProvider={toggleHiddenProvider}
-            onExportSafeAccountSummaries={exportSafeAccountSummaries}
-            notificationsEnabled={notificationsEnabled}
-            notificationThreshold={notificationThreshold}
-            onNotificationsEnabledChange={handleNotificationsEnabledChange}
-            onNotificationThresholdChange={(value) => setNotificationThreshold(clampNotificationThreshold(value))}
-          />
-        ) : view === 'github-copilot-accounts' ? (
-          <ProviderAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={copilotAccounts}
-            busy={copilotBusy}
-            error={copilotError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllCopilot}
-            onRefreshAccount={refreshCopilotAccount}
-            onRemoveAccount={removeCopilotAccount}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'codex-accounts' ? (
-          <CodexAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={codexAccounts}
-            busy={codexBusy}
-            error={codexError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllCodex}
-            onRefreshAccount={refreshCodex}
-            onRemoveAccount={removeCodexAccount}
-            onReauthenticate={startCodexAuth}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'antigravity-accounts' ? (
-          <AntigravityAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={antigravityAccounts}
-            busy={antigravityBusy}
-            error={antigravityError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllAntigravity}
-            onRefreshAccount={refreshAntigravity}
-            onRemoveAccount={removeAntigravityAccount}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'claude-accounts' ? (
-          <ClaudeAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={claudeAccounts}
-            busy={claudeBusy}
-            error={claudeError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllClaude}
-            onRefreshAccount={refreshClaude}
-            onRemoveAccount={removeClaudeAccount}
-            onReauthenticate={startClaudeAuth}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'kiro-accounts' ? (
-          <KiroAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={kiroAccounts}
-            busy={kiroBusy}
-            error={kiroError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllKiro}
-            onRefreshAccount={refreshKiro}
-            onRemoveAccount={removeKiroAccount}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'cursor-accounts' ? (
-          <CursorAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={cursorAccounts}
-            busy={cursorBusy}
-            error={cursorError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllCursor}
-            onRefreshAccount={refreshCursor}
-            onRemoveAccount={removeCursorAccount}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'grok-accounts' ? (
-          <GrokAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={grokAccounts}
-            busy={grokBusy}
-            error={grokError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllGrok}
-            onRefreshAccount={refreshGrok}
-            onRemoveAccount={removeGrokAccount}
-            onReauthenticate={startGrokAuth}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : view === 'opencode-go-accounts' ? (
-          <OpenCodeGoAccountsView
-            viewMode={accountPagesViewMode}
-            accounts={openCodeGoAccounts}
-            busy={openCodeGoBusy}
-            error={openCodeGoError}
-            pinnedAccounts={pinnedAccounts}
-            onBack={() => setView('dashboard')}
-            onOpenIntegrations={() => setView('integrations')}
-            onRefreshAll={refreshAllOpenCodeGo}
-            onRemoveAccount={removeOpenCodeGoAccount}
-            onTogglePinnedAccount={togglePinnedAccount}
-          />
-        ) : (
-          <IntegrationsView
-            connectedCount={connectedCount}
-            codexConnectedCount={codexAccounts.length}
-            antigravityConnectedCount={antigravityAccounts.length}
-            claudeConnectedCount={claudeAccounts.length}
-            kiroConnectedCount={kiroAccounts.length}
-            cursorConnectedCount={cursorAccounts.length}
-            grokConnectedCount={grokAccounts.length}
-            openCodeGoConnectedCount={openCodeGoAccounts.length}
-            openCodeGoError={openCodeGoError}
-            openCodeGoFormOpen={openCodeGoFormOpen}
-            onStartOpenCodeGo={() => setOpenCodeGoFormOpen(true)}
-            onAddOpenCodeGo={addOpenCodeGo}
-            onCancelOpenCodeGo={() => setOpenCodeGoFormOpen(false)}
-            onOpenOpenCodeGoConsole={openOpenCodeGoConsole}
-            copilotBusy={copilotBusy}
-            codexBusy={codexBusy}
-            antigravityBusy={antigravityBusy}
-            claudeBusy={claudeBusy}
-            kiroBusy={kiroBusy}
-            cursorBusy={cursorBusy}
-            grokBusy={grokBusy}
-            openCodeGoBusy={openCodeGoBusy}
-            copilotError={copilotError}
-            codexError={codexError}
-            antigravityError={antigravityError}
-            claudeError={claudeError}
-            kiroError={kiroError}
-            cursorError={cursorError}
-            grokError={grokError}
-            copilotLogin={copilotLogin}
-            codexLogin={codexLogin}
-            antigravityLogin={antigravityLogin}
-            claudeLogin={claudeLogin}
-            kiroLogin={kiroLogin}
-            cursorLogin={cursorLogin}
-            grokLogin={grokLogin}
-            claudeCallbackInput={claudeCallbackInput}
-            claudeEmailHint={claudeEmailHint}
-            onStartCopilotAuth={startCopilotAuth}
-            onStartCodexAuth={startCodexAuth}
-            onStartAntigravityAuth={startAntigravityAuth}
-            onStartClaudeAuth={startClaudeAuth}
-            onStartKiroAuth={startKiroAuth}
-            onStartCursorAuth={startCursorAuth}
-            onStartGrokAuth={startGrokAuth}
-            onImportLocalCodex={importLocalCodex}
-            onImportLocalAntigravity={importLocalAntigravity}
-            onImportLocalKiro={importLocalKiro}
-            onImportLocalCursor={importLocalCursor}
-            onImportLocalGrok={importLocalGrok}
-            onOpenCopilotAuthUrl={openCopilotAuthUrl}
-            onOpenCodexAuthUrl={openCodexAuthUrl}
-            onOpenAntigravityAuthUrl={openAntigravityAuthUrl}
-            onOpenClaudeAuthUrl={openClaudeAuthUrl}
-            onOpenKiroAuthUrl={openKiroAuthUrl}
-            onOpenCursorAuthUrl={openCursorAuthUrl}
-            onOpenGrokAuthUrl={openGrokAuthUrl}
-            onCompleteCopilotAuth={completeCopilotAuth}
-            onCompleteCodexAuth={completeCodexAuth}
-            onCompleteAntigravityAuth={completeAntigravityAuth}
-            onCompleteClaudeAuth={completeClaudeAuth}
-            onCompleteKiroAuth={completeKiroAuth}
-            onCompleteCursorAuth={completeCursorAuth}
-            onCompleteGrokAuth={completeGrokAuth}
-            onCancelCopilotAuth={cancelCopilotAuth}
-            onCancelCodexAuth={cancelCodexAuth}
-            onCancelAntigravityAuth={cancelAntigravityAuth}
-            onCancelClaudeAuth={cancelClaudeAuth}
-            onCancelKiroAuth={cancelKiroAuth}
-            onCancelCursorAuth={cancelCursorAuth}
-            onCancelGrokAuth={cancelGrokAuth}
-            onClaudeCallbackInputChange={setClaudeCallbackInput}
-            onClaudeEmailHintChange={setClaudeEmailHint}
-          />
-        )}
-      </section>
-    </main>
+        <section className="content">
+          {view === 'dashboard' ? (
+            <DashboardView
+              viewMode={dashboardViewMode}
+              providerOrder={providerOrder}
+              pinnedAccounts={pinnedAccounts}
+              hiddenProviders={hiddenProviders}
+              onTogglePinnedAccount={togglePinnedAccount}
+              copilotAccounts={copilotAccounts}
+              codexAccounts={codexAccounts}
+              antigravityAccounts={antigravityAccounts}
+              claudeAccounts={claudeAccounts}
+              kiroAccounts={kiroAccounts}
+              cursorAccounts={cursorAccounts}
+              grokAccounts={grokAccounts}
+              openCodeGoAccounts={openCodeGoAccounts}
+              copilotBusy={copilotBusy}
+              codexBusy={codexBusy}
+              antigravityBusy={antigravityBusy}
+              claudeBusy={claudeBusy}
+              kiroBusy={kiroBusy}
+              cursorBusy={cursorBusy}
+              grokBusy={grokBusy}
+              openCodeGoBusy={openCodeGoBusy}
+              copilotError={copilotError}
+              codexError={codexError}
+              antigravityError={antigravityError}
+              claudeError={claudeError}
+              kiroError={kiroError}
+              cursorError={cursorError}
+              grokError={grokError}
+              openCodeGoError={openCodeGoError}
+              onRefreshAllCopilot={refreshAllCopilot}
+              onRefreshCopilotAccount={refreshCopilotAccount}
+              onRemoveCopilotAccount={removeCopilotAccount}
+              onRefreshAllCodex={refreshAllCodex}
+              onRefreshCodexAccount={refreshCodex}
+              onRemoveCodexAccount={removeCodexAccount}
+              onReauthenticateCodex={startCodexAuth}
+              onRefreshAllAntigravity={refreshAllAntigravity}
+              onRefreshAntigravityAccount={refreshAntigravity}
+              onRemoveAntigravityAccount={removeAntigravityAccount}
+              onRefreshAllClaude={refreshAllClaude}
+              onRefreshClaudeAccount={refreshClaude}
+              onRemoveClaudeAccount={removeClaudeAccount}
+              onReauthenticateClaude={startClaudeAuth}
+              onRefreshAllKiro={refreshAllKiro}
+              onRefreshKiroAccount={refreshKiro}
+              onRemoveKiroAccount={removeKiroAccount}
+              onRefreshAllCursor={refreshAllCursor}
+              onRefreshCursorAccount={refreshCursor}
+              onRemoveCursorAccount={removeCursorAccount}
+              onRefreshAllGrok={refreshAllGrok}
+              onRefreshGrokAccount={refreshGrok}
+              onRemoveGrokAccount={removeGrokAccount}
+              onReauthenticateGrok={startGrokAuth}
+              onRefreshAllOpenCodeGo={refreshAllOpenCodeGo}
+              onRemoveOpenCodeGoAccount={removeOpenCodeGoAccount}
+              onOpenIntegrations={() => setView('integrations')}
+              onOpenCopilotAccounts={() => setView('github-copilot-accounts')}
+              onOpenCodexAccounts={() => setView('codex-accounts')}
+              onOpenAntigravityAccounts={() => setView('antigravity-accounts')}
+              onOpenClaudeAccounts={() => setView('claude-accounts')}
+              onOpenKiroAccounts={() => setView('kiro-accounts')}
+              onOpenCursorAccounts={() => setView('cursor-accounts')}
+              onOpenGrokAccounts={() => setView('grok-accounts')}
+              onOpenOpenCodeGoAccounts={() => setView('opencode-go-accounts')}
+            />
+          ) : view === 'settings' ? (
+            <SettingsView
+              connectedCount={connectedCount}
+              themeMode={themeMode}
+              usageDisplayMode={usageDisplayMode}
+              dashboardViewMode={dashboardViewMode}
+              accountPagesViewMode={accountPagesViewMode}
+              autoRefreshEnabled={autoRefreshEnabled}
+              autoRefreshIntervalSeconds={autoRefreshIntervalSeconds}
+              providerOrder={providerOrder}
+              hiddenProviders={hiddenProviders}
+              onThemeModeChange={setThemeMode}
+              onUsageDisplayModeChange={setUsageDisplayMode}
+              onDashboardViewModeChange={setDashboardViewMode}
+              onAccountPagesViewModeChange={setAccountPagesViewMode}
+              onAutoRefreshEnabledChange={setAutoRefreshEnabled}
+              onAutoRefreshIntervalSecondsChange={(value) => setAutoRefreshIntervalSeconds(clampAutoRefreshIntervalSeconds(value))}
+              onMoveProvider={(provider, direction) => setProviderOrder((order) => moveProvider(order, provider, direction))}
+              onToggleHiddenProvider={toggleHiddenProvider}
+              onExportSafeAccountSummaries={exportSafeAccountSummaries}
+              notificationsEnabled={notificationsEnabled}
+              notificationThreshold={notificationThreshold}
+              onNotificationsEnabledChange={handleNotificationsEnabledChange}
+              onNotificationThresholdChange={(value) => setNotificationThreshold(clampNotificationThreshold(value))}
+            />
+          ) : view === 'github-copilot-accounts' ? (
+            <ProviderAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={copilotAccounts}
+              busy={copilotBusy}
+              error={copilotError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllCopilot}
+              onRefreshAccount={refreshCopilotAccount}
+              onRemoveAccount={removeCopilotAccount}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'codex-accounts' ? (
+            <CodexAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={codexAccounts}
+              busy={codexBusy}
+              error={codexError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllCodex}
+              onRefreshAccount={refreshCodex}
+              onRemoveAccount={removeCodexAccount}
+              onReauthenticate={startCodexAuth}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'antigravity-accounts' ? (
+            <AntigravityAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={antigravityAccounts}
+              busy={antigravityBusy}
+              error={antigravityError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllAntigravity}
+              onRefreshAccount={refreshAntigravity}
+              onRemoveAccount={removeAntigravityAccount}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'claude-accounts' ? (
+            <ClaudeAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={claudeAccounts}
+              busy={claudeBusy}
+              error={claudeError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllClaude}
+              onRefreshAccount={refreshClaude}
+              onRemoveAccount={removeClaudeAccount}
+              onReauthenticate={startClaudeAuth}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'kiro-accounts' ? (
+            <KiroAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={kiroAccounts}
+              busy={kiroBusy}
+              error={kiroError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllKiro}
+              onRefreshAccount={refreshKiro}
+              onRemoveAccount={removeKiroAccount}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'cursor-accounts' ? (
+            <CursorAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={cursorAccounts}
+              busy={cursorBusy}
+              error={cursorError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllCursor}
+              onRefreshAccount={refreshCursor}
+              onRemoveAccount={removeCursorAccount}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'grok-accounts' ? (
+            <GrokAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={grokAccounts}
+              busy={grokBusy}
+              error={grokError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllGrok}
+              onRefreshAccount={refreshGrok}
+              onRemoveAccount={removeGrokAccount}
+              onReauthenticate={startGrokAuth}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : view === 'opencode-go-accounts' ? (
+            <OpenCodeGoAccountsView
+              viewMode={accountPagesViewMode}
+              accounts={openCodeGoAccounts}
+              busy={openCodeGoBusy}
+              error={openCodeGoError}
+              pinnedAccounts={pinnedAccounts}
+              onBack={() => setView('dashboard')}
+              onOpenIntegrations={() => setView('integrations')}
+              onRefreshAll={refreshAllOpenCodeGo}
+              onRemoveAccount={removeOpenCodeGoAccount}
+              onTogglePinnedAccount={togglePinnedAccount}
+            />
+          ) : (
+            <IntegrationsView
+              connectedCount={connectedCount}
+              codexConnectedCount={codexAccounts.length}
+              antigravityConnectedCount={antigravityAccounts.length}
+              claudeConnectedCount={claudeAccounts.length}
+              kiroConnectedCount={kiroAccounts.length}
+              cursorConnectedCount={cursorAccounts.length}
+              grokConnectedCount={grokAccounts.length}
+              openCodeGoConnectedCount={openCodeGoAccounts.length}
+              openCodeGoError={openCodeGoError}
+              openCodeGoFormOpen={openCodeGoFormOpen}
+              onStartOpenCodeGo={() => setOpenCodeGoFormOpen(true)}
+              onAddOpenCodeGo={addOpenCodeGo}
+              onCancelOpenCodeGo={() => setOpenCodeGoFormOpen(false)}
+              onOpenOpenCodeGoConsole={openOpenCodeGoConsole}
+              copilotBusy={copilotBusy}
+              codexBusy={codexBusy}
+              antigravityBusy={antigravityBusy}
+              claudeBusy={claudeBusy}
+              kiroBusy={kiroBusy}
+              cursorBusy={cursorBusy}
+              grokBusy={grokBusy}
+              openCodeGoBusy={openCodeGoBusy}
+              copilotError={copilotError}
+              codexError={codexError}
+              antigravityError={antigravityError}
+              claudeError={claudeError}
+              kiroError={kiroError}
+              cursorError={cursorError}
+              grokError={grokError}
+              copilotLogin={copilotLogin}
+              codexLogin={codexLogin}
+              antigravityLogin={antigravityLogin}
+              claudeLogin={claudeLogin}
+              kiroLogin={kiroLogin}
+              cursorLogin={cursorLogin}
+              grokLogin={grokLogin}
+              claudeCallbackInput={claudeCallbackInput}
+              claudeEmailHint={claudeEmailHint}
+              onStartCopilotAuth={startCopilotAuth}
+              onStartCodexAuth={startCodexAuth}
+              onStartAntigravityAuth={startAntigravityAuth}
+              onStartClaudeAuth={startClaudeAuth}
+              onStartKiroAuth={startKiroAuth}
+              onStartCursorAuth={startCursorAuth}
+              onStartGrokAuth={startGrokAuth}
+              onImportLocalCodex={importLocalCodex}
+              onImportLocalAntigravity={importLocalAntigravity}
+              onImportLocalKiro={importLocalKiro}
+              onImportLocalCursor={importLocalCursor}
+              onImportLocalGrok={importLocalGrok}
+              onOpenCopilotAuthUrl={openCopilotAuthUrl}
+              onOpenCodexAuthUrl={openCodexAuthUrl}
+              onOpenAntigravityAuthUrl={openAntigravityAuthUrl}
+              onOpenClaudeAuthUrl={openClaudeAuthUrl}
+              onOpenKiroAuthUrl={openKiroAuthUrl}
+              onOpenCursorAuthUrl={openCursorAuthUrl}
+              onOpenGrokAuthUrl={openGrokAuthUrl}
+              onCompleteCopilotAuth={completeCopilotAuth}
+              onCompleteCodexAuth={completeCodexAuth}
+              onCompleteAntigravityAuth={completeAntigravityAuth}
+              onCompleteClaudeAuth={completeClaudeAuth}
+              onCompleteKiroAuth={completeKiroAuth}
+              onCompleteCursorAuth={completeCursorAuth}
+              onCompleteGrokAuth={completeGrokAuth}
+              onCancelCopilotAuth={cancelCopilotAuth}
+              onCancelCodexAuth={cancelCodexAuth}
+              onCancelAntigravityAuth={cancelAntigravityAuth}
+              onCancelClaudeAuth={cancelClaudeAuth}
+              onCancelKiroAuth={cancelKiroAuth}
+              onCancelCursorAuth={cancelCursorAuth}
+              onCancelGrokAuth={cancelGrokAuth}
+              onClaudeCallbackInputChange={setClaudeCallbackInput}
+              onClaudeEmailHintChange={setClaudeEmailHint}
+            />
+          )}
+        </section>
+      </main>
+    </UsageDisplayContext.Provider>
   );
 }
 
 interface SettingsViewProps {
   connectedCount: number;
   themeMode: ThemeMode;
+  usageDisplayMode: UsageDisplayMode;
   dashboardViewMode: ViewMode;
   accountPagesViewMode: ViewMode;
   autoRefreshEnabled: boolean;
@@ -2030,6 +2044,7 @@ interface SettingsViewProps {
   providerOrder: ProviderKey[];
   hiddenProviders: Set<ProviderKey>;
   onThemeModeChange: (mode: ThemeMode) => void;
+  onUsageDisplayModeChange: (mode: UsageDisplayMode) => void;
   onDashboardViewModeChange: (mode: ViewMode) => void;
   onAccountPagesViewModeChange: (mode: ViewMode) => void;
   onAutoRefreshEnabledChange: (enabled: boolean) => void;
@@ -2046,6 +2061,7 @@ interface SettingsViewProps {
 function SettingsView({
   connectedCount,
   themeMode,
+  usageDisplayMode,
   dashboardViewMode,
   accountPagesViewMode,
   autoRefreshEnabled,
@@ -2053,6 +2069,7 @@ function SettingsView({
   providerOrder,
   hiddenProviders,
   onThemeModeChange,
+  onUsageDisplayModeChange,
   onDashboardViewModeChange,
   onAccountPagesViewModeChange,
   onAutoRefreshEnabledChange,
@@ -2089,6 +2106,12 @@ function SettingsView({
               <ThemeModeControl
                 value={themeMode}
                 onChange={onThemeModeChange}
+              />
+            </SettingsControlRow>
+            <SettingsControlRow label="Show usage as">
+              <UsageDisplayControl
+                value={usageDisplayMode}
+                onChange={onUsageDisplayModeChange}
               />
             </SettingsControlRow>
             <SettingsControlRow label="Dashboard view">
@@ -4592,20 +4615,13 @@ interface AntigravityMetricRowProps {
 
 function AntigravityMetricRow({ label, window, resetLabel }: AntigravityMetricRowProps) {
   const remaining = window.remainingPercent;
-  const remainingPercent = remaining == null ? null : Math.max(0, Math.min(100, remaining));
-  const toneClass = remainingPercent != null && remainingPercent <= 20 ? ' usage-metric--remaining-low' : '';
 
   return (
-    <div className={`usage-metric usage-metric--remaining${toneClass}`}>
-      <div className="usage-metric__line">
-        <span>{label}</span>
-        <strong>{remaining == null ? '-' : `${remaining}%`}</strong>
-      </div>
-      <div className="usage-metric__bar" aria-hidden="true">
-        <span style={{ width: `${remainingPercent ?? 0}%` }} />
-      </div>
-      <div className="usage-metric__meta">{resetLabel ?? formatResetLine(window.resetAt)}</div>
-    </div>
+    <UsageMetric
+      label={label}
+      usedPercent={remaining == null ? null : 100 - remaining}
+      meta={[resetLabel ?? formatResetLine(window.resetAt)]}
+    />
   );
 }
 
@@ -4686,7 +4702,6 @@ function KiroUsageCard({ account, busy, pinned, dashboardMode = false, onRefresh
   const creditsUsed = account.creditsUsed ?? 0;
   const creditsLeft = Math.max(0, creditsTotal - creditsUsed);
   const creditsUsedPct = creditsTotal > 0 ? Math.round((creditsUsed / creditsTotal) * 100) : 0;
-  const creditsRemPct = 100 - creditsUsedPct;
 
   const bonusTotal = account.bonusTotal;
   const bonusUsed = account.bonusUsed ?? 0;
@@ -4726,7 +4741,6 @@ function KiroUsageCard({ account, busy, pinned, dashboardMode = false, onRefresh
         <KiroMetricRow
           label="User Prompt credits"
           usedPct={creditsUsedPct}
-          remainingPct={creditsRemPct}
           used={creditsUsed}
           total={creditsTotal}
           left={creditsLeft}
@@ -4736,7 +4750,6 @@ function KiroUsageCard({ account, busy, pinned, dashboardMode = false, onRefresh
           <KiroMetricRow
             label="Add-on credits"
             usedPct={bonusTotal > 0 ? Math.round(((bonusUsed) / bonusTotal) * 100) : 0}
-            remainingPct={bonusTotal > 0 ? Math.round(((bonusTotal - bonusUsed) / bonusTotal) * 100) : 0}
             used={bonusUsed}
             total={bonusTotal}
             left={Math.max(0, bonusTotal - bonusUsed)}
@@ -4754,7 +4767,6 @@ function KiroUsageCard({ account, busy, pinned, dashboardMode = false, onRefresh
 interface KiroMetricRowProps {
   label: string;
   usedPct: number;
-  remainingPct: number;
   used: number;
   total: number;
   left: number;
@@ -4762,27 +4774,16 @@ interface KiroMetricRowProps {
   expireDays?: number | null;
 }
 
-function KiroMetricRow({ label, usedPct, remainingPct, used, total, left, resetAt, expireDays }: KiroMetricRowProps) {
-  const toneClass = usedPct >= 80 ? ' usage-metric--remaining-low' : '';
+function KiroMetricRow({ label, usedPct, used, total, left, resetAt, expireDays }: KiroMetricRowProps) {
   const resetText = formatResetLine(resetAt);
   const expireText = expireDays != null ? ` · Expires in ${expireDays}d` : '';
 
   return (
-    <div className={`usage-metric${toneClass}`}>
-      <div className="usage-metric__line">
-        <span>{label}</span>
-        <strong>{usedPct}%</strong>
-      </div>
-      <div className="usage-metric__bar" aria-hidden="true">
-        <span style={{ width: `${Math.max(0, Math.min(100, remainingPct))}%` }} />
-      </div>
-      <div className="usage-metric__meta">
-        {used} / {total} used · {left} left
-      </div>
-      <div className="usage-metric__meta">
-        {resetText}{expireText}
-      </div>
-    </div>
+    <UsageMetric
+      label={label}
+      usedPercent={usedPct}
+      meta={[`${used} / ${total} used · ${left} left`, `${resetText}${expireText}`]}
+    />
   );
 }
 
@@ -4800,25 +4801,15 @@ interface CodexMetricRowProps {
 }
 
 function CodexMetricRow({ label, remaining, resetAt, windowMinutes }: CodexMetricRowProps) {
-  const remainingPercent = remaining == null ? null : Math.max(0, Math.min(100, remaining));
-  const value = remaining == null ? '-' : `${remaining}% left`;
-  const toneClass = remainingPercent != null && remainingPercent <= 20 ? ' usage-metric--remaining-low' : '';
   const windowText = windowMinutes ? `${formatWindowMinutes(windowMinutes)} window` : 'Window unknown';
   const resetText = formatResetLine(resetAt);
 
   return (
-    <div className={`usage-metric usage-metric--remaining${toneClass}`}>
-      <div className="usage-metric__line">
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </div>
-      <div className="usage-metric__bar" aria-hidden="true">
-        <span style={{ width: `${remainingPercent ?? 0}%` }} />
-      </div>
-      <div className="usage-metric__meta">
-        {windowText} · {resetText}
-      </div>
-    </div>
+    <UsageMetric
+      label={label}
+      usedPercent={remaining == null ? null : 100 - remaining}
+      meta={[`${windowText} · ${resetText}`]}
+    />
   );
 }
 
@@ -4830,24 +4821,14 @@ interface ClaudeMetricRowProps {
 }
 
 function ClaudeMetricRow({ label, remaining, resetAt, windowText }: ClaudeMetricRowProps) {
-  const remainingPercent = remaining == null ? null : Math.max(0, Math.min(100, remaining));
-  const value = remaining == null ? '-' : `${remaining}% left`;
-  const toneClass = remainingPercent != null && remainingPercent <= 20 ? ' usage-metric--remaining-low' : '';
   const resetText = formatResetLine(resetAt);
 
   return (
-    <div className={`usage-metric usage-metric--remaining${toneClass}`}>
-      <div className="usage-metric__line">
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </div>
-      <div className="usage-metric__bar" aria-hidden="true">
-        <span style={{ width: `${remainingPercent ?? 0}%` }} />
-      </div>
-      <div className="usage-metric__meta">
-        {windowText} · {resetText}
-      </div>
-    </div>
+    <UsageMetric
+      label={label}
+      usedPercent={remaining == null ? null : 100 - remaining}
+      meta={[`${windowText} · ${resetText}`]}
+    />
   );
 }
 
@@ -4873,25 +4854,17 @@ function UsageMetricRow({
   emphasized = false,
 }: UsageMetricRowProps) {
   const computedUsed = used ?? (total != null && remaining != null ? Math.max(0, total - remaining) : null);
-  const value = included
-    ? 'Included'
-    : computedUsed != null && total != null
-      ? `${computedUsed} / ${total}`
-      : percent != null
-        ? `${percent}% used`
-        : '-';
+  const countText = computedUsed != null && total != null ? `${computedUsed} / ${total}` : undefined;
 
   return (
-    <div className={`usage-metric ${emphasized ? 'usage-metric--emphasized' : ''}`}>
-      <div className="usage-metric__line">
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </div>
-      <div className="usage-metric__bar" aria-hidden="true">
-        <span style={{ width: `${included ? 100 : percent ?? 0}%` }} />
-      </div>
-      <div className="usage-metric__meta">{resetText}</div>
-    </div>
+    <UsageMetric
+      label={label}
+      usedPercent={percent ?? usedPercentOf(computedUsed, total)}
+      value={included ? undefined : countText}
+      included={included}
+      meta={[resetText]}
+      emphasized={emphasized}
+    />
   );
 }
 
@@ -5087,28 +5060,20 @@ function GrokUsageCard({ account, busy, pinned, dashboardMode = false, onRemove,
         />
 
         {monthlyLimit > 0 ? (
-          <div className="usage-metric">
-            <div className="usage-metric__line">
-              <span>Monthly Spend</span>
-              <strong>{`$${monthlyUsed.toFixed(2)} / $${monthlyLimit.toFixed(2)}`}</strong>
-            </div>
-            <div className="usage-metric__bar" aria-hidden="true">
-              <span style={{ width: `${monthlyPercent}%` }} />
-            </div>
-            <div className="usage-metric__meta">{formatResetLine(account.quota.monthlyPeriodEndAt)}</div>
-          </div>
+          <UsageMetric
+            label="Monthly Spend"
+            usedPercent={monthlyPercent}
+            value={`$${monthlyUsed.toFixed(2)} / $${monthlyLimit.toFixed(2)}`}
+            meta={[formatResetLine(account.quota.monthlyPeriodEndAt)]}
+          />
         ) : null}
 
         {onDemandCap > 0 ? (
-          <div className="usage-metric">
-            <div className="usage-metric__line">
-              <span>On-Demand</span>
-              <strong>{`$${onDemandUsed.toFixed(2)} / $${onDemandCap.toFixed(2)}`}</strong>
-            </div>
-            <div className="usage-metric__bar" aria-hidden="true">
-              <span style={{ width: `${onDemandPercent}%` }} />
-            </div>
-          </div>
+          <UsageMetric
+            label="On-Demand"
+            usedPercent={onDemandPercent}
+            value={`$${onDemandUsed.toFixed(2)} / $${onDemandCap.toFixed(2)}`}
+          />
         ) : null}
 
         {account.quota.prepaidBalance != null && account.quota.prepaidBalance > 0 ? (
@@ -5207,51 +5172,15 @@ export function CursorUsageCard({ account, busy, pinned, dashboardMode = false, 
       </div>
 
       <div className="usage-card__rows">
-        {/* Total Usage */}
-        <div className="usage-metric">
-          <div className="usage-metric__line">
-            <span>Total Usage</span>
-            <strong style={{ color: 'var(--success)' }}>{totalPercent}%</strong>
-          </div>
-          <div className="usage-metric__bar" aria-hidden="true">
-            <span style={{ width: `${totalPercent}%`, background: 'var(--success)' }} />
-          </div>
-          <div className="usage-metric__meta" style={{ textAlign: 'left' }}>{totalUsageText}</div>
-          <div className="usage-metric__meta" style={{ textAlign: 'left' }}>{resetText}</div>
-        </div>
-
-        {/* Auto + Composer */}
-        <div className="usage-metric">
-          <div className="usage-metric__line">
-            <span>Auto + Composer</span>
-            <strong style={{ color: 'var(--success)' }}>{autoPercent}%</strong>
-          </div>
-          <div className="usage-metric__bar" aria-hidden="true">
-            <span style={{ width: `${autoPercent}%`, background: 'var(--success)' }} />
-          </div>
-        </div>
-
-        {/* API Usage */}
-        <div className="usage-metric">
-          <div className="usage-metric__line">
-            <span>API Usage</span>
-            <strong style={{ color: 'var(--success)' }}>{apiPercent}%</strong>
-          </div>
-          <div className="usage-metric__bar" aria-hidden="true">
-            <span style={{ width: `${apiPercent}%`, background: 'var(--success)' }} />
-          </div>
-        </div>
-
-        {/* On-Demand */}
-        <div className="usage-metric">
-          <div className="usage-metric__line">
-            <span>On-Demand</span>
-            <strong style={{ color: account.onDemandEnabled ? 'var(--success)' : 'var(--subtle)' }}>{onDemandText}</strong>
-          </div>
-          <div className="usage-metric__bar" aria-hidden="true">
-            <span style={{ width: `${onDemandPercent}%`, background: 'var(--success)' }} />
-          </div>
-        </div>
+        <UsageMetric label="Total Usage" usedPercent={totalPercent} meta={[totalUsageText, resetText]} />
+        <UsageMetric label="Auto + Composer" usedPercent={autoPercent} />
+        <UsageMetric label="API Usage" usedPercent={apiPercent} />
+        <UsageMetric
+          label="On-Demand"
+          usedPercent={onDemandPercent}
+          value={onDemandText}
+          inactive={!account.onDemandEnabled}
+        />
       </div>
 
       {account.quotaQueryLastError ? <p className="usage-card__error">{account.quotaQueryLastError}</p> : null}

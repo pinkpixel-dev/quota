@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatPercent = formatPercent;
 exports.displayPercent = displayPercent;
+exports.meterPercent = meterPercent;
 exports.statusBarIndicator = statusBarIndicator;
 exports.statusBarLabel = statusBarLabel;
 exports.formatReset = formatReset;
@@ -14,6 +15,11 @@ function displayPercent(track, mode) {
     if (mode === 'percentRemaining')
         return track.percentRemaining ?? (track.percentUsed == null ? undefined : 100 - track.percentUsed);
     return track.percentUsed ?? (track.percentRemaining == null ? undefined : 100 - track.percentRemaining);
+}
+/** Panel meter width, filled by whichever percent the display setting shows. */
+function meterPercent(track, mode) {
+    const percent = displayPercent(track, mode);
+    return percent == null || !Number.isFinite(percent) ? 0 : Math.min(100, Math.max(0, Math.round(percent)));
 }
 function statusBarIndicator(track) {
     const remaining = displayPercent(track, 'percentRemaining');

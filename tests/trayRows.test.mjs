@@ -39,9 +39,13 @@ test('builds compact rows in the saved provider order', () => {
     lastUsed: 1,
   });
 
-  assert.deepEqual(buildTrayUsageRows(accounts, ['cursor', 'codex']), [
-    'Cursor · cursor@example.com · Total 41% used · Auto 30% used · API 11% used · On-demand off',
+  assert.deepEqual(buildTrayUsageRows(accounts, ['cursor', 'codex'], 'remaining'), [
+    'Cursor · cursor@example.com · Total 59% left · Auto 70% left · API 89% left · On-demand off',
     'Codex · dev@example.com · 5h 82% left · Week 64% left',
+  ]);
+  assert.deepEqual(buildTrayUsageRows(accounts, ['cursor', 'codex'], 'used'), [
+    'Cursor · cursor@example.com · Total 41% used · Auto 30% used · API 11% used · On-demand off',
+    'Codex · dev@example.com · 5h 18% used · Week 36% used',
   ]);
 });
 
@@ -64,7 +68,7 @@ test('clamps percentages and keeps count-based Copilot usage', () => {
     lastUsed: 1,
   });
 
-  assert.deepEqual(buildTrayUsageRows(accounts, order), [
+  assert.deepEqual(buildTrayUsageRows(accounts, order, 'used'), [
     'Copilot · @octocat · Premium 12/300 used · Chat 100% used · Inline 0% used',
   ]);
 });
@@ -81,7 +85,7 @@ test('keeps connected accounts visible when usage has not loaded', () => {
     lastUsed: 1,
   });
 
-  assert.deepEqual(buildTrayUsageRows(accounts, order), [
+  assert.deepEqual(buildTrayUsageRows(accounts, order, 'remaining'), [
     'Claude · claude@example.com · No usage data yet',
   ]);
 });
