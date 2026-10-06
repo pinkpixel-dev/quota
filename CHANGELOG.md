@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented here.
 
+## 1.6.1 and quota-vscode 1.3.1 - October 6, 2026
+
+This is the first public release of the OpenCode Go work ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). Desktop `1.6.0` and extension `1.3.0` only went out as two test builds, so everything listed under 1.6.0 below ships for the first time here, including the Windows console window fix, "Starts on first use", and the VS Code track order fix that came out of beta testing. `quota-cli` is unchanged.
+
+### 🏷️ Versioning
+
+- Bumped the desktop app to `1.6.1` and the extension to `1.3.1`. Both test builds shipped the extension as `1.3.0`, so VS Code could keep the beta 1 extension installed over beta 2. The new version numbers make sure the final release replaces whichever beta you have.
+
 ## 1.6.0 and quota-vscode 1.3.0 - October 5, 2026
 
 Adds OpenCode Go to the desktop app and the VS Code extension ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` is unchanged.

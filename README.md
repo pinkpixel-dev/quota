@@ -66,7 +66,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 
 ## Installation
 
-Download the latest published desktop release, [Quota v1.1.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.1.1), for your platform. Desktop `v1.6.0` is currently prepared locally and has not been published yet.
+Download the latest desktop release, [Quota v1.6.1](https://github.com/pinkpixel-dev/quota/releases/tag/v1.6.1), for your platform.
 
 Or install from source:
 
