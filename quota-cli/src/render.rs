@@ -1,8 +1,8 @@
 //! Human-readable rendering for `quota-cli usage`.
 //!
 //! The Herdr sidebar has one narrow line per pane, so `compact_token` stays
-//! percent-only. A terminal has room, and the reset time is the other half of
-//! what the desktop app shows, so the text report spells it out.
+//! percent-only. A terminal has room, so the text report labels each percent
+//! as what's left, like the desktop app's default, and spells out the reset time.
 
 use quota_core::usage::ProviderUsage;
 
@@ -19,12 +19,12 @@ pub fn usage_detail(usage: &ProviderUsage, now: i64) -> Option<String> {
             let percent = window.remaining_percent?;
             Some(match window.reset_at {
                 Some(reset_at) => format!(
-                    "{} {}% ({})",
+                    "{} {}% left ({})",
                     window.label,
                     percent,
                     relative_reset(reset_at, now)
                 ),
-                None => format!("{} {}%", window.label, percent),
+                None => format!("{} {}% left", window.label, percent),
             })
         })
         .collect();

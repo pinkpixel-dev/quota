@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ## 1.7.0 and quota-vscode 1.4.0 - October 6, 2026
 
-Adds a setting for showing usage as what's left or what's used, and makes every bar follow it ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` is unchanged.
+Adds a setting for showing usage as what's left or what's used, and makes every bar follow it ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` 0.2.1 picks up a matching label.
 
 ### 🖥️ Desktop
 
@@ -15,6 +15,10 @@ Adds a setting for showing usage as what's left or what's used, and makes every 
 - Any percentage row turns red once 20% or less is left, in either mode. Before, only some cards did this.
 - Low-quota notifications still trigger on what's left, so your threshold means the same thing whichever mode you pick.
 
+### 🖥️ quota-cli
+
+- `quota-cli usage` now labels each percent as what's left, like `5h 98% left (resets in 4h 58m)`. The numbers haven't changed, they were always remaining, but the bare `5h 98%` didn't say so. The Herdr sidebar token stays percent-only because it only has one narrow line.
+
 ### 🧩 VS Code Extension
 
 - The panel bars now fill the same way as the `quota.statusBar.display` setting. Before, the percent label switched between used and remaining, but the bar always showed used.
@@ -22,7 +26,7 @@ Adds a setting for showing usage as what's left or what's used, and makes every 
 
 ### 🏷️ Versioning
 
-- Bumped the desktop app to `1.7.0` and the extension to `1.4.0`.
+- Bumped the desktop app to `1.7.0`, the extension to `1.4.0`, and `quota-cli` to `0.2.1`.
 
 ## 1.6.1 and quota-vscode 1.3.1 - October 6, 2026
 

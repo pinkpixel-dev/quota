@@ -1,6 +1,6 @@
 [package]
 name = "quota-cli"
-version = "0.2.0"
+version = "0.2.1"
 description = "Read AI usage from locally stored agent CLI credentials."
 authors = ["Pink Pixel <admin@pinkpixel.dev>"]
 license = "Apache-2.0"

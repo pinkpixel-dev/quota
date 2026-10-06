@@ -31,14 +31,14 @@ fn a_window_with_a_reset_shows_how_long_is_left() {
     );
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("5h 47% (resets in 2h 14m)")
+        Some("5h 47% left (resets in 2h 14m)")
     );
 }
 
 #[test]
 fn a_window_without_a_reset_shows_only_the_percent() {
     let report = usage(vec![window("Credits", Some(100), None)], None);
-    assert_eq!(usage_detail(&report, NOW).as_deref(), Some("Credits 100%"));
+    assert_eq!(usage_detail(&report, NOW).as_deref(), Some("Credits 100% left"));
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn every_window_is_rendered_not_just_the_first_two() {
     );
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("5h 47% · Wk 36% · Mo 80%")
+        Some("5h 47% left · Wk 36% left · Mo 80% left")
     );
 }
 
@@ -65,7 +65,7 @@ fn a_reset_further_out_than_a_day_reads_in_days_and_hours() {
     );
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("Wk 36% (resets in 6d 3h)")
+        Some("Wk 36% left (resets in 6d 3h)")
     );
 }
 
@@ -74,7 +74,7 @@ fn a_whole_number_of_hours_drops_the_minutes() {
     let report = usage(vec![window("5h", Some(10), Some(NOW + 3 * 3600))], None);
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("5h 10% (resets in 3h)")
+        Some("5h 10% left (resets in 3h)")
     );
 }
 
@@ -83,7 +83,7 @@ fn a_whole_number_of_days_drops_the_hours() {
     let report = usage(vec![window("Wk", Some(10), Some(NOW + 2 * 86_400))], None);
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("Wk 10% (resets in 2d)")
+        Some("Wk 10% left (resets in 2d)")
     );
 }
 
@@ -92,7 +92,7 @@ fn less_than_a_minute_left_still_reads_as_a_minute_not_zero() {
     let report = usage(vec![window("5h", Some(3), Some(NOW + 20))], None);
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("5h 3% (resets in 1m)")
+        Some("5h 3% left (resets in 1m)")
     );
 }
 
@@ -101,7 +101,7 @@ fn a_reset_already_passed_reads_as_due_rather_than_negative() {
     let report = usage(vec![window("5h", Some(0), Some(NOW - 600))], None);
     assert_eq!(
         usage_detail(&report, NOW).as_deref(),
-        Some("5h 0% (resets now)")
+        Some("5h 0% left (resets now)")
     );
 }
 
@@ -114,7 +114,7 @@ fn a_window_with_no_percent_is_skipped_entirely() {
         ],
         None,
     );
-    assert_eq!(usage_detail(&report, NOW).as_deref(), Some("Wk 50%"));
+    assert_eq!(usage_detail(&report, NOW).as_deref(), Some("Wk 50% left"));
 }
 
 #[test]

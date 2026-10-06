@@ -122,12 +122,12 @@ quota-cli usage
 ```
 
 ```text
-claude       5h 98% (resets in 4h 58m) · Wk 35% (resets in 3d 9h)
-codex        5h 100% (resets in 4h 59m) · Wk 95% (resets in 4d 6h)
-cursor       Plan 100% (resets in 8d 3h)
-antigravity  5h 100% (resets in 4h 59m) · Wk 97% (resets in 6d 17h)
+claude       5h 98% left (resets in 4h 58m) · Wk 35% left (resets in 3d 9h)
+codex        5h 100% left (resets in 4h 59m) · Wk 95% left (resets in 4d 6h)
+cursor       Plan 100% left (resets in 8d 3h)
+antigravity  5h 100% left (resets in 4h 59m) · Wk 97% left (resets in 6d 17h)
 grok         no credit allocation
-kiro         Credits 100% · Bonus 100%
+kiro         Credits 100% left · Bonus 100% left
 ```
 
 Percentages are what you have left. Reset times show when a provider reports one. Anything you're not signed into says so instead of showing a number. Add `--json` for scripting.
