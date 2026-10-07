@@ -2,38 +2,11 @@
 import * as vscode from 'vscode';
 
 import { DEFAULT_SUMMARY_PATH, PROVIDER_ORDER } from './constants';
-import type { ProviderId, QuotaConfiguration, QuotaDataSource, StatusBarDisplayMode, TrackId } from './types';
-
-const TRACK_IDS: TrackId[] = [
-  'githubCopilot.premium',
-  'githubCopilot.chat',
-  'githubCopilot.inline',
-  'codex.primary',
-  'codex.weekly',
-  'claude.fiveHour',
-  'claude.weekly',
-  'claude.weeklySonnet',
-  'claude.extraUsage',
-  'antigravity.gemini',
-  'antigravity.geminiWeekly',
-  'antigravity.claude',
-  'antigravity.claudeWeekly',
-  'antigravity.credits',
-  'kiro.promptCredits',
-  'grok.credits',
-  'grok.monthlySpend',
-  'grok.onDemand',
-  'opencodeGo.fiveHour',
-  'opencodeGo.weekly',
-  'opencodeGo.monthly',
-];
+import { parseStatusBarEntry } from './statusBarSelection';
+import type { ProviderId, QuotaConfiguration, QuotaDataSource, StatusBarDisplayMode } from './types';
 
 function isProviderId(value: string): value is ProviderId {
   return PROVIDER_ORDER.includes(value as ProviderId);
-}
-
-function isTrackId(value: string): value is TrackId {
-  return TRACK_IDS.includes(value as TrackId);
 }
 
 function readStringArray(section: vscode.WorkspaceConfiguration, key: string): string[] {
@@ -46,7 +19,7 @@ export function readConfiguration(): QuotaConfiguration {
   const dataSource = section.get<QuotaDataSource>('dataSource', 'extensionAccounts');
   const summaryPath = section.get<string>('summaryPath', '').trim() || DEFAULT_SUMMARY_PATH;
   const enabledProviders = readStringArray(section, 'providers.enabled').filter(isProviderId);
-  const statusBarItems = readStringArray(section, 'statusBar.items').filter(isTrackId);
+  const statusBarItems = readStringArray(section, 'statusBar.items').filter((item) => parseStatusBarEntry(item) != null);
   const statusBarDisplay = section.get<StatusBarDisplayMode>('statusBar.display', 'percentRemaining');
 
   return {

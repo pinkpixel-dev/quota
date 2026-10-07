@@ -1,13 +1,14 @@
 // @env node
 import * as vscode from 'vscode';
 
-import { CANONICAL_TRACK_ORDER, EXTENSION_NAME } from './constants';
+import { EXTENSION_NAME } from './constants';
 import { statusBarIndicator, statusBarLabel } from './format';
-import type { QuotaConfiguration, QuotaSnapshot, TrackId } from './types';
+import { resolveStatusBarTracks } from './statusBarSelection';
+import type { QuotaConfiguration, QuotaSnapshot } from './types';
 
 export class QuotaStatusBar {
   private readonly mainItem: vscode.StatusBarItem;
-  private readonly trackItems = new Map<TrackId, vscode.StatusBarItem>();
+  private readonly trackItems = new Map<string, { item: vscode.StatusBarItem; priority: number }>();
 
   constructor() {
     this.mainItem = vscode.window.createStatusBarItem('quota.main', vscode.StatusBarAlignment.Right, 90);
@@ -17,7 +18,7 @@ export class QuotaStatusBar {
 
   dispose(): void {
     this.mainItem.dispose();
-    for (const item of this.trackItems.values()) item.dispose();
+    for (const { item } of this.trackItems.values()) item.dispose();
   }
 
   update(snapshot: QuotaSnapshot, config: QuotaConfiguration): void {
@@ -33,24 +34,22 @@ export class QuotaStatusBar {
       : `Click to open Quota.\nSource: ${snapshot.sourcePath}`;
     this.mainItem.show();
 
-    const sortedTrackIds = [...config.statusBarItems].sort((a, b) => {
-      const ai = CANONICAL_TRACK_ORDER.indexOf(a);
-      const bi = CANONICAL_TRACK_ORDER.indexOf(b);
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-    });
-    const selectedTrackIds = sortedTrackIds.slice(0, Math.max(0, config.statusBarMaxItems));
-    const visibleTracks = selectedTrackIds
-      .map((id) => snapshot.tracks.find((track) => track.id === id && config.enabledProviders.includes(track.providerId)))
-      .filter((track) => track != null);
-    const visibleIds = new Set(visibleTracks.map((track) => track.id));
+    const visibleTracks = resolveStatusBarTracks(
+      config.statusBarItems,
+      snapshot.tracks,
+      config.enabledProviders,
+      config.statusBarMaxItems,
+    );
+    const visibleKeys = new Set(visibleTracks.map((item) => item.key));
 
-    for (const [id, item] of this.trackItems.entries()) {
-      if (!visibleIds.has(id)) item.hide();
+    for (const [key, entry] of this.trackItems.entries()) {
+      if (!visibleKeys.has(key)) entry.item.hide();
     }
 
-    for (const track of visibleTracks) {
-      const item = this.getTrackItem(track.id);
-      item.text = `${statusBarIndicator(track)} ${statusBarLabel(track, config.statusBarDisplay)}`;
+    for (const { key, track, accountTag, priority } of visibleTracks) {
+      const item = this.getTrackItem(key, priority);
+      const label = statusBarLabel(track, config.statusBarDisplay);
+      item.text = `${statusBarIndicator(track)} ${accountTag ? `${label} · ${accountTag}` : label}`;
       item.tooltip = [
         `${track.providerLabel}: ${track.label}`,
         track.accountLabel,
@@ -62,20 +61,20 @@ export class QuotaStatusBar {
     }
   }
 
-  private getTrackItem(id: TrackId): vscode.StatusBarItem {
-    const existing = this.trackItems.get(id);
-    if (existing) return existing;
+  /** Priority is fixed at creation, so an item is recreated when its position changes. */
+  private getTrackItem(key: string, priority: number): vscode.StatusBarItem {
+    const existing = this.trackItems.get(key);
+    if (existing?.priority === priority) return existing.item;
+    existing?.item.dispose();
 
-    const canonicalIndex = CANONICAL_TRACK_ORDER.indexOf(id);
-    const priority = 89 - (canonicalIndex === -1 ? 50 : canonicalIndex);
-    const item = vscode.window.createStatusBarItem(`quota.${id}`, vscode.StatusBarAlignment.Right, priority);
-    item.name = `${EXTENSION_NAME}: ${id}`;
+    const item = vscode.window.createStatusBarItem(`quota.${key}`, vscode.StatusBarAlignment.Right, priority);
+    item.name = `${EXTENSION_NAME}: ${key.slice(0, key.indexOf('@'))}`;
     item.command = 'quota.openPanel';
-    this.trackItems.set(id, item);
+    this.trackItems.set(key, { item, priority });
     return item;
   }
 
   private hideTrackItems(): void {
-    for (const item of this.trackItems.values()) item.hide();
+    for (const { item } of this.trackItems.values()) item.hide();
   }
 }

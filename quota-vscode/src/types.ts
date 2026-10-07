@@ -32,7 +32,8 @@ export interface QuotaConfiguration {
   summaryPath: string;
   enabledProviders: ProviderId[];
   statusBarEnabled: boolean;
-  statusBarItems: TrackId[];
+  /** Bare track IDs or `trackId@accountId` entries. */
+  statusBarItems: string[];
   statusBarDisplay: StatusBarDisplayMode;
   statusBarMaxItems: number;
   refreshIntervalSeconds: number;
@@ -43,6 +44,7 @@ export interface QuotaTrack {
   providerId: ProviderId;
   providerLabel: string;
   label: string;
+  accountId: string;
   accountLabel: string;
   percentUsed?: number;
   percentRemaining?: number;

@@ -49,6 +49,7 @@ const opencodeGoProvider_1 = require("./opencodeGoProvider");
 const panel_1 = require("./panel");
 const summary_1 = require("./summary");
 const statusBar_1 = require("./statusBar");
+const statusBarPicker_1 = require("./statusBarPicker");
 let config;
 let snapshot;
 let statusBar;
@@ -190,6 +191,9 @@ async function activate(context) {
         if (!checkManualRefreshCooldown())
             return;
         await refresh(true, { refreshProviders: true });
+    }), vscode.commands.registerCommand('quota.chooseStatusBarItems', async () => {
+        await refresh(false);
+        await (0, statusBarPicker_1.chooseStatusBarItems)(snapshot, config);
     }), vscode.commands.registerCommand('quota.openSettings', async () => {
         await vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${context.extension.id}`);
     }), vscode.commands.registerCommand('quota.connectGitHubCopilot', async () => {

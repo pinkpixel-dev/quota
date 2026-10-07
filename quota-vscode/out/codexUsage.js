@@ -38,6 +38,7 @@ function trackFromAccount(account, id, label) {
         providerId: 'codex',
         providerLabel: constants_1.PROVIDER_LABELS.codex,
         label,
+        accountId: account.id,
         accountLabel: account.email,
         percentUsed: clampedRemaining == null ? undefined : 100 - clampedRemaining,
         percentRemaining: remaining ?? undefined,

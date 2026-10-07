@@ -331,6 +331,7 @@ function trackFromAccount(account: GitHubCopilotAccount, id: 'githubCopilot.prem
     providerId: 'githubCopilot',
     providerLabel: PROVIDER_LABELS.githubCopilot,
     label,
+    accountId: account.id,
     accountLabel: accountLabel(account),
     percentUsed: clampPercent(percentUsed),
     percentRemaining: percentUsed == null ? undefined : 100 - clampPercent(percentUsed)!,

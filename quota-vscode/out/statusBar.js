@@ -38,6 +38,7 @@ exports.QuotaStatusBar = void 0;
 const vscode = __importStar(require("vscode"));
 const constants_1 = require("./constants");
 const format_1 = require("./format");
+const statusBarSelection_1 = require("./statusBarSelection");
 class QuotaStatusBar {
     mainItem;
     trackItems = new Map();
@@ -48,7 +49,7 @@ class QuotaStatusBar {
     }
     dispose() {
         this.mainItem.dispose();
-        for (const item of this.trackItems.values())
+        for (const { item } of this.trackItems.values())
             item.dispose();
     }
     update(snapshot, config) {
@@ -62,23 +63,16 @@ class QuotaStatusBar {
             ? `${snapshot.warnings[0]}\n\nClick to open Quota.`
             : `Click to open Quota.\nSource: ${snapshot.sourcePath}`;
         this.mainItem.show();
-        const sortedTrackIds = [...config.statusBarItems].sort((a, b) => {
-            const ai = constants_1.CANONICAL_TRACK_ORDER.indexOf(a);
-            const bi = constants_1.CANONICAL_TRACK_ORDER.indexOf(b);
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-        });
-        const selectedTrackIds = sortedTrackIds.slice(0, Math.max(0, config.statusBarMaxItems));
-        const visibleTracks = selectedTrackIds
-            .map((id) => snapshot.tracks.find((track) => track.id === id && config.enabledProviders.includes(track.providerId)))
-            .filter((track) => track != null);
-        const visibleIds = new Set(visibleTracks.map((track) => track.id));
-        for (const [id, item] of this.trackItems.entries()) {
-            if (!visibleIds.has(id))
-                item.hide();
+        const visibleTracks = (0, statusBarSelection_1.resolveStatusBarTracks)(config.statusBarItems, snapshot.tracks, config.enabledProviders, config.statusBarMaxItems);
+        const visibleKeys = new Set(visibleTracks.map((item) => item.key));
+        for (const [key, entry] of this.trackItems.entries()) {
+            if (!visibleKeys.has(key))
+                entry.item.hide();
         }
-        for (const track of visibleTracks) {
-            const item = this.getTrackItem(track.id);
-            item.text = `${(0, format_1.statusBarIndicator)(track)} ${(0, format_1.statusBarLabel)(track, config.statusBarDisplay)}`;
+        for (const { key, track, accountTag, priority } of visibleTracks) {
+            const item = this.getTrackItem(key, priority);
+            const label = (0, format_1.statusBarLabel)(track, config.statusBarDisplay);
+            item.text = `${(0, format_1.statusBarIndicator)(track)} ${accountTag ? `${label} · ${accountTag}` : label}`;
             item.tooltip = [
                 `${track.providerLabel}: ${track.label}`,
                 track.accountLabel,
@@ -89,20 +83,20 @@ class QuotaStatusBar {
             item.show();
         }
     }
-    getTrackItem(id) {
-        const existing = this.trackItems.get(id);
-        if (existing)
-            return existing;
-        const canonicalIndex = constants_1.CANONICAL_TRACK_ORDER.indexOf(id);
-        const priority = 89 - (canonicalIndex === -1 ? 50 : canonicalIndex);
-        const item = vscode.window.createStatusBarItem(`quota.${id}`, vscode.StatusBarAlignment.Right, priority);
-        item.name = `${constants_1.EXTENSION_NAME}: ${id}`;
+    /** Priority is fixed at creation, so an item is recreated when its position changes. */
+    getTrackItem(key, priority) {
+        const existing = this.trackItems.get(key);
+        if (existing?.priority === priority)
+            return existing.item;
+        existing?.item.dispose();
+        const item = vscode.window.createStatusBarItem(`quota.${key}`, vscode.StatusBarAlignment.Right, priority);
+        item.name = `${constants_1.EXTENSION_NAME}: ${key.slice(0, key.indexOf('@'))}`;
         item.command = 'quota.openPanel';
-        this.trackItems.set(id, item);
+        this.trackItems.set(key, { item, priority });
         return item;
     }
     hideTrackItems() {
-        for (const item of this.trackItems.values())
+        for (const { item } of this.trackItems.values())
             item.hide();
     }
 }

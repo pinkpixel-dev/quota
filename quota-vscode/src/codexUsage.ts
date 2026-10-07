@@ -27,6 +27,7 @@ interface WindowInfo {
 }
 
 interface CodexTrackAccount {
+  id: string;
   email: string;
   quota: CodexQuotaSummary;
   quotaQueryLastError?: string | null;
@@ -73,6 +74,7 @@ function trackFromAccount(
     providerId: 'codex',
     providerLabel: PROVIDER_LABELS.codex,
     label,
+    accountId: account.id,
     accountLabel: account.email,
     percentUsed: clampedRemaining == null ? undefined : 100 - clampedRemaining,
     percentRemaining: remaining ?? undefined,

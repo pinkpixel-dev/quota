@@ -245,6 +245,7 @@ function trackFromAccount(account, id, label, percentUsed) {
         providerId: 'githubCopilot',
         providerLabel: constants_1.PROVIDER_LABELS.githubCopilot,
         label,
+        accountId: account.id,
         accountLabel: accountLabel(account),
         percentUsed: clampPercent(percentUsed),
         percentRemaining: percentUsed == null ? undefined : 100 - clampPercent(percentUsed),

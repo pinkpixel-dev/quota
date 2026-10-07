@@ -350,6 +350,7 @@ function trackFromAccount(account, id, label, remaining, resetAt) {
         providerId: 'claude',
         providerLabel: constants_1.PROVIDER_LABELS.claude,
         label,
+        accountId: account.id,
         accountLabel: account.displayName ? `${account.displayName} (${account.email})` : account.email,
         percentUsed: usedFromRemaining(remaining),
         percentRemaining: remaining ?? undefined,

@@ -13,6 +13,7 @@ import { OpenCodeGoProvider } from './opencodeGoProvider';
 import { showQuotaPanel, updateQuotaPanel } from './panel';
 import { loadQuotaSnapshot } from './summary';
 import { QuotaStatusBar } from './statusBar';
+import { chooseStatusBarItems } from './statusBarPicker';
 import type { QuotaConfiguration, QuotaSnapshot } from './types';
 
 let config: QuotaConfiguration;
@@ -165,6 +166,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('quota.refresh', async () => {
       if (!checkManualRefreshCooldown()) return;
       await refresh(true, { refreshProviders: true });
+    }),
+    vscode.commands.registerCommand('quota.chooseStatusBarItems', async () => {
+      await refresh(false);
+      await chooseStatusBarItems(snapshot, config);
     }),
     vscode.commands.registerCommand('quota.openSettings', async () => {
       await vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${context.extension.id}`);

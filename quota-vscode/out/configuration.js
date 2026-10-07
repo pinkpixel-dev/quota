@@ -37,34 +37,9 @@ exports.readConfiguration = readConfiguration;
 // @env node
 const vscode = __importStar(require("vscode"));
 const constants_1 = require("./constants");
-const TRACK_IDS = [
-    'githubCopilot.premium',
-    'githubCopilot.chat',
-    'githubCopilot.inline',
-    'codex.primary',
-    'codex.weekly',
-    'claude.fiveHour',
-    'claude.weekly',
-    'claude.weeklySonnet',
-    'claude.extraUsage',
-    'antigravity.gemini',
-    'antigravity.geminiWeekly',
-    'antigravity.claude',
-    'antigravity.claudeWeekly',
-    'antigravity.credits',
-    'kiro.promptCredits',
-    'grok.credits',
-    'grok.monthlySpend',
-    'grok.onDemand',
-    'opencodeGo.fiveHour',
-    'opencodeGo.weekly',
-    'opencodeGo.monthly',
-];
+const statusBarSelection_1 = require("./statusBarSelection");
 function isProviderId(value) {
     return constants_1.PROVIDER_ORDER.includes(value);
-}
-function isTrackId(value) {
-    return TRACK_IDS.includes(value);
 }
 function readStringArray(section, key) {
     const value = section.get(key);
@@ -75,7 +50,7 @@ function readConfiguration() {
     const dataSource = section.get('dataSource', 'extensionAccounts');
     const summaryPath = section.get('summaryPath', '').trim() || constants_1.DEFAULT_SUMMARY_PATH;
     const enabledProviders = readStringArray(section, 'providers.enabled').filter(isProviderId);
-    const statusBarItems = readStringArray(section, 'statusBar.items').filter(isTrackId);
+    const statusBarItems = readStringArray(section, 'statusBar.items').filter((item) => (0, statusBarSelection_1.parseStatusBarEntry)(item) != null);
     const statusBarDisplay = section.get('statusBar.display', 'percentRemaining');
     return {
         dataSource,

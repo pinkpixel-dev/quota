@@ -12,7 +12,8 @@ Quota is built for developers who use more than one AI coding tool and want one 
 
 - **Tracks multiple providers**: GitHub Copilot, Codex, Claude Code, Antigravity, Kiro, Grok, and OpenCode Go
 - **Shows a permanent status bar button**: open Quota without leaving your editor
-- **Pins quota tracks to the status bar**: choose the exact limits you want visible while coding
+- **Tracks more than one account per provider**: connect a work and a personal account side by side
+- **Pins quota tracks to the status bar**: choose the exact limits you want visible while coding, per account
 - **Opens a compact quota panel**: scan percent used or remaining, reset timing, and last update time
 - **Refreshes extension-owned accounts**: use manual refresh or the built-in refresh interval
 - **Explains expired authorization**: get a clear error and Reauthenticate action instead of an opaque token-refresh response
@@ -48,7 +49,11 @@ Pinned percentage tracks use a small usage indicator:
 - 🔴 10% remaining or less
 - ⚪ No percentage data available
 
-Example pinned tracks:
+The easiest way to choose them is `Quota: Choose Status Bar Items`, or the **Status bar** button in the panel. It lists every track for every connected account, so you can tick exactly the ones you want. If you've connected more than one account for a provider, the status bar adds a short account tag, like `Codex:Wk 22% left · work`.
+
+You can also edit `quota.statusBar.items` by hand. A bare track ID like `codex.weekly` follows the first connected account for that provider. Add `@` and an account ID to pin a specific account (the picker writes these for you). Only the first `quota.statusBar.maxItems` tracks show up.
+
+Example track IDs:
 
 - `codex.primary`
 - `claude.fiveHour`
@@ -62,15 +67,17 @@ Example pinned tracks:
 
 Click the status bar button or run `Quota: Open Quota Panel` to open the in-editor panel. The panel uses a single column in narrow layouts and multiple columns in wider layouts, so it stays readable whether you keep it slim or stretch it across the editor.
 
-Each track shows:
+Each connected account gets one card. Antigravity, for example, shows Gemini 5h, Gemini Weekly, Claude/GPT 5h, and Claude/GPT Weekly together, with available AI credits in the card header.
 
-- Provider and quota name
-- Connected account label
-- Percent used or percent remaining, following `quota.statusBar.display`. The bar fills the same way, so it tracks whichever number you're looking at
-- Reset time when available
-- Last updated time
-- Provider connect, disconnect, refresh, and settings actions
-- A Reauthenticate action for connected Codex or Claude Code accounts whose authorization expired
+Each card shows:
+
+- Provider and connected account label
+- One row per quota window, with percent used or percent remaining following `quota.statusBar.display`. The bar fills the same way, so it tracks whichever number you're looking at
+- Reset time for each window when available
+- Last updated time for the account
+- Any refresh error for that account
+
+Above the cards there's a small group for each provider. It shows **Connect** until you have an account, then the account count with **Add** (connect another account) and **Disconnect** (pick which account to remove). A Reauthenticate button shows up when an account's authorization expired.
 
 ## Connect accounts
 
@@ -83,6 +90,8 @@ Run the matching connect command from the Command Palette:
 - `Quota: Connect Kiro`
 - `Quota: Connect Grok`
 - `Quota: Connect OpenCode Go`
+
+Running a connect command again while signed in to a different account adds a second account instead of replacing the first one. The panel's **Add** button does the same thing. If you connect the same account twice, Quota just updates the existing one.
 
 Each provider uses its own auth flow. Quota stores raw provider tokens only in VS Code SecretStorage and stores display-safe account metadata in extension state.
 
@@ -123,7 +132,8 @@ Open `Quota: Open Settings` or edit your VS Code settings:
 | `Quota: Open Quota Panel` | Open the compact quota panel |
 | `Quota: Refresh Summary` | Refresh connected provider data |
 | `Quota: Open Settings` | Open Quota settings |
-| `Quota: Connect GitHub Copilot` | Connect a GitHub Copilot account |
+| `Quota: Choose Status Bar Items` | Pick which tracks, for which accounts, show in the status bar |
+| `Quota: Connect GitHub Copilot` | Connect a GitHub Copilot account, or add another one |
 | `Quota: Refresh GitHub Copilot` | Refresh GitHub Copilot quota data |
 | `Quota: Disconnect GitHub Copilot` | Remove extension-stored GitHub Copilot credentials |
 | `Quota: Connect Codex` | Connect a Codex account |

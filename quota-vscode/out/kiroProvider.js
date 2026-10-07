@@ -142,6 +142,7 @@ function trackFromAccount(account) {
         providerId: 'kiro',
         providerLabel: constants_1.PROVIDER_LABELS.kiro,
         label: 'Prompt credits',
+        accountId: account.id,
         accountLabel: account.email || 'Kiro account',
         percentUsed: clampPercent(percentUsed),
         percentRemaining: percentUsed == null ? undefined : 100 - clampPercent(percentUsed),

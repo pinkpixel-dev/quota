@@ -404,6 +404,7 @@ function trackFromAccount(account: ClaudeAccount, id: TrackId, label: string, re
     providerId: 'claude',
     providerLabel: PROVIDER_LABELS.claude,
     label,
+    accountId: account.id,
     accountLabel: account.displayName ? `${account.displayName} (${account.email})` : account.email,
     percentUsed: usedFromRemaining(remaining),
     percentRemaining: remaining ?? undefined,

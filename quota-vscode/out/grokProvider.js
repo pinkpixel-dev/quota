@@ -267,6 +267,7 @@ function tracksFromAccount(account) {
     const base = {
         providerId: 'grok',
         providerLabel: constants_1.PROVIDER_LABELS.grok,
+        accountId: account.id,
         accountLabel,
         updatedAt: account.usageUpdatedAt,
         error: account.quotaQueryLastError ?? null,

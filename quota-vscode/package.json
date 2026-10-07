@@ -24,6 +24,7 @@
     "onCommand:quota.openPanel",
     "onCommand:quota.refresh",
     "onCommand:quota.openSettings",
+    "onCommand:quota.chooseStatusBarItems",
     "onCommand:quota.connectGitHubCopilot",
     "onCommand:quota.refreshGitHubCopilot",
     "onCommand:quota.disconnectGitHubCopilot",
@@ -60,6 +61,10 @@
       {
         "command": "quota.openSettings",
         "title": "Quota: Open Settings"
+      },
+      {
+        "command": "quota.chooseStatusBarItems",
+        "title": "Quota: Choose Status Bar Items"
       },
       {
         "command": "quota.connectGitHubCopilot",
@@ -204,31 +209,10 @@
           "default": [],
           "items": {
             "type": "string",
-            "enum": [
-              "githubCopilot.premium",
-              "githubCopilot.chat",
-              "githubCopilot.inline",
-              "codex.primary",
-              "codex.weekly",
-              "claude.fiveHour",
-              "claude.weekly",
-              "claude.weeklySonnet",
-              "claude.extraUsage",
-              "antigravity.gemini",
-              "antigravity.geminiWeekly",
-              "antigravity.claude",
-              "antigravity.claudeWeekly",
-              "antigravity.credits",
-              "kiro.promptCredits",
-              "grok.credits",
-              "grok.monthlySpend",
-              "grok.onDemand",
-              "opencodeGo.fiveHour",
-              "opencodeGo.weekly",
-              "opencodeGo.monthly"
-            ]
+            "pattern": "^(githubCopilot\\.(premium|chat|inline)|codex\\.(primary|weekly)|claude\\.(fiveHour|weekly|weeklySonnet|extraUsage)|antigravity\\.(gemini|geminiWeekly|claude|claudeWeekly|credits)|kiro\\.promptCredits|grok\\.(credits|monthlySpend|onDemand)|opencodeGo\\.(fiveHour|weekly|monthly))(@.+)?$",
+            "patternErrorMessage": "Use a track ID like codex.weekly, optionally followed by @accountId."
           },
-          "markdownDescription": "Quota tracks shown directly in the status bar. Leave empty to show only the small Quota button."
+          "markdownDescription": "Quota tracks shown directly in the status bar. Run **Quota: Choose Status Bar Items** to pick tracks per account. A bare track ID such as `codex.weekly` follows the first connected account; `codex.weekly@<accountId>` pins one account. Leave empty to show only the small Quota button."
         },
         "quota.statusBar.display": {
           "type": "string",

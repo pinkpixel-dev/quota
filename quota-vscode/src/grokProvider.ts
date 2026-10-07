@@ -333,6 +333,7 @@ function tracksFromAccount(account: GrokAccount): QuotaTrack[] {
   const base = {
     providerId: 'grok' as const,
     providerLabel: PROVIDER_LABELS.grok,
+    accountId: account.id,
     accountLabel,
     updatedAt: account.usageUpdatedAt,
     error: account.quotaQueryLastError ?? null,

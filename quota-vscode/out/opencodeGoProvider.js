@@ -52,6 +52,7 @@ function track(account, id, label, window) {
         providerId: 'opencodeGo',
         providerLabel: constants_1.PROVIDER_LABELS.opencodeGo,
         label,
+        accountId: account.id,
         accountLabel: account.label,
         percentUsed: window?.percentUsed,
         percentRemaining: window?.percentUsed == null ? undefined : 100 - window.percentUsed,

@@ -88,6 +88,7 @@ function buildAntigravityCreditsTrack(account) {
         providerId: 'antigravity',
         providerLabel: constants_1.PROVIDER_LABELS.antigravity,
         label: 'Available AI Credits',
+        accountId: account.id,
         accountLabel: account.name ? `${account.name} (${account.email})` : account.email,
         valueLabel,
         updatedAt: account.usageUpdatedAt,

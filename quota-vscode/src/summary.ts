@@ -56,6 +56,10 @@ function accountLabel(account: Record<string, unknown>): string {
   );
 }
 
+function accountId(account: Record<string, unknown>): string {
+  return asString(account.id) ?? accountLabel(account);
+}
+
 function makeTrack(
   id: TrackId,
   providerId: ProviderId,
@@ -70,6 +74,7 @@ function makeTrack(
     providerId,
     providerLabel: PROVIDER_LABELS[providerId],
     label,
+    accountId: accountId(account),
     accountLabel: accountLabel(account),
     percentUsed: clampPercent(percentUsed),
     percentRemaining: clampPercent(percentRemaining),
@@ -214,6 +219,7 @@ function tracksFromAntigravity(accounts: Record<string, unknown>[]): QuotaTrack[
             providerId: 'antigravity',
             providerLabel: PROVIDER_LABELS.antigravity,
             label: 'Available AI Credits',
+            accountId: accountId(account),
             accountLabel: accountLabel(account),
             valueLabel: creditsValue,
             updatedAt: normalizeTimestamp(account.usageUpdatedAt),

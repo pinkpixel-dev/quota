@@ -164,6 +164,7 @@ function trackFromAccount(account: KiroAccount): QuotaTrack {
     providerId: 'kiro',
     providerLabel: PROVIDER_LABELS.kiro,
     label: 'Prompt credits',
+    accountId: account.id,
     accountLabel: account.email || 'Kiro account',
     percentUsed: clampPercent(percentUsed),
     percentRemaining: percentUsed == null ? undefined : 100 - clampPercent(percentUsed)!,

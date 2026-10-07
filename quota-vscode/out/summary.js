@@ -78,12 +78,16 @@ function accountLabel(account) {
         ?? asString(account.label)
         ?? 'Connected account');
 }
+function accountId(account) {
+    return asString(account.id) ?? accountLabel(account);
+}
 function makeTrack(id, providerId, account, label, percentUsed, percentRemaining, resetAt) {
     return {
         id,
         providerId,
         providerLabel: constants_1.PROVIDER_LABELS[providerId],
         label,
+        accountId: accountId(account),
         accountLabel: accountLabel(account),
         percentUsed: clampPercent(percentUsed),
         percentRemaining: clampPercent(percentRemaining),
@@ -149,6 +153,7 @@ function tracksFromAntigravity(accounts) {
                     providerId: 'antigravity',
                     providerLabel: constants_1.PROVIDER_LABELS.antigravity,
                     label: 'Available AI Credits',
+                    accountId: accountId(account),
                     accountLabel: accountLabel(account),
                     valueLabel: creditsValue,
                     updatedAt: normalizeTimestamp(account.usageUpdatedAt),

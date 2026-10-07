@@ -423,6 +423,7 @@ function trackFromAccount(account, id, label, window) {
         providerId: 'antigravity',
         providerLabel: constants_1.PROVIDER_LABELS.antigravity,
         label,
+        accountId: account.id,
         accountLabel: account.name ? `${account.name} (${account.email})` : account.email,
         percentUsed: usedFromRemaining(window.remainingPercent),
         percentRemaining: window.remainingPercent ?? undefined,
