@@ -8,6 +8,7 @@ All notable changes to this project will be documented here.
 
 - You can connect more than one account per provider from the panel now. Each provider shows **Connect** until it has an account, then **Add** and **Disconnect**. Connecting with the same login again just updates the existing account.
 - The panel shows one card per account instead of one card per track. Antigravity's Gemini and Claude/GPT windows are all on one card, with AI credits in the header.
+- Cards in the same row stretch to the same height, with the updated time pinned to the bottom. The panel also uses the full editor width now instead of stopping at 1120px.
 - New `Quota: Choose Status Bar Items` command, also on the panel's **Status bar** button. It lists every track for every connected account so you can pick exactly what shows up. When a provider has more than one account, status bar items get a short account tag like `· work`.
 - `quota.statusBar.items` accepts `trackId@accountId` to pin one account. Plain IDs like `codex.weekly` still work and follow the first account, so existing settings don't change.
 

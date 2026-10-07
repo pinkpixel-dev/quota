@@ -151,3 +151,4 @@ export function renderAccountCard(card: AccountCard): string {
     </article>
   `;
 }
+

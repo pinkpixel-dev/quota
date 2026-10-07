@@ -31,8 +31,7 @@ body {
 }
 
 main {
-  width: min(100%, 1120px);
-  margin: 0 auto;
+  width: 100%;
   padding: 14px;
 }
 
@@ -146,9 +145,14 @@ button:focus-visible {
 .list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 8px;
   padding-top: 12px;
+}
+
+.account-card {
+  display: flex;
+  flex-direction: column;
 }
 
 .account-card,
@@ -274,7 +278,8 @@ button:focus-visible {
 }
 
 .card-meta {
-  margin-top: 10px;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .quota-error {
