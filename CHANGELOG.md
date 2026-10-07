@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## Unreleased
+
+### 🌐 Website
+
+- Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
+
 ## 1.7.0 and quota-vscode 1.4.0 - October 6, 2026
 
 Adds a setting for showing usage as what's left or what's used, and makes every bar follow it ([#7](https://github.com/pinkpixel-dev/quota/issues/7)). `quota-cli` 0.2.1 picks up a matching label.

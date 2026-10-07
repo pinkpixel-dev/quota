@@ -1,0 +1,126 @@
+---
+import DownloadTable from './DownloadTable.astro';
+import CopyCommand from './CopyCommand.astro';
+import { vscode, cli, releasesUrl } from '../data/site';
+---
+
+<section id="download" class="download q-dots" aria-labelledby="download-title">
+  <div class="q-wrap download__grid">
+    <div>
+      <h2 id="download-title">Download</h2>
+      <p class="download__lede">The desktop app runs on Windows and Linux. There's no macOS build right now.</p>
+      <DownloadTable />
+    </div>
+
+    <div class="download__other">
+      <div class="download__item">
+        <h3>VS Code extension</h3>
+        <p>Version {vscode.version}</p>
+        <div class="download__links">
+          <a href={vscode.marketplace}>Marketplace</a>
+          <a href={vscode.openVsx}>Open VSX</a>
+          <a href={vscode.vsix}>.vsix file</a>
+        </div>
+      </div>
+
+      <div class="download__item">
+        <h3>quota-cli</h3>
+        <p>Version {cli.version}. Use cargo on a Mac.</p>
+        <CopyCommand command="cargo install quota-cli" label="Copy cargo install command" />
+        <div class="download__links">
+          <a href={cli.linux}>Linux binary</a>
+          <a href={cli.windows}>Windows binary</a>
+          <a href={cli.crate}>crates.io</a>
+        </div>
+      </div>
+
+      <div class="download__item">
+        <h3>Herdr plugin</h3>
+        <p>Install quota-cli first.</p>
+        <CopyCommand command="herdr plugin install pinkpixel-dev/quota/herdr-plugin" label="Copy Herdr plugin install command" />
+      </div>
+
+      <a class="download__all" href={releasesUrl}>All releases on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .download {
+    padding-block: clamp(3.5rem, 8vw, 6rem);
+    border-top: 1px solid var(--q-line-soft);
+    scroll-margin-top: 3.75rem;
+  }
+
+  .download__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3rem;
+  }
+
+  @media (min-width: 60rem) {
+    .download__grid {
+      grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 1fr);
+      gap: 3.5rem;
+    }
+  }
+
+  h2 {
+    font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+  }
+
+  .download__lede {
+    margin: 0.75rem 0 1.5rem;
+    color: var(--q-muted);
+  }
+
+  .download__other {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+
+  .download__item {
+    display: grid;
+    gap: 0.6rem;
+    padding: 1.25rem;
+    border: 1px solid var(--q-line);
+    border-radius: var(--q-radius-lg);
+    background: var(--q-panel);
+  }
+
+  h3 {
+    font-size: 1.0625rem;
+  }
+
+  .download__item p {
+    font-size: 0.875rem;
+    color: var(--q-subtle);
+  }
+
+  .download__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.25rem;
+  }
+
+  .download__links a,
+  .download__all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    font-size: 0.9375rem;
+    color: var(--q-accent);
+    text-underline-offset: 3px;
+    white-space: nowrap;
+  }
+
+  .download__all {
+    justify-self: start;
+    color: var(--q-muted);
+  }
+
+  .download__all:hover {
+    color: var(--q-text);
+  }
+</style>

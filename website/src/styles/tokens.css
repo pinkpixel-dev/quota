@@ -1,0 +1,59 @@
+/* Design tokens shared by the homepage and the docs. Values mirror the desktop app. */
+
+:root {
+  color-scheme: dark;
+
+  --q-bg: #111315;
+  --q-panel: #171a1d;
+  --q-panel-strong: #1e2226;
+  --q-code-bg: #101214;
+  --q-bar-bg: #0f1113;
+  --q-line: #2a3035;
+  --q-line-soft: #202529;
+  --q-text: #f4f7f8;
+  --q-muted: #a8b0b6;
+  --q-subtle: #747e86;
+  --q-accent: #e7ff5f;
+  --q-accent-ink: #141700;
+  --q-accent-soft: rgba(231, 255, 95, 0.12);
+  --q-accent-border: rgba(231, 255, 95, 0.3);
+  --q-accent-focus: rgba(231, 255, 95, 0.55);
+  --q-success: #1ed760;
+  --q-warning: #ffb84d;
+  --q-danger: #ff5f66;
+  --q-grid-dot: rgba(255, 255, 255, 0.06);
+  --q-shot-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+  --q-brand-filter: invert(1);
+
+  --q-radius: 8px;
+  --q-radius-lg: 12px;
+  --q-font-sans: 'Geist Variable', ui-sans-serif, -apple-system, 'Segoe UI', sans-serif;
+  --q-font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --q-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --q-bg: #f4f7f7;
+  --q-panel: #ffffff;
+  --q-panel-strong: #eef3f3;
+  --q-code-bg: #e9eeee;
+  --q-bar-bg: #dfe7e7;
+  --q-line: #cdd8d8;
+  --q-line-soft: #dfe7e7;
+  --q-text: #171d1f;
+  --q-muted: #526164;
+  --q-subtle: #6a7679;
+  --q-accent: #b45309;
+  --q-accent-ink: #ffffff;
+  --q-accent-soft: rgba(245, 158, 11, 0.14);
+  --q-accent-border: rgba(180, 83, 9, 0.34);
+  --q-accent-focus: rgba(180, 83, 9, 0.55);
+  --q-success: #0f9f63;
+  --q-warning: #a85b00;
+  --q-danger: #d43f4d;
+  --q-grid-dot: rgba(23, 29, 31, 0.09);
+  --q-shot-shadow: 0 24px 60px -28px rgba(23, 29, 31, 0.35);
+  --q-brand-filter: none;
+}

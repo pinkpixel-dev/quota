@@ -25,7 +25,7 @@ Every provider saves its raw auth info in the Rust backend and only secure accou
 
 ## Screenshots
 
-### Dashboard
+### Default Dashboard
 
 ![Default dashboard](screenshots/default_dashboard.png)
 

@@ -1,0 +1,133 @@
+---
+import { Download, BookOpen } from '@lucide/astro';
+import { desktop, providers } from '../data/site';
+import ProviderIcon from './ProviderIcon.astro';
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="q-wrap hero__grid">
+    <div class="hero__copy">
+      <h1 id="hero-title">See how much AI usage you have left.</h1>
+      <p class="hero__lede">
+        Quota tracks your limits across the AI coding tools you use, in one place. It comes as a desktop app, a VS Code
+        extension, a CLI and a Herdr plugin.
+      </p>
+      <div class="hero__actions">
+        <a class="q-btn q-btn--primary" href="#download">
+          <Download size={17} aria-hidden="true" />
+          Download {desktop.version}
+        </a>
+        <a class="q-btn" href="/docs/">
+          <BookOpen size={17} aria-hidden="true" />
+          Read the docs
+        </a>
+      </div>
+      <p class="hero__meta">Windows and Linux · Free and open source</p>
+    </div>
+
+    <div class="hero__providers">
+      <h2>Supported providers</h2>
+      <ul>
+        {
+          providers.map((provider) => (
+            <li>
+              <ProviderIcon icon={provider.icon} size={18} />
+              <span>{provider.name}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <a href="/docs/providers/">What each one tracks</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: clamp(3rem, 8vw, 6rem) clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .hero__grid {
+    display: grid;
+    gap: 2.5rem;
+    align-items: end;
+  }
+
+  @media (min-width: 60rem) {
+    .hero__grid {
+      grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 1fr);
+      gap: 4rem;
+    }
+  }
+
+  h1 {
+    max-width: 16ch;
+    font-size: clamp(2.4rem, 6vw, 4.25rem);
+    letter-spacing: -0.035em;
+  }
+
+  .hero__lede {
+    max-width: 38rem;
+    margin-top: 1.25rem;
+    font-size: clamp(1.0625rem, 1.6vw, 1.1875rem);
+    color: var(--q-muted);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .hero__meta {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--q-subtle);
+  }
+
+  .hero__providers {
+    padding: 1.25rem;
+    border: 1px solid var(--q-line);
+    border-radius: var(--q-radius-lg);
+    background: var(--q-panel);
+  }
+
+  .hero__providers h2 {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--q-subtle);
+  }
+
+  ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem 1rem;
+    margin: 0.9rem 0 1rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.25rem;
+    font-size: 0.9375rem;
+    color: var(--q-text);
+  }
+
+  .hero__providers > a {
+    font-size: 0.875rem;
+    color: var(--q-accent);
+    text-underline-offset: 3px;
+  }
+
+  @media (max-width: 22rem) {
+    ul {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

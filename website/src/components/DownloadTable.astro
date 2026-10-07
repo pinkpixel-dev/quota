@@ -1,0 +1,173 @@
+---
+import { Download } from '@lucide/astro';
+import { desktop, desktopDownloads } from '../data/site';
+---
+
+<div class="q-downloads not-content">
+  <table>
+    <caption class="q-sr-only">Quota {desktop.version} desktop downloads</caption>
+    <thead>
+      <tr>
+        <th scope="col">Platform</th>
+        <th scope="col">Package</th>
+        <th scope="col"><span class="q-sr-only">Download</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        desktopDownloads.map((item) => (
+          <tr>
+            <td>{item.os}</td>
+            <td>
+              <span class="q-downloads__label">{item.label}</span>
+              <code>{item.file}</code>
+            </td>
+            <td>
+              <a href={item.href} aria-label={`Download ${item.file}`}>
+                <Download size={16} aria-hidden="true" />
+                <span>Download</span>
+              </a>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+  <p class="q-downloads__meta">
+    Version {desktop.version} · <a href={desktop.checksumsUrl}>SHA256SUMS.txt</a>{' · '}<a href={desktop.releaseUrl}
+      >Release notes</a
+    >
+  </p>
+</div>
+
+<style>
+  .q-downloads {
+    width: 100%;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--q-line);
+    border-radius: var(--q-radius);
+    overflow: hidden;
+    background: var(--q-panel);
+    font-size: 0.875rem;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--q-subtle);
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--q-line);
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--q-line-soft);
+    color: var(--q-text);
+    vertical-align: middle;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  td:first-child {
+    color: var(--q-muted);
+    white-space: nowrap;
+  }
+
+  .q-downloads__label {
+    display: block;
+    font-weight: 500;
+  }
+
+  code {
+    display: block;
+    margin-top: 0.15rem;
+    font-family: var(--q-font-mono);
+    font-size: 0.75rem;
+    color: var(--q-subtle);
+    background: none;
+    padding: 0;
+    overflow-wrap: anywhere;
+  }
+
+  td:last-child {
+    text-align: right;
+    width: 1%;
+  }
+
+  td a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+    padding: 0 0.8rem;
+    border: 1px solid var(--q-accent-border);
+    border-radius: var(--q-radius);
+    background: var(--q-accent-soft);
+    color: var(--q-accent);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 150ms var(--q-ease),
+      border-color 150ms var(--q-ease);
+  }
+
+  td a:hover {
+    border-color: var(--q-accent);
+  }
+
+  td a:active {
+    transform: translateY(1px);
+  }
+
+  .q-downloads__meta {
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--q-subtle);
+  }
+
+  .q-downloads__meta a {
+    color: var(--q-muted);
+  }
+
+  .q-downloads__meta a:hover {
+    color: var(--q-text);
+  }
+
+  @media (max-width: 30rem) {
+    td a span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    td a {
+      padding: 0 0.65rem;
+    }
+
+    td,
+    th {
+      padding-inline: 0.7rem;
+    }
+  }
+
+  .q-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

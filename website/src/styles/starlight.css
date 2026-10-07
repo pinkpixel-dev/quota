@@ -1,0 +1,94 @@
+/* Maps Quota's tokens onto Starlight's theme variables. */
+
+:root {
+  --sl-font: var(--q-font-sans);
+  --sl-font-mono: var(--q-font-mono);
+
+  --sl-color-white: var(--q-text);
+  --sl-color-gray-1: #e3e8ea;
+  --sl-color-gray-2: #c4cbd0;
+  --sl-color-gray-3: var(--q-muted);
+  --sl-color-gray-4: var(--q-subtle);
+  --sl-color-gray-5: var(--q-line);
+  --sl-color-gray-6: var(--q-panel);
+  --sl-color-black: var(--q-bg);
+
+  --sl-color-accent-low: #2b3008;
+  --sl-color-accent: var(--q-accent);
+  --sl-color-accent-high: var(--q-accent);
+  --sl-color-text-invert: var(--q-accent-ink);
+
+  --sl-color-bg-nav: var(--q-bg);
+  --sl-color-bg-sidebar: var(--q-bg);
+  --sl-color-bg-inline-code: var(--q-panel-strong);
+  --sl-color-hairline-light: var(--q-line);
+  --sl-color-hairline: var(--q-line-soft);
+}
+
+:root[data-theme='light'] {
+  --sl-color-white: var(--q-text);
+  --sl-color-gray-1: #26302f;
+  --sl-color-gray-2: #3a4648;
+  --sl-color-gray-3: var(--q-muted);
+  --sl-color-gray-4: var(--q-subtle);
+  --sl-color-gray-5: var(--q-line);
+  --sl-color-gray-6: var(--q-panel-strong);
+  --sl-color-gray-7: var(--q-panel);
+  --sl-color-black: var(--q-bg);
+
+  --sl-color-accent-low: #fdecc8;
+  --sl-color-accent: var(--q-accent);
+  --sl-color-accent-high: #8a3f06;
+}
+
+/* Header: keep the logo and title compact like the desktop sidebar. */
+.site-title {
+  gap: 0.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.site-title img {
+  border-radius: 6px;
+}
+
+/* Keep the accent for small details, not big blocks. */
+.site-title {
+  color: var(--sl-color-white);
+}
+
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  background: var(--q-accent-soft);
+  color: var(--sl-color-white);
+  font-weight: 600;
+}
+
+.social-icons a {
+  color: var(--q-muted);
+}
+
+.social-icons a:hover {
+  color: var(--q-text);
+}
+
+.sl-anchor-icon {
+  color: var(--q-subtle);
+}
+
+/* Screenshots inside docs pages. */
+.sl-markdown-content img {
+  border: 1px solid var(--q-line);
+  border-radius: var(--q-radius);
+}
+
+.sl-markdown-content :not(pre) > code {
+  border-radius: 4px;
+}
+
+/* Focus rings stay visible everywhere. */
+:focus-visible {
+  outline: 2px solid var(--q-accent-focus);
+  outline-offset: 2px;
+}

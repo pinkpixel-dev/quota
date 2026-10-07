@@ -1,0 +1,30 @@
+---
+title: Privacy and storage
+description: Where Quota keeps your credentials and what it does with them.
+---
+
+Quota runs on your machine. There's no Quota server, no account to make and no analytics. Each app talks directly to the providers you connect, and only to read your usage.
+
+## Desktop app
+
+- Credentials are stored locally under `~/.quota`, and the Rust side of the app owns them. The interface only ever gets safe summaries, like your account name, plan and usage numbers.
+- **Export JSON** in Settings saves those same safe summaries. Tokens, refresh tokens and API keys are never in the file.
+- Sign-in links only open for known provider sign-in pages.
+- Removing an account deletes its stored credentials.
+
+## VS Code extension
+
+- Provider tokens are kept in VS Code's SecretStorage.
+- Account names and cached usage are kept in the extension's global state.
+- Disconnect commands delete the extension's credentials and cached usage for that provider.
+- The extension doesn't use any sponsor, ad, announcement or relay services.
+
+## quota-cli and the Herdr plugin
+
+- They read the credentials your agent CLIs already saved and never write to them. See [where the credentials come from](/docs/cli/#where-the-credentials-come-from).
+- Tokens are never logged or printed.
+- The Herdr plugin only fetches providers that have a pane on screen.
+
+## Reporting a problem
+
+If you find a security issue, please email [admin@pinkpixel.dev](mailto:admin@pinkpixel.dev) instead of opening a public issue.

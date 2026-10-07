@@ -1,0 +1,147 @@
+---
+import { Image } from 'astro:assets';
+import dashboard from '../assets/screenshots/default_dashboard.png';
+import compact from '../assets/screenshots/compact_dashboard.png';
+import list from '../assets/screenshots/list_dashboard.png';
+
+const layouts = [
+  { id: 'default', label: 'Default', image: dashboard, alt: 'Quota dashboard in the default layout' },
+  { id: 'compact', label: 'Compact', image: compact, alt: 'Quota dashboard in the compact three column layout' },
+  { id: 'list', label: 'List', image: list, alt: 'Quota dashboard in the list layout, one row per account' },
+];
+---
+
+<section class="showcase q-dots" aria-labelledby="showcase-title">
+  <div class="q-wrap">
+    <div class="showcase__bar">
+      <h2 id="showcase-title">Every account, one dashboard</h2>
+      <div class="tabs" role="tablist" aria-label="Dashboard layout">
+        {
+          layouts.map((layout, index) => (
+            <button
+              type="button"
+              role="tab"
+              id={`tab-${layout.id}`}
+              aria-controls={`panel-${layout.id}`}
+              aria-selected={index === 0 ? 'true' : 'false'}
+              tabindex={index === 0 ? 0 : -1}
+            >
+              {layout.label}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    {
+      layouts.map((layout, index) => (
+        <div
+          class="q-shot showcase__panel"
+          role="tabpanel"
+          id={`panel-${layout.id}`}
+          aria-labelledby={`tab-${layout.id}`}
+          hidden={index !== 0}
+        >
+          <Image
+            src={layout.image}
+            alt={layout.alt}
+            widths={[640, 960, 1279]}
+            sizes="(min-width: 88rem) 82rem, 100vw"
+            loading={index === 0 ? 'eager' : 'lazy'}
+          />
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<script>
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('.showcase [role="tab"]')];
+
+  const select = (tab: HTMLButtonElement) => {
+    for (const other of tabs) {
+      const active = other === tab;
+      other.setAttribute('aria-selected', String(active));
+      other.tabIndex = active ? 0 : -1;
+      const panel = document.getElementById(other.getAttribute('aria-controls') ?? '');
+      if (panel) panel.hidden = !active;
+    }
+  };
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => select(tab));
+    tab.addEventListener('keydown', (event) => {
+      const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      if (event.key === 'Home' || event.key === 'End' || step) {
+        event.preventDefault();
+        const next =
+          event.key === 'Home'
+            ? tabs[0]
+            : event.key === 'End'
+              ? tabs[tabs.length - 1]
+              : tabs[(index + step + tabs.length) % tabs.length];
+        select(next);
+        next.focus();
+      }
+    });
+  });
+</script>
+
+<style>
+  .showcase {
+    padding-block: clamp(2rem, 5vw, 3.5rem);
+    border-block: 1px solid var(--q-line-soft);
+  }
+
+  .showcase__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  h2 {
+    font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  }
+
+  .tabs {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--q-line);
+    border-radius: var(--q-radius);
+    background: var(--q-panel);
+  }
+
+  [role='tab'] {
+    min-height: 2.25rem;
+    padding: 0 0.9rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--q-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      color 150ms var(--q-ease),
+      background-color 150ms var(--q-ease);
+  }
+
+  [role='tab']:hover {
+    color: var(--q-text);
+  }
+
+  [role='tab'][aria-selected='true'] {
+    background: var(--q-panel-strong);
+    color: var(--q-text);
+    box-shadow: inset 0 0 0 1px var(--q-line);
+  }
+
+  .showcase__panel img {
+    width: 100%;
+  }
+</style>

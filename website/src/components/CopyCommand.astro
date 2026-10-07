@@ -1,0 +1,102 @@
+---
+import { Copy, Check } from '@lucide/astro';
+
+interface Props {
+  command: string;
+  label?: string;
+}
+
+const { command, label = 'Copy command' } = Astro.props;
+---
+
+<div class="copy-command">
+  <code>{command}</code>
+  <button type="button" data-copy={command} aria-label={label} title={label}>
+    <Copy size={15} class="icon-copy" aria-hidden="true" />
+    <Check size={15} class="icon-done" aria-hidden="true" />
+  </button>
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.copy-command button')) {
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy ?? '');
+        button.dataset.state = 'done';
+        setTimeout(() => delete button.dataset.state, 1600);
+      } catch {
+        button.dataset.state = 'error';
+        setTimeout(() => delete button.dataset.state, 1600);
+      }
+    });
+  }
+</script>
+
+<style>
+  .copy-command {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.35rem 0.35rem 0.35rem 0.85rem;
+    border: 1px solid var(--q-line);
+    border-radius: var(--q-radius);
+    background: var(--q-code-bg);
+  }
+
+  code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    color: var(--q-text);
+    scrollbar-width: none;
+  }
+
+  code::before {
+    content: '$ ';
+    color: var(--q-subtle);
+  }
+
+  button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--q-muted);
+    cursor: pointer;
+    transition:
+      background-color 150ms var(--q-ease),
+      color 150ms var(--q-ease);
+  }
+
+  button:hover {
+    background: var(--q-panel-strong);
+    color: var(--q-text);
+  }
+
+  .icon-done {
+    display: none;
+  }
+
+  button[data-state='done'] {
+    color: var(--q-success);
+  }
+
+  button[data-state='done'] .icon-copy {
+    display: none;
+  }
+
+  button[data-state='done'] .icon-done {
+    display: block;
+  }
+
+  button[data-state='error'] {
+    color: var(--q-danger);
+  }
+</style>

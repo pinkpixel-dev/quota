@@ -1,0 +1,46 @@
+---
+title: Providers
+description: Which AI tools each part of Quota supports, and what each one tracks.
+---
+
+Not every piece of Quota supports every provider yet. Here's where things stand right now.
+
+| Provider | Desktop | VS Code | quota-cli and Herdr |
+| --- | :---: | :---: | :---: |
+| Claude Code | Yes | Yes | Yes |
+| Codex | Yes | Yes | Yes |
+| GitHub Copilot | Yes | Yes | No |
+| Cursor | Yes | No | Yes |
+| Antigravity | Yes | Yes | Yes |
+| Kiro | Yes | Yes | Yes |
+| Grok | Yes | Yes | Yes |
+| OpenCode Go | Yes | Yes | No |
+
+Cursor isn't in the VS Code extension because Cursor is its own standalone editor now. The desktop app and the CLI still track it.
+
+## What gets tracked
+
+Each provider measures usage differently, so the rows you see depend on the provider.
+
+| Provider | Tracks |
+| --- | --- |
+| Claude Code | 5 hour window, weekly window, weekly Sonnet, extra usage |
+| Codex | 5 hour window, weekly window |
+| GitHub Copilot | Premium requests, chat messages, inline suggestions |
+| Cursor | Plan usage for the current billing cycle, plus Auto + Composer, API and on-demand usage in the desktop app |
+| Antigravity | Gemini 5 hour and weekly, Claude and GPT 5 hour and weekly, AI credits when you have them |
+| Kiro | Prompt credits, plus bonus or add-on credits when you have them |
+| Grok | Credit window, monthly spend, on-demand spend |
+| OpenCode Go | 5 hour, weekly and monthly usage |
+
+## Remaining or used
+
+Everything defaults to showing what you have **left**. If you'd rather see what you've used:
+
+- **Desktop:** Settings, Appearance, **Show usage as**, then pick Used.
+- **VS Code:** set `quota.statusBar.display` to `percentUsed`.
+- **quota-cli and Herdr:** always show what's left.
+
+## A note on OpenCode Go
+
+OpenCode doesn't have a sign-in flow for other apps, so you connect it with your Go API key from the [OpenCode console](https://opencode.ai/auth). Usage comes from an endpoint OpenCode hasn't documented yet. If they change it, this provider might need a quick update.

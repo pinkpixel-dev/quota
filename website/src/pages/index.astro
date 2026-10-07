@@ -1,0 +1,25 @@
+---
+import HomeLayout from '../layouts/HomeLayout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import Hero from '../components/Hero.astro';
+import DesktopShowcase from '../components/DesktopShowcase.astro';
+import Surfaces from '../components/Surfaces.astro';
+import Features from '../components/Features.astro';
+import DownloadSection from '../components/DownloadSection.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+---
+
+<HomeLayout
+  title="Quota · Track your AI usage"
+  description="Quota tracks usage limits across Claude Code, Codex, GitHub Copilot, Cursor, Antigravity, Kiro, Grok and OpenCode Go. Desktop app, VS Code extension, CLI and Herdr plugin."
+>
+  <SiteHeader />
+  <main id="main">
+    <Hero />
+    <DesktopShowcase />
+    <Surfaces />
+    <Features />
+    <DownloadSection />
+  </main>
+  <SiteFooter />
+</HomeLayout>

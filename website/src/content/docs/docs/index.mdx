@@ -1,0 +1,32 @@
+---
+title: Getting started
+description: Pick the version of Quota that fits how you work, then install it.
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Quota shows how much usage you have left across your AI coding tools, like Claude Code, Codex, GitHub Copilot, Cursor, Antigravity, Kiro, Grok and OpenCode Go. I made it because I kept checking a different usage page for every tool just to see what I had left.
+
+It comes in four pieces. They don't depend on each other, so install whichever ones fit how you work.
+
+| Piece | What it is | Good for |
+| --- | --- | --- |
+| [Desktop app](/docs/desktop/) | A Tauri app for Windows and Linux with a dashboard, system tray and notifications | Keeping track of several accounts per provider |
+| [VS Code extension](/docs/vscode/) | A status bar button and a quota panel inside VS Code, Antigravity, Kiro and other Open VSX editors | Checking usage without leaving your editor |
+| [quota-cli](/docs/cli/) | A small Rust binary that prints your usage in the terminal | Terminal users and scripts. No sign-in step |
+| [Herdr plugin](/docs/herdr/) | Shows usage in the Herdr sidebar, next to each agent pane | People running agents in [Herdr](https://herdr.dev) |
+
+## How they connect to your accounts
+
+The desktop app and the VS Code extension each keep their own accounts. You sign in once per provider inside the app, and Quota stores the credentials locally. You can also import an account from a CLI you're already signed into, for the providers that support it.
+
+`quota-cli` and the Herdr plugin don't have accounts at all. They read the credentials your agent CLIs already saved, like `~/.claude/.credentials.json` or `~/.codex/auth.json`, and never write to them.
+
+## Pick one
+
+<CardGrid>
+  <LinkCard title="Desktop app" description="Download for Windows or Linux." href="/docs/desktop/" />
+  <LinkCard title="VS Code extension" description="Install from the Marketplace or Open VSX." href="/docs/vscode/" />
+  <LinkCard title="quota-cli" description="cargo install quota-cli" href="/docs/cli/" />
+  <LinkCard title="Herdr plugin" description="Usage right in the Herdr sidebar." href="/docs/herdr/" />
+</CardGrid>

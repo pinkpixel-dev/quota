@@ -1,0 +1,260 @@
+---
+import { Image } from 'astro:assets';
+import { ArrowRight } from '@lucide/astro';
+import CopyCommand from './CopyCommand.astro';
+import { vscode } from '../data/site';
+import settings from '../assets/screenshots/settings_page.png';
+import vscodePanel from '../assets/screenshots/vscode_panel.png';
+import vscodeStatus from '../assets/screenshots/vscode_statusbar.png';
+import cliShot from '../assets/screenshots/cli_usage.png';
+import herdrShot from '../assets/screenshots/screenshot_herdr_top.png';
+---
+
+<section class="surfaces" aria-labelledby="surfaces-title">
+  <div class="q-wrap">
+    <h2 id="surfaces-title" class="surfaces__title">Use the one that fits how you work</h2>
+
+    <article class="surface">
+      <div class="surface__copy">
+        <h3>Desktop app</h3>
+        <p>The full dashboard. Connect as many accounts per provider as you want and keep an eye on them from the tray.</p>
+        <ul>
+          <li>Default, compact and list layouts</li>
+          <li>Pin the accounts you care about to the dashboard</li>
+          <li>Tray menu with a usage line for every account</li>
+          <li>Low-quota notifications and auto refresh, both opt-in</li>
+        </ul>
+        <div class="surface__actions">
+          <a class="q-btn q-btn--primary" href="#download">Download</a>
+          <a class="surface__link" href="/docs/desktop/">Desktop docs <ArrowRight size={15} aria-hidden="true" /></a>
+        </div>
+      </div>
+      <div class="q-shot">
+        <Image src={settings} alt="Quota settings with theme, layout and dashboard order controls" widths={[640, 960, 1280]} sizes="(min-width: 60rem) 55vw, 100vw" />
+      </div>
+    </article>
+
+    <article class="surface surface--flip">
+      <div class="surface__copy">
+        <h3>VS Code extension</h3>
+        <p>A Quota button in your status bar and a panel with every quota you've connected. Works in VS Code and Open VSX editors like Antigravity and Kiro.</p>
+        <ul>
+          <li>Pin specific quotas next to the status bar button</li>
+          <li>Panel resizes from one column to several</li>
+          <li>Tokens stay in VS Code's SecretStorage</li>
+        </ul>
+        <div class="surface__actions">
+          <a class="q-btn" href={vscode.marketplace}>Marketplace</a>
+          <a class="q-btn" href={vscode.openVsx}>Open VSX</a>
+          <a class="surface__link" href="/docs/vscode/">Extension docs <ArrowRight size={15} aria-hidden="true" /></a>
+        </div>
+      </div>
+      <div class="surface__stack">
+        <div class="q-shot">
+          <Image src={vscodePanel} alt="The Quota panel inside VS Code" widths={[480, 790]} sizes="(min-width: 60rem) 55vw, 100vw" />
+        </div>
+        <div class="q-shot surface__strip">
+          <Image src={vscodeStatus} alt="The Quota status bar button with pinned quota tracks" widths={[640, 1161]} sizes="(min-width: 60rem) 55vw, 100vw" />
+        </div>
+      </div>
+    </article>
+
+    <article class="surface surface--wide">
+      <div class="surface__copy">
+        <h3>quota-cli</h3>
+        <p>Prints your usage in the terminal. It reads the credentials your agent CLIs already saved, so there's nothing to sign into, and it never writes to them.</p>
+        <div class="surface__actions surface__actions--cmd">
+          <CopyCommand command="cargo install quota-cli" label="Copy cargo install command" />
+          <a class="surface__link" href="/docs/cli/">CLI docs <ArrowRight size={15} aria-hidden="true" /></a>
+        </div>
+      </div>
+      <div class="q-shot surface__terminal" tabindex="0" role="region" aria-label="quota-cli output">
+        <Image src={cliShot} alt="Output of quota-cli usage listing remaining usage for Claude, Codex, Cursor, Antigravity, Grok and Kiro" widths={[800, 1552]} sizes="(max-width: 48rem) 832px, (min-width: 88rem) 82rem, 100vw" />
+      </div>
+    </article>
+
+    <article class="surface surface--flip surface--herdr">
+      <div class="surface__copy">
+        <h3>Herdr plugin</h3>
+        <p>Shows usage in the Herdr sidebar, next to each agent pane. A Claude pane shows Claude numbers, a Codex pane shows Codex numbers.</p>
+        <ul>
+          <li>Only fetches providers that have a pane on screen</li>
+          <li>Optional keybinding or watcher to keep numbers fresh</li>
+          <li>Needs quota-cli installed first</li>
+        </ul>
+        <div class="surface__actions surface__actions--cmd">
+          <CopyCommand command="herdr plugin install pinkpixel-dev/quota/herdr-plugin" label="Copy Herdr plugin install command" />
+          <a class="surface__link" href="/docs/herdr/">Plugin docs <ArrowRight size={15} aria-hidden="true" /></a>
+        </div>
+      </div>
+      <div class="q-shot surface__tall">
+        <Image src={herdrShot} alt="The Herdr agents sidebar with Quota usage under each pane" width={410} />
+      </div>
+    </article>
+  </div>
+</section>
+
+<style>
+  .surfaces {
+    padding-block: clamp(3.5rem, 8vw, 6rem);
+  }
+
+  .surfaces__title {
+    max-width: 22ch;
+    font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .surface {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+    align-items: center;
+    padding-block: clamp(2rem, 4vw, 3rem);
+    border-top: 1px solid var(--q-line-soft);
+  }
+
+  @media (min-width: 60rem) {
+    .surface {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 3.5rem;
+    }
+
+    .surface--flip .surface__copy {
+      order: 2;
+    }
+
+    .surface--wide {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.75rem;
+    }
+
+    .surface--wide .surface__copy {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      column-gap: 3.5rem;
+      align-items: end;
+    }
+
+    .surface--wide .surface__copy h3 {
+      grid-column: 1;
+    }
+
+    .surface--wide .surface__copy p {
+      grid-column: 1;
+    }
+
+    .surface--wide .surface__actions {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: end;
+    }
+
+    .surface--herdr {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+
+  h3 {
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+  }
+
+  .surface__copy p {
+    margin-top: 0.75rem;
+    max-width: 34rem;
+    color: var(--q-muted);
+  }
+
+  ul {
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+  }
+
+  li {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+
+  li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 2px;
+    background: var(--q-accent);
+  }
+
+  .surface__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 1.75rem;
+  }
+
+  .surface__actions--cmd {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .surface__actions--cmd .surface__link {
+    align-self: flex-start;
+  }
+
+  .surface__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.75rem;
+    color: var(--q-text);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .surface__link:hover {
+    color: var(--q-accent);
+  }
+
+  .surface__stack {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .surface__strip img {
+    width: 100%;
+  }
+
+  .surface__terminal {
+    background: #111315;
+  }
+
+  /* Keep the terminal text readable on phones by scrolling it sideways instead of shrinking it. */
+  @media (max-width: 48rem) {
+    .surface__terminal {
+      overflow-x: auto;
+    }
+
+    .q-shot.surface__terminal img {
+      width: 52rem;
+      max-width: none;
+    }
+  }
+
+  .surface__tall {
+    justify-self: center;
+    max-width: 18rem;
+  }
+
+  .q-shot img {
+    width: 100%;
+  }
+</style>

@@ -1,0 +1,131 @@
+---
+import { Image } from 'astro:assets';
+import { Sun, Moon } from '@lucide/astro';
+import icon from '../assets/icon.png';
+import GithubMark from './GithubMark.astro';
+import { repo } from '../data/site';
+---
+
+<header class="site-header">
+  <div class="q-wrap site-header__inner">
+    <a class="brand" href="/" aria-label="Quota home">
+      <Image src={icon} alt="" width={32} height={32} />
+      <span>Quota</span>
+    </a>
+    <nav aria-label="Main">
+      <a href="/docs/">Docs</a>
+      <a href="#download" class="hide-xs">Download</a>
+      <a href={repo} class="icon-link" aria-label="Quota on GitHub" title="GitHub">
+        <GithubMark size={18} />
+      </a>
+      <button type="button" class="icon-link theme-toggle" aria-label="Switch theme" title="Switch theme">
+        <Sun size={18} class="icon-sun" aria-hidden="true" />
+        <Moon size={18} class="icon-moon" aria-hidden="true" />
+      </button>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.theme-toggle');
+  const sync = () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    toggle?.setAttribute('aria-label', `Switch to ${next} theme`);
+    toggle?.setAttribute('title', `Switch to ${next} theme`);
+  };
+  sync();
+  toggle?.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem('starlight-theme', next);
+    } catch {}
+    sync();
+  });
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 1px solid var(--q-line-soft);
+    background: color-mix(in oklab, var(--q-bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: 3.75rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    font-size: 1.0625rem;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+
+  .brand img {
+    border-radius: 7px;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  nav a,
+  nav button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--q-radius);
+    background: transparent;
+    color: var(--q-muted);
+    font: inherit;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      color 150ms var(--q-ease),
+      background-color 150ms var(--q-ease);
+  }
+
+  nav a:hover,
+  nav button:hover {
+    color: var(--q-text);
+    background: var(--q-panel);
+  }
+
+  .icon-link {
+    width: 2.5rem;
+    padding: 0;
+  }
+
+  :global([data-theme='dark']) .icon-sun,
+  :global([data-theme='light']) .icon-moon {
+    display: block;
+  }
+
+  .icon-sun,
+  .icon-moon {
+    display: none;
+  }
+
+  @media (max-width: 26rem) {
+    .hide-xs {
+      display: none !important;
+    }
+  }
+</style>

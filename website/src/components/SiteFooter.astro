@@ -1,0 +1,56 @@
+---
+import { repo, releasesUrl, pinkpixel } from '../data/site';
+---
+
+<footer class="site-footer">
+  <div class="q-wrap site-footer__inner">
+    <p>Made with 💖 by <a href={pinkpixel.site}>Pink Pixel</a> · Apache-2.0</p>
+    <nav aria-label="Footer">
+      <a href="/docs/">Docs</a>
+      <a href={releasesUrl}>Releases</a>
+      <a href={repo}>GitHub</a>
+      <a href={pinkpixel.kofi}>Ko-fi</a>
+      <a href={pinkpixel.bmac}>Buy me a coffee</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--q-line-soft);
+    padding-block: 2rem;
+    font-size: 0.875rem;
+    color: var(--q-subtle);
+  }
+
+  .site-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+  }
+
+  a {
+    color: var(--q-muted);
+    text-decoration: none;
+    transition: color 150ms var(--q-ease);
+  }
+
+  a:hover {
+    color: var(--q-text);
+  }
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+  }
+
+  nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    white-space: nowrap;
+  }
+</style>

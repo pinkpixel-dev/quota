@@ -1,0 +1,153 @@
+---
+const features = [
+  { title: 'Multiple accounts', text: 'Connect more than one account per provider and see them side by side.' },
+  { title: 'Remaining or used', text: 'One setting flips every bar, percentage and tray line. Remaining is the default.' },
+  { title: 'Pinned accounts', text: 'Pin accounts from a provider page and the dashboard shows those instead of the first two.' },
+  { title: 'Provider order', text: 'Reorder providers or hide one from the dashboard without disconnecting it.' },
+  { title: 'Reauthenticate in place', text: 'When a Codex, Claude Code or Grok login expires, the card keeps your last numbers and offers a Reauthenticate button.' },
+  { title: 'Import local accounts', text: 'Pull in Codex, Antigravity, Kiro, Cursor and Grok accounts you already signed into.' },
+  { title: 'Dark and light', text: 'System, dark or light theme. Dark uses the lime accent, light switches to amber.' },
+  { title: 'Safe export', text: 'Export account summaries as JSON. Tokens and API keys never go in the file.' },
+];
+---
+
+<section class="features" aria-labelledby="features-title">
+  <div class="q-wrap features__grid">
+    <div class="features__intro">
+      <h2 id="features-title">The small stuff that adds up</h2>
+      <p>What the desktop app does besides the dashboard.</p>
+    </div>
+    <dl>
+      {
+        features.map((feature) => (
+          <div>
+            <dt>{feature.title}</dt>
+            <dd>{feature.text}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+
+  <div class="q-wrap">
+    <div class="privacy">
+      <h2>Stays on your machine</h2>
+      <ul>
+        <li>No Quota server, no account to make, and no analytics.</li>
+        <li>The desktop app keeps credentials in Rust-owned storage under <code>~/.quota</code>. The interface only sees safe summaries.</li>
+        <li>quota-cli reads your agent CLIs' credentials and never writes to them.</li>
+      </ul>
+      <a href="/docs/privacy/">How storage works</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .features {
+    padding-block: clamp(3.5rem, 8vw, 6rem);
+    border-top: 1px solid var(--q-line-soft);
+  }
+
+  .features__grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  @media (min-width: 60rem) {
+    .features__grid {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 2.2fr);
+      gap: 3.5rem;
+    }
+  }
+
+  h2 {
+    font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+    max-width: 14ch;
+  }
+
+  .features__intro p {
+    margin-top: 0.75rem;
+    color: var(--q-muted);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 0;
+    border-top: 1px solid var(--q-line);
+    border-left: 1px solid var(--q-line);
+  }
+
+  @media (min-width: 40rem) {
+    dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 80rem) {
+    dl {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  dl > div {
+    padding: 1.25rem;
+    border-right: 1px solid var(--q-line);
+    border-bottom: 1px solid var(--q-line);
+  }
+
+  dt {
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0.4rem 0 0;
+    font-size: 0.9375rem;
+    color: var(--q-muted);
+  }
+
+  .privacy {
+    display: grid;
+    gap: 1rem 3.5rem;
+    margin-top: clamp(3rem, 6vw, 4.5rem);
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid var(--q-line);
+    border-radius: var(--q-radius-lg);
+    background: var(--q-panel);
+  }
+
+  @media (min-width: 60rem) {
+    .privacy {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 2.2fr);
+      align-items: start;
+    }
+
+    .privacy a {
+      grid-column: 2;
+    }
+  }
+
+  .privacy h2 {
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+  }
+
+  .privacy ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.5rem;
+    color: var(--q-muted);
+  }
+
+  .privacy code {
+    font-size: 0.875em;
+    color: var(--q-text);
+  }
+
+  .privacy a {
+    justify-self: start;
+    font-size: 0.9375rem;
+    color: var(--q-accent);
+    text-underline-offset: 3px;
+  }
+</style>
