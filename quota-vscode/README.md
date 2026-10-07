@@ -6,7 +6,7 @@ Track AI usage from the editor you already have open. Quota adds a compact statu
 
 Quota is built for developers who use more than one AI coding tool and want one place to check usage before a limit surprises them. Connect the providers you use, pin the tracks you care about, and open the panel whenever you want the full picture.
 
-![Quota dashboard panel](https://res.cloudinary.com/dlbyddfav/image/upload/v1782548917/dashboard_n7iext.png)
+![Quota dashboard panel](https://res.cloudinary.com/di7ctlowx/image/upload/v1791413392/vscode_w50fnc.png)
 
 ## What Quota does
 
