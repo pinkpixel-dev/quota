@@ -4,6 +4,14 @@ All notable changes to this project will be documented here.
 
 ## Unreleased
 
+### 🌐 Website
+
+- Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
+
+## quota-vscode 1.5.0 - October 7, 2026
+
+Adds support for more than one account per provider, one card per account in the panel, and a picker for choosing exactly what shows in the status bar.
+
 ### 🧩 VS Code Extension
 
 - You can connect more than one account per provider from the panel now. Each provider shows **Connect** until it has an account, then **Add** and **Disconnect**. Connecting with the same login again just updates the existing account.
@@ -12,9 +20,9 @@ All notable changes to this project will be documented here.
 - New `Quota: Choose Status Bar Items` command, also on the panel's **Status bar** button. It lists every track for every connected account so you can pick exactly what shows up. When a provider has more than one account, status bar items get a short account tag like `· work`.
 - `quota.statusBar.items` accepts `trackId@accountId` to pin one account. Plain IDs like `codex.weekly` still work and follow the first account, so existing settings don't change.
 
-### 🌐 Website
+### 🏷️ Versioning
 
-- Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
+- Bumped the extension to `1.5.0`.
 
 ## 1.7.0 and quota-vscode 1.4.0 - October 6, 2026
 
