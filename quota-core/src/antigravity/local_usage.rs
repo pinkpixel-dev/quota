@@ -117,7 +117,11 @@ fn find_bucket(raw: &Value, bucket_id: &str) -> Option<Value> {
 fn as_number(value: &Value) -> Option<f64> {
     value
         .as_f64()
-        .or_else(|| value.as_str().and_then(|item| item.trim().parse::<f64>().ok()))
+        .or_else(|| {
+            value
+                .as_str()
+                .and_then(|item| item.trim().parse::<f64>().ok())
+        })
         .filter(|item| item.is_finite())
 }
 
@@ -305,8 +309,9 @@ async fn resolve_access_token(
         )));
     }
 
-    let parsed: Value = serde_json::from_str(&body)
-        .map_err(|_| LocalUsageError::Request("token refresh returned unreadable JSON".to_string()))?;
+    let parsed: Value = serde_json::from_str(&body).map_err(|_| {
+        LocalUsageError::Request("token refresh returned unreadable JSON".to_string())
+    })?;
 
     parsed
         .get("access_token")

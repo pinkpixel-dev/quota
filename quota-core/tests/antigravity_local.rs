@@ -75,7 +75,11 @@ fn an_expired_token_needs_refreshing() {
 #[test]
 fn a_file_with_no_expiry_is_treated_as_usable() {
     let home = temp_home("no-expiry");
-    write(&home, "oauth_creds.json", r#"{"access_token":"ya29-access"}"#);
+    write(
+        &home,
+        "oauth_creds.json",
+        r#"{"access_token":"ya29-access"}"#,
+    );
 
     let credentials = read_local_credentials_in(&home).expect("read credentials");
 
@@ -86,7 +90,11 @@ fn a_file_with_no_expiry_is_treated_as_usable() {
 #[test]
 fn reads_the_signed_in_address_from_the_accounts_file() {
     let home = temp_home("email");
-    write(&home, "oauth_creds.json", r#"{"access_token":"ya29-access"}"#);
+    write(
+        &home,
+        "oauth_creds.json",
+        r#"{"access_token":"ya29-access"}"#,
+    );
     write(
         &home,
         "google_accounts.json",
@@ -103,7 +111,11 @@ fn a_missing_accounts_file_is_not_an_error() {
     // Usage does not depend on knowing the address, so a missing or unreadable
     // accounts file must not fail the read.
     let home = temp_home("no-accounts");
-    write(&home, "oauth_creds.json", r#"{"access_token":"ya29-access"}"#);
+    write(
+        &home,
+        "oauth_creds.json",
+        r#"{"access_token":"ya29-access"}"#,
+    );
 
     let credentials = read_local_credentials_in(&home).expect("read credentials");
 
@@ -174,11 +186,17 @@ fn reading_never_writes_to_the_credentials_file() {
     let body = r#"{"access_token":"ya29-access","refresh_token":"1//refresh","expiry_date":1}"#;
     write(&home, "oauth_creds.json", body);
     let path = home.join("oauth_creds.json");
-    let before = fs::metadata(&path).expect("stat").modified().expect("mtime");
+    let before = fs::metadata(&path)
+        .expect("stat")
+        .modified()
+        .expect("mtime");
 
     let _ = read_local_credentials_in(&home).expect("read credentials");
 
-    let after = fs::metadata(&path).expect("stat").modified().expect("mtime");
+    let after = fs::metadata(&path)
+        .expect("stat")
+        .modified()
+        .expect("mtime");
     assert_eq!(before, after, "the credentials file was modified");
     assert_eq!(fs::read_to_string(&path).expect("re-read"), body);
 }
@@ -188,8 +206,8 @@ fn reading_never_writes_to_the_credentials_file() {
 // ---------------------------------------------------------------------------
 
 use quota_core::antigravity::local::{
-    decode_keyring_blob, parse_keyring_secret, KEYRING_SERVICE, KEYRING_USER,
-    WINDOWS_KEYRING_TARGET,
+    decode_keyring_blob, parse_keyring_secret, read_cli_credentials_in, KEYRING_SERVICE,
+    KEYRING_USER, WINDOWS_KEYRING_TARGET,
 };
 
 /// Builds an id token shaped like the one the Antigravity CLI stores.
@@ -304,4 +322,42 @@ fn a_non_utf8_blob_fails_without_quoting_its_bytes() {
         keyring::Error::BadEncoding(bytes) => assert!(bytes.is_empty()),
         other => panic!("expected BadEncoding, got {other:?}"),
     }
+}
+
+#[test]
+fn parses_the_darwin_go_keyring_base64_prefixed_payload() {
+    use base64::Engine;
+    let raw = keyring_secret("2027-01-01T00:00:00Z");
+    let encoded = base64::engine::general_purpose::STANDARD.encode(raw.as_bytes());
+    let prefixed = format!("go-keyring-base64:{}", encoded);
+
+    let credentials = parse_keyring_secret(&prefixed).expect("parse secret");
+    assert_eq!(credentials.access_token, "ya29-access");
+    assert_eq!(credentials.refresh_token.as_deref(), Some("1//refresh"));
+    assert_eq!(credentials.email.as_deref(), Some("person@example.com"));
+    assert_eq!(credentials.expiry_date_ms, Some(1_798_761_600_000));
+}
+
+#[test]
+fn a_malformed_darwin_go_keyring_payload_fails_cleanly() {
+    let err =
+        parse_keyring_secret("go-keyring-base64:!!!not-base64!!!").expect_err("expected malformed");
+    let rendered = format!("{} {:?}", err, err);
+    assert!(!rendered.contains("not-base64"));
+}
+
+#[test]
+fn reads_the_cli_oauth_token_file() {
+    let home = temp_home("cli_file");
+    let cli_dir = home.join("antigravity-cli");
+    fs::create_dir_all(&cli_dir).expect("create cli dir");
+    write(
+        &cli_dir,
+        "antigravity-oauth-token",
+        &keyring_secret("2027-01-01T00:00:00Z"),
+    );
+
+    let credentials = read_cli_credentials_in(&home).expect("read cli credentials");
+    assert_eq!(credentials.access_token, "ya29-access");
+    assert_eq!(credentials.refresh_token.as_deref(), Some("1//refresh"));
 }

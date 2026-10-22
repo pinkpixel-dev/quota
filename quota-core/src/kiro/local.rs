@@ -161,12 +161,7 @@ fn credentials_from(
     // The profile is preferred because the IDE rewrites it when the user
     // switches subscription, while a cached token can lag behind.
     let profile_arn = pick_string(profile, &[&["arn"], &["profileArn"]])
-        .or_else(|| {
-            pick_string(
-                Some(token),
-                &[&["profileArn"], &["profile_arn"], &["arn"]],
-            )
-        })
+        .or_else(|| pick_string(Some(token), &[&["profileArn"], &["profile_arn"], &["arn"]]))
         .ok_or(LocalCredentialError::NoProfileArn)?;
 
     let expires_at = pick_timestamp(Some(token), &[&["expiresAt"], &["expires_at"]]);
@@ -187,11 +182,9 @@ pub fn read_cli_credentials_at(path: &Path) -> Result<LocalKiroCredentials, Loca
         return Err(LocalCredentialError::NotFound);
     }
 
-    let connection = rusqlite::Connection::open_with_flags(
-        path,
-        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-    )
-    .map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
+    let connection =
+        rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
 
     // The middle segment names the login method, `social` for a GitHub or
     // Google sign-in and something else for an enterprise one, so it is matched

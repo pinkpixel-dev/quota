@@ -86,7 +86,9 @@ struct AuthEntry {
     email: Option<String>,
 }
 
-pub fn read_local_credentials_at(path: &Path) -> Result<LocalGrokCredentials, LocalCredentialError> {
+pub fn read_local_credentials_at(
+    path: &Path,
+) -> Result<LocalGrokCredentials, LocalCredentialError> {
     read_local_credentials_at_time(path, chrono::Utc::now().timestamp())
 }
 
@@ -137,7 +139,11 @@ pub fn read_local_credentials_at_time(
         .iter()
         .filter(|entry| !entry.is_expired_at(now))
         .max_by_key(|entry| entry.expires_at.unwrap_or(i64::MAX))
-        .or_else(|| usable.iter().max_by_key(|entry| entry.expires_at.unwrap_or(0)))
+        .or_else(|| {
+            usable
+                .iter()
+                .max_by_key(|entry| entry.expires_at.unwrap_or(0))
+        })
         .expect("usable is not empty");
 
     Ok(chosen.clone())

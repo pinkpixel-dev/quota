@@ -26,10 +26,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
     ProviderUsage {
         provider: "codex".to_string(),
         account_label: label,
-        windows: vec![
-            window_from(primary, "5h"),
-            window_from(secondary, "Wk"),
-        ],
+        windows: vec![window_from(primary, "5h"), window_from(secondary, "Wk")],
         note: None,
     }
 }

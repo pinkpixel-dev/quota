@@ -21,6 +21,37 @@ pub fn local_credentials_path() -> Option<PathBuf> {
     gemini_home().map(|home| home.join("oauth_creds.json"))
 }
 
+/// Where the Antigravity CLI writes its OAuth credentials on disk.
+pub fn cli_credentials_path_in(gemini_home: &Path) -> PathBuf {
+    gemini_home
+        .join("antigravity-cli")
+        .join("antigravity-oauth-token")
+}
+
+pub fn cli_credentials_path() -> Option<PathBuf> {
+    gemini_home().map(|home| cli_credentials_path_in(&home))
+}
+
+pub fn read_cli_credentials_in(
+    gemini_home: &Path,
+) -> Result<LocalAntigravityCredentials, LocalCredentialError> {
+    let path = cli_credentials_path_in(gemini_home);
+    if !path.exists() {
+        return Err(LocalCredentialError::NotFound);
+    }
+
+    let raw = std::fs::read_to_string(&path)
+        .map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
+
+    parse_keyring_secret(&raw)
+}
+
+pub fn read_cli_credentials() -> Result<LocalAntigravityCredentials, LocalCredentialError> {
+    let home = gemini_home()
+        .ok_or_else(|| LocalCredentialError::Unreadable("no home directory".to_string()))?;
+    read_cli_credentials_in(&home)
+}
+
 #[derive(Clone)]
 pub struct LocalAntigravityCredentials {
     pub access_token: String,
@@ -54,7 +85,10 @@ impl fmt::Debug for LocalAntigravityCredentials {
         formatter
             .debug_struct("LocalAntigravityCredentials")
             .field("access_token", &"<redacted>")
-            .field("refresh_token", &self.refresh_token.as_ref().map(|_| "<redacted>"))
+            .field(
+                "refresh_token",
+                &self.refresh_token.as_ref().map(|_| "<redacted>"),
+            )
             .field("expiry_date_ms", &self.expiry_date_ms)
             .field("email", &self.email)
             .field("issued_to_client_id", &self.issued_to_client_id)
@@ -77,7 +111,11 @@ impl fmt::Display for LocalCredentialError {
                 "No Antigravity credentials found. Sign in to Antigravity first."
             ),
             Self::Unreadable(detail) => {
-                write!(formatter, "Could not read Antigravity credentials: {}", detail)
+                write!(
+                    formatter,
+                    "Could not read Antigravity credentials: {}",
+                    detail
+                )
             }
             Self::Malformed(detail) => write!(
                 formatter,
@@ -140,8 +178,8 @@ pub fn read_local_credentials_in(
 
 /// Convenience wrapper over the default directory.
 pub fn read_local_credentials() -> Result<LocalAntigravityCredentials, LocalCredentialError> {
-    let home =
-        gemini_home().ok_or_else(|| LocalCredentialError::Unreadable("no home directory".to_string()))?;
+    let home = gemini_home()
+        .ok_or_else(|| LocalCredentialError::Unreadable("no home directory".to_string()))?;
     read_local_credentials_in(&home)
 }
 
@@ -216,9 +254,24 @@ pub fn parse_keyring_secret(
         expiry: Option<String>,
     }
 
+    let decoded_storage: String;
+    let json_str = if let Some(stripped) = raw.strip_prefix("go-keyring-base64:") {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(stripped.trim())
+            .map_err(|_| {
+                LocalCredentialError::Malformed("invalid base64 in keyring secret".to_string())
+            })?;
+        decoded_storage = String::from_utf8(bytes).map_err(|_| {
+            LocalCredentialError::Malformed("keyring secret was not valid UTF-8".to_string())
+        })?;
+        &decoded_storage
+    } else {
+        raw
+    };
+
     // Only position information from the serde error is kept, since its message
     // can quote the input it failed on.
-    let secret: KeyringSecret = serde_json::from_str(raw).map_err(|err| {
+    let secret: KeyringSecret = serde_json::from_str(json_str).map_err(|err| {
         LocalCredentialError::Malformed(format!(
             "JSON error at line {} column {}",
             err.line(),
@@ -242,10 +295,7 @@ pub fn parse_keyring_secret(
             .refresh_token
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty()),
-        expiry_date_ms: token
-            .expiry
-            .as_deref()
-            .and_then(parse_rfc3339_ms),
+        expiry_date_ms: token.expiry.as_deref().and_then(parse_rfc3339_ms),
         email: secret
             .id_token
             .as_deref()
@@ -310,10 +360,13 @@ fn keyring_entry() -> keyring::Result<keyring_core::Entry> {
 }
 
 /// Credentials for whichever Antigravity sign-in we can find, preferring the
-/// CLI's keyring entry over the Gemini file. When neither is present the
-/// keyring's error is the one reported, since it is the source that matters for
-/// the sidebar.
+/// CLI token file over the keyring entry (to avoid OS keychain authorization
+/// prompts) and falling back to the Gemini file. When none is present the
+/// keyring's error is the one reported, since it is the primary source for the CLI.
 pub fn read_any_credentials() -> Result<LocalAntigravityCredentials, LocalCredentialError> {
+    if let Ok(credentials) = read_cli_credentials() {
+        return Ok(credentials);
+    }
     let keyring_result = read_keyring_credentials();
     if keyring_result.is_ok() {
         return keyring_result;

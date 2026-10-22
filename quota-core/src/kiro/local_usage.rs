@@ -73,7 +73,12 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
             &["total"],
         ],
     )
-    .or_else(|| pick_number(Some(raw), &[&["bonusCredits", "total"], &["bonus", "total"]]));
+    .or_else(|| {
+        pick_number(
+            Some(raw),
+            &[&["bonusCredits", "total"], &["bonus", "total"]],
+        )
+    });
 
     let bonus_used = pick_number(
         free_trial,
@@ -191,7 +196,12 @@ fn region_from_profile_arn(arn: &str) -> Option<String> {
 }
 
 fn runtime_endpoint_for_region(region: Option<&str>) -> String {
-    match region.unwrap_or("us-east-1").trim().to_ascii_lowercase().as_str() {
+    match region
+        .unwrap_or("us-east-1")
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
         "eu-central-1" => "https://q.eu-central-1.amazonaws.com".to_string(),
         _ => DEFAULT_RUNTIME_ENDPOINT.to_string(),
     }

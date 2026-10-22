@@ -154,5 +154,8 @@ fn the_project_id_reads_from_every_shape_google_sends() {
         Some("proj-field")
     );
     assert_eq!(project_id(&json!({})), None);
-    assert_eq!(project_id(&json!({ "cloudaicompanionProject": "  " })), None);
+    assert_eq!(
+        project_id(&json!({ "cloudaicompanionProject": "  " })),
+        None
+    );
 }

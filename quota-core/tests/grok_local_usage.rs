@@ -176,7 +176,10 @@ fn a_plan_with_no_allocation_says_so_instead_of_showing_nothing() {
 
     assert_eq!(usage.windows[0].remaining_percent, None);
     assert_eq!(usage.note.as_deref(), Some("no credit allocation"));
-    assert_eq!(usage.compact_token().as_deref(), Some("no credit allocation"));
+    assert_eq!(
+        usage.compact_token().as_deref(),
+        Some("no credit allocation")
+    );
 }
 
 #[test]

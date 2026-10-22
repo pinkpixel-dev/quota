@@ -5,7 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn temp_dir(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("quota-kiro-local-{}-{}", std::process::id(), name));
+    let dir =
+        std::env::temp_dir().join(format!("quota-kiro-local-{}-{}", std::process::id(), name));
     fs::create_dir_all(&dir).expect("create temp dir");
     dir
 }
@@ -52,8 +53,7 @@ fn the_profile_arn_wins_over_the_cached_token_arn() {
         r#"{"arn":"arn:aws:codewhisperer:eu-central-1:1:profile/NEW"}"#,
     );
 
-    let credentials =
-        read_local_credentials_at(&token, Some(&profile)).expect("read credentials");
+    let credentials = read_local_credentials_at(&token, Some(&profile)).expect("read credentials");
 
     assert_eq!(
         credentials.profile_arn,
@@ -70,8 +70,8 @@ fn a_profile_path_that_does_not_exist_is_not_an_error() {
         r#"{"accessToken":"kiro-access-token","arn":"arn:aws:codewhisperer:us-east-1:1:profile/ABC"}"#,
     );
 
-    let credentials = read_local_credentials_at(&token, Some(&dir.join("nope.json")))
-        .expect("read credentials");
+    let credentials =
+        read_local_credentials_at(&token, Some(&dir.join("nope.json"))).expect("read credentials");
 
     assert_eq!(credentials.access_token, "kiro-access-token");
 }
@@ -239,7 +239,10 @@ fn cli_database(dir: &Path, key: &str, value: &str) -> PathBuf {
     let path = dir.join("data.sqlite3");
     let connection = rusqlite::Connection::open(&path).expect("create db");
     connection
-        .execute("CREATE TABLE auth_kv (key TEXT PRIMARY KEY, value TEXT)", [])
+        .execute(
+            "CREATE TABLE auth_kv (key TEXT PRIMARY KEY, value TEXT)",
+            [],
+        )
         .expect("create table");
     connection
         .execute(
@@ -291,7 +294,10 @@ fn a_database_with_no_token_row_is_not_found_rather_than_an_error() {
     let path = dir.join("data.sqlite3");
     let connection = rusqlite::Connection::open(&path).expect("create db");
     connection
-        .execute("CREATE TABLE auth_kv (key TEXT PRIMARY KEY, value TEXT)", [])
+        .execute(
+            "CREATE TABLE auth_kv (key TEXT PRIMARY KEY, value TEXT)",
+            [],
+        )
         .expect("create table");
 
     match read_cli_credentials_at(&path) {

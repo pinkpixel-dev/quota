@@ -3,11 +3,8 @@ use quota_core::codex::local::{read_local_credentials_at, LocalCredentialError};
 use std::fs;
 
 fn temp_file(name: &str, body: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "quota-codex-local-{}-{}",
-        std::process::id(),
-        name
-    ));
+    let dir =
+        std::env::temp_dir().join(format!("quota-codex-local-{}-{}", std::process::id(), name));
     fs::create_dir_all(&dir).expect("create temp dir");
     let path = dir.join("auth.json");
     fs::write(&path, body).expect("write auth file");
@@ -97,7 +94,10 @@ fn an_api_key_login_reports_that_it_has_no_usage_window() {
 
     match read_local_credentials_at(&path) {
         Err(LocalCredentialError::ApiKeyOnly) => {}
-        other => panic!("expected ApiKeyOnly, got {:?}", other.map(|_| "credentials")),
+        other => panic!(
+            "expected ApiKeyOnly, got {:?}",
+            other.map(|_| "credentials")
+        ),
     }
 }
 

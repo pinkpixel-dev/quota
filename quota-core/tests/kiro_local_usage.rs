@@ -1,4 +1,6 @@
-use quota_core::kiro::local_usage::{normalize_usage_response, usage_url_for_profile_arn, LocalUsageError};
+use quota_core::kiro::local_usage::{
+    normalize_usage_response, usage_url_for_profile_arn, LocalUsageError,
+};
 use serde_json::json;
 
 fn breakdown(limit: f64, used: f64) -> serde_json::Value {
@@ -129,7 +131,8 @@ fn prefers_the_credit_pool_over_other_breakdowns() {
 
 #[test]
 fn routes_the_request_to_the_region_named_in_the_profile_arn() {
-    let url = usage_url_for_profile_arn("arn:aws:codewhisperer:eu-central-1:123456789012:profile/ABC");
+    let url =
+        usage_url_for_profile_arn("arn:aws:codewhisperer:eu-central-1:123456789012:profile/ABC");
 
     assert!(url.starts_with("https://q.eu-central-1.amazonaws.com/getUsageLimits"));
     assert!(url.contains("resourceType=AGENTIC_REQUEST"));
@@ -137,7 +140,8 @@ fn routes_the_request_to_the_region_named_in_the_profile_arn() {
 
 #[test]
 fn an_unrecognized_region_falls_back_to_the_default_endpoint() {
-    let url = usage_url_for_profile_arn("arn:aws:codewhisperer:ap-south-1:123456789012:profile/ABC");
+    let url =
+        usage_url_for_profile_arn("arn:aws:codewhisperer:ap-south-1:123456789012:profile/ABC");
 
     assert!(url.starts_with("https://q.us-east-1.amazonaws.com/"));
 }
@@ -172,5 +176,7 @@ fn a_lapsed_token_tells_the_user_to_use_kiro_not_to_sign_in_again() {
 /// not collapse into the same advice.
 #[test]
 fn a_rejected_token_still_asks_for_a_new_sign_in() {
-    assert!(LocalUsageError::Unauthorized.to_string().contains("Sign in to Kiro again"));
+    assert!(LocalUsageError::Unauthorized
+        .to_string()
+        .contains("Sign in to Kiro again"));
 }

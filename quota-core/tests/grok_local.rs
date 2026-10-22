@@ -2,11 +2,8 @@ use quota_core::grok::local::{read_local_credentials_at_time, LocalCredentialErr
 use std::fs;
 
 fn temp_file(name: &str, body: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "quota-grok-local-{}-{}",
-        std::process::id(),
-        name
-    ));
+    let dir =
+        std::env::temp_dir().join(format!("quota-grok-local-{}-{}", std::process::id(), name));
     fs::create_dir_all(&dir).expect("create temp dir");
     let path = dir.join("auth.json");
     fs::write(&path, body).expect("write auth file");

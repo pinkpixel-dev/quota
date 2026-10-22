@@ -76,10 +76,7 @@ fn credentials_struct_debug_redacts_access_token() {
 fn a_parse_failure_never_quotes_the_token() {
     // serde's own error message can echo the input it choked on. Only the line
     // and column are kept, so a malformed file cannot leak the token it holds.
-    let path = temp_file(
-        "malformed",
-        r#"{"accessToken":"super-secret-token","#,
-    );
+    let path = temp_file("malformed", r#"{"accessToken":"super-secret-token","#);
 
     match read_local_credentials_at(&path) {
         Err(error) => {

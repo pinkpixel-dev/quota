@@ -68,7 +68,10 @@ fn a_file_without_the_oauth_block_is_malformed() {
 
 #[test]
 fn credentials_struct_debug_redacts_access_token() {
-    let path = temp_file("leak", r#"{"claudeAiOauth":{"accessToken":"super-secret"}}"#);
+    let path = temp_file(
+        "leak",
+        r#"{"claudeAiOauth":{"accessToken":"super-secret"}}"#,
+    );
     let rendered = format!("{:?}", read_local_credentials_at(&path));
     assert!(!rendered.contains("super-secret"));
 }

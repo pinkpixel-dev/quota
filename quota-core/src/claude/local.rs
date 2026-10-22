@@ -62,7 +62,11 @@ impl fmt::Display for LocalCredentialError {
                 "No Claude Code credentials found. Sign in with the Claude Code CLI first."
             ),
             Self::Unreadable(detail) => {
-                write!(formatter, "Could not read Claude Code credentials: {}", detail)
+                write!(
+                    formatter,
+                    "Could not read Claude Code credentials: {}",
+                    detail
+                )
             }
             Self::Malformed(detail) => write!(
                 formatter,
@@ -93,7 +97,9 @@ struct OauthBlock {
     subscription_type: Option<String>,
 }
 
-pub fn read_local_credentials_at(path: &Path) -> Result<LocalClaudeCredentials, LocalCredentialError> {
+pub fn read_local_credentials_at(
+    path: &Path,
+) -> Result<LocalClaudeCredentials, LocalCredentialError> {
     if !path.exists() {
         return Err(LocalCredentialError::NotFound);
     }
@@ -107,16 +113,11 @@ pub fn read_local_credentials_at(path: &Path) -> Result<LocalClaudeCredentials, 
 /// Parse the credentials JSON. The file and the macOS Keychain item hold the
 /// same payload, so both sources go through here.
 pub fn parse_credentials_json(raw: &str) -> Result<LocalClaudeCredentials, LocalCredentialError> {
-    let parsed: CredentialsFile = serde_json::from_str(raw)
-        .map_err(|err| {
-            // Use only line/column info from serde error, never the quoted value which could be a token
-            let msg = format!(
-                "JSON error at line {} column {}",
-                err.line(),
-                err.column()
-            );
-            LocalCredentialError::Malformed(msg)
-        })?;
+    let parsed: CredentialsFile = serde_json::from_str(raw).map_err(|err| {
+        // Use only line/column info from serde error, never the quoted value which could be a token
+        let msg = format!("JSON error at line {} column {}", err.line(), err.column());
+        LocalCredentialError::Malformed(msg)
+    })?;
 
     let oauth = parsed
         .oauth
@@ -171,12 +172,13 @@ fn read_keychain_credentials() -> Result<LocalClaudeCredentials, LocalCredential
     if !output.status.success() {
         return Err(match output.status.code() {
             Some(ITEM_NOT_FOUND) => LocalCredentialError::NotFound,
-            _ => LocalCredentialError::Unreadable(format!("security exited with {}", output.status)),
+            _ => {
+                LocalCredentialError::Unreadable(format!("security exited with {}", output.status))
+            }
         });
     }
 
-    let raw = String::from_utf8(output.stdout).map_err(|_| {
-        LocalCredentialError::Malformed("Keychain item is not UTF-8".to_string())
-    })?;
+    let raw = String::from_utf8(output.stdout)
+        .map_err(|_| LocalCredentialError::Malformed("Keychain item is not UTF-8".to_string()))?;
     parse_credentials_json(raw.trim())
 }

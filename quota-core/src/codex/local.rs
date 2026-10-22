@@ -104,7 +104,9 @@ struct JwtAuthData {
     chatgpt_account_id: Option<String>,
 }
 
-pub fn read_local_credentials_at(path: &Path) -> Result<LocalCodexCredentials, LocalCredentialError> {
+pub fn read_local_credentials_at(
+    path: &Path,
+) -> Result<LocalCodexCredentials, LocalCredentialError> {
     if !path.exists() {
         return Err(LocalCredentialError::NotFound);
     }
@@ -151,7 +153,8 @@ pub fn read_local_credentials_at(path: &Path) -> Result<LocalCodexCredentials, L
 
     let account_id = auth_data
         .and_then(|data| {
-            normalize(data.account_id.clone()).or_else(|| normalize(data.chatgpt_account_id.clone()))
+            normalize(data.account_id.clone())
+                .or_else(|| normalize(data.chatgpt_account_id.clone()))
         })
         .or_else(|| normalize(tokens.account_id.clone()));
 
