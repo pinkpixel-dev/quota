@@ -54,7 +54,7 @@ exit 1
         .unwrap();
     }
 
-    fn run(&self, force: bool) -> Output {
+    fn command(&self, force: bool) -> Command {
         let mut command = Command::new(env!("CARGO_BIN_EXE_quota-cli"));
         command.args(["herdr", "report"]);
         if force {
@@ -66,8 +66,14 @@ exit 1
             .env("HERDR_PLUGIN_ID", "pinkpixel.quota")
             .env("KIMI_CODE_HOME", self.dir.join("kimi-home"))
             .env("QUOTA_TEST_DIR", &self.dir)
-            .output()
-            .unwrap()
+            // Isolate the override: a value inherited from the developer's
+            // shell must never reach a test process.
+            .env_remove("KIMI_CODE_BASE_URL");
+        command
+    }
+
+    fn run(&self, force: bool) -> Output {
+        self.command(force).output().unwrap()
     }
 
     fn reports(&self) -> String {
@@ -221,4 +227,50 @@ fn unsupported_panes_do_not_read_kimi_credentials_or_touch_the_cache() {
     assert!(output.stderr.is_empty());
     assert!(fixture.reports().is_empty());
     assert!(!fixture.dir.join("state").exists());
+}
+
+#[test]
+fn invalid_base_url_env_fails_safely_without_sending_a_request() {
+    let fixture = Fixture::new(
+        "bad-base-url",
+        json!([
+            {"agent": "kimi", "pane_id": "w1:p1", "workspace_id": "w1"}
+        ]),
+    );
+    let creds = fixture.dir.join("kimi-home/credentials");
+    std::fs::create_dir_all(&creds).unwrap();
+    std::fs::write(
+        creds.join("kimi-code.json"),
+        r#"{"access_token":"test-secret","refresh_token":"refresh-secret","expires_at":4102444800}"#,
+    )
+    .unwrap();
+    // Credentials are valid and future-dated, so any failure here comes from
+    // URL resolution. Neither value is an official endpoint, so the CLI must
+    // stop before opening a connection.
+    for (name, value) in [
+        ("plain-http", "http://api.kimi.com/coding/v1"),
+        ("gateway", "https://token@quota-gateway.example/coding/v1"),
+    ] {
+        let output = fixture
+            .command(true)
+            .env("KIMI_CODE_BASE_URL", value)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1), "case: {name}");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains("KIMI_CODE_BASE_URL"),
+            "case: {name}: {stderr}"
+        );
+        assert!(
+            !stderr.contains(value),
+            "case: {name}: stderr echoes the configured value"
+        );
+        assert!(
+            !stderr.contains("secret") && !stderr.contains("token"),
+            "case: {name}: {stderr}"
+        );
+        assert!(fixture.reports().is_empty(), "case: {name}");
+        assert!(!fixture.dir.join("state").exists(), "case: {name}");
+    }
 }

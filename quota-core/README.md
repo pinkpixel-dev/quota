@@ -19,8 +19,6 @@ for (provider, result) in reports {
 
 `fetch_provider(name)` does one provider and returns `None` for a name that has no reader, which lets a caller tell "unknown provider" apart from "provider failed".
 
-The Kimi provider reads OAuth credentials from `~/.kimi-code/credentials/kimi-code.json`, honoring `KIMI_CODE_HOME`. It fetches the default Kimi Code `/usages` endpoint and normalizes `used_ratio` into remaining percentages for `5h`, `Wk`, `Month`, and `Code`, preserving available reset times. Missing or invalid windows are skipped; no valid windows produces a `No usage data` note. Expired or rejected tokens must be renewed by Kimi Code. Legacy `~/.kimi` credentials, API keys, and custom service addresses are outside this provider's scope.
-
 ## Things worth knowing before you depend on this
 
 Every reader is read-only. None of them refresh, rewrite, or rotate the files they read, since those tokens back the user's own agent sessions. Antigravity is the only exception, because Google does not rotate its refresh token, and even there nothing is written to disk.

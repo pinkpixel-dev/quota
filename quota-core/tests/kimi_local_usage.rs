@@ -18,7 +18,7 @@ fn converts_all_windows_in_display_order_with_resets_and_two_compact_windows() {
             .iter()
             .map(|w| w.label.as_str())
             .collect::<Vec<_>>(),
-        ["5h", "Wk", "Month", "Code"]
+        ["5h", "Wk", "Mo", "Code"]
     );
     assert_eq!(
         usage
@@ -45,10 +45,7 @@ fn skips_missing_or_invalid_windows_instead_of_inventing_full_quota() {
         "limit_month_total": {"used_ratio": "0.1", "reset_time": "bad date"},
         "limit_month_code": {"used_ratio": 0.9}
     }}));
-    assert_eq!(
-        usage.compact_token().as_deref(),
-        Some("Month 90% · Code 10%")
-    );
+    assert_eq!(usage.compact_token().as_deref(), Some("Mo 90% · Code 10%"));
     assert_eq!(usage.windows[0].reset_at, None);
 }
 
