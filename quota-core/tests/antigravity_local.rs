@@ -361,3 +361,52 @@ fn reads_the_cli_oauth_token_file() {
     assert_eq!(credentials.access_token, "ya29-access");
     assert_eq!(credentials.refresh_token.as_deref(), Some("1//refresh"));
 }
+
+/// The current CLI keyring payload. It names the account but carries no id
+/// token, so it cannot name the OAuth client that issued the refresh token.
+fn current_keyring_secret() -> String {
+    r#"{"auth_method":"consumer","id_token_email":"person@example.com","token":{"access_token":"ya29-access","refresh_token":"1//refresh","token_type":"Bearer","expiry":"2027-01-01T00:00:00Z","expires_in":3600}}"#.to_string()
+}
+
+#[test]
+fn parses_the_current_keyring_payload_which_has_no_id_token() {
+    let credentials = parse_keyring_secret(&current_keyring_secret()).expect("parse secret");
+
+    assert_eq!(credentials.access_token, "ya29-access");
+    assert_eq!(credentials.email.as_deref(), Some("person@example.com"));
+    assert_eq!(credentials.issued_to_client_id, None);
+    assert!(credentials.cli_owned);
+}
+
+#[test]
+fn the_gemini_file_is_not_cli_owned() {
+    // The shared Gemini file can belong to the Gemini CLI's client, so it must
+    // not be attributed to Antigravity's without a matching id token.
+    let home = temp_home("not-cli-owned");
+    write(
+        &home,
+        "oauth_creds.json",
+        r#"{"access_token":"ya29-access"}"#,
+    );
+
+    let credentials = read_local_credentials_in(&home).expect("read credentials");
+
+    assert!(!credentials.cli_owned);
+}
+
+#[test]
+fn the_cli_token_file_is_cli_owned() {
+    let home = temp_home("cli-owned-flag");
+    let cli_dir = home.join("antigravity-cli");
+    fs::create_dir_all(&cli_dir).expect("create cli dir");
+    write(
+        &cli_dir,
+        "antigravity-oauth-token",
+        &current_keyring_secret(),
+    );
+
+    let credentials = read_cli_credentials_in(&home).expect("read cli credentials");
+
+    assert!(credentials.cli_owned);
+    assert_eq!(credentials.email.as_deref(), Some("person@example.com"));
+}
