@@ -32,6 +32,7 @@ pub enum LocalCredentialError {
     Unreadable(String),
     Malformed(String),
     Expired,
+    SignedOut,
 }
 
 impl fmt::Display for LocalCredentialError {
@@ -56,6 +57,10 @@ impl fmt::Display for LocalCredentialError {
             Self::Expired => write!(
                 formatter,
                 "Kimi Code's stored token has expired. Run Kimi Code to refresh it, or use /login."
+            ),
+            Self::SignedOut => write!(
+                formatter,
+                "Kimi Code is signed out. Run /login in Kimi Code."
             ),
         }
     }
@@ -88,9 +93,7 @@ pub fn read_local_credentials_at(
     })?;
     let access_token = parsed.access_token.trim().to_string();
     if access_token.is_empty() {
-        return Err(LocalCredentialError::Malformed(
-            "no access token".to_string(),
-        ));
+        return Err(LocalCredentialError::SignedOut);
     }
     if !parsed.expires_at.is_finite() || parsed.expires_at <= 0.0 {
         return Err(LocalCredentialError::Malformed(

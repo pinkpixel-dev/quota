@@ -61,7 +61,15 @@ fn maps_the_aliases_herdr_also_uses_for_the_same_agent() {
             kind
         );
     }
-    for kind in ["kimi", "kimi-code", "kimi code", " KIMI-CODE "] {
+}
+
+#[test]
+fn kimi_maps_from_the_canonical_name_and_its_aliases() {
+    // Herdr reports the canonical kimi kind; Quota also accepts its input
+    // aliases so hand-written or older agent lists still match.
+    for kind in [
+        "kimi", "KIMI", "  Kimi  ", "kimi-code", "KIMI-CODE", " kimi-code ", "kimi code", "Kimi Code",
+    ] {
         assert_eq!(provider_for_agent_kind(kind), Some("kimi"), "kind {}", kind);
     }
 }

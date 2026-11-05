@@ -60,10 +60,8 @@ fn missing_and_unreadable_credentials_are_distinct() {
 }
 
 #[test]
-fn rejects_empty_missing_and_wrongly_typed_fields_without_leaking_values() {
-    let future = chrono::Utc::now().timestamp() + 3600;
+fn rejects_missing_and_wrongly_typed_fields_without_leaking_values() {
     for (index, body) in [
-        json!({"access_token": "  ", "expires_at": future}).to_string(),
         json!({"access_token": "secret-access-token"}).to_string(),
         json!({"access_token": "secret-access-token", "expires_at": "secret-expiry"}).to_string(),
         json!({"access_token": "secret-access-token", "expires_at": 0}).to_string(),
@@ -80,6 +78,33 @@ fn rejects_empty_missing_and_wrongly_typed_fields_without_leaking_values() {
         assert!(!rendered.contains("secret-access-token"));
         assert!(!rendered.contains("secret-expiry"));
     }
+}
+
+#[test]
+fn empty_access_token_means_signed_out_without_changing_credentials() {
+    // Kimi Code writes this payload when the session is revoked.
+    let body = r#"{"access_token":"","refresh_token":"","expires_at":0,"scope":"kimi-code","token_type":"Bearer","expires_in":0}"#;
+    let fixture = Fixture::new("signed-out", body);
+    let error = read_local_credentials_at(&fixture.path()).unwrap_err();
+    assert!(matches!(error, LocalCredentialError::SignedOut));
+    assert_eq!(
+        error.to_string(),
+        "Kimi Code is signed out. Run /login in Kimi Code."
+    );
+    assert_eq!(std::fs::read_to_string(fixture.path()).unwrap(), body);
+
+    let body = json!({
+        "access_token": "   ", "expires_at": chrono::Utc::now().timestamp() + 3600
+    })
+    .to_string();
+    let fixture = Fixture::new("signed-out-whitespace", &body);
+    let error = read_local_credentials_at(&fixture.path()).unwrap_err();
+    assert!(matches!(error, LocalCredentialError::SignedOut));
+    assert_eq!(
+        error.to_string(),
+        "Kimi Code is signed out. Run /login in Kimi Code."
+    );
+    assert_eq!(std::fs::read_to_string(fixture.path()).unwrap(), body);
 }
 
 #[test]

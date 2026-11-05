@@ -100,7 +100,7 @@ fn kimi_panes_share_a_fresh_cache_and_report_the_pure_workspace() {
         "pure",
         json!([
             {"agent": "kimi", "pane_id": "w1:p1", "workspace_id": "w1"},
-            {"agent": "KIMI-CODE", "pane_id": "w1:p2", "workspace_id": "w1"}
+            {"agent": "kimi", "pane_id": "w1:p2", "workspace_id": "w1"}
         ]),
     );
     fixture.seed("kimi", "5h 82% · Wk 64%", 0);
@@ -159,7 +159,7 @@ fn stale_or_forced_cache_fetches_kimi_once_then_falls_back_on_credential_failure
             name,
             json!([
                 {"agent": "kimi", "pane_id": "w1:p1", "workspace_id": "w1"},
-                {"agent": "kimi-code", "pane_id": "w1:p2", "workspace_id": "w1"}
+                {"agent": "kimi", "pane_id": "w1:p2", "workspace_id": "w1"}
             ]),
         );
         fixture.seed("kimi", "5h 82% · Wk 64%", age);
@@ -209,6 +209,33 @@ fn expired_credentials_without_a_cache_report_an_error_without_modification() {
     assert!(stderr.contains("expired"));
     assert!(stderr.contains("/login"));
     assert!(!stderr.contains("secret"));
+    assert!(fixture.reports().is_empty());
+    assert!(!fixture.dir.join("state").exists());
+    assert_eq!(std::fs::read_to_string(path).unwrap(), body);
+}
+
+#[test]
+fn revoked_credentials_report_signed_out_without_modification() {
+    let fixture = Fixture::new(
+        "signed-out",
+        json!([
+            {"agent": "kimi", "pane_id": "w1:p1", "workspace_id": "w1"}
+        ]),
+    );
+    let home = fixture.dir.join("kimi-home/credentials");
+    std::fs::create_dir_all(&home).unwrap();
+    let path = home.join("kimi-code.json");
+    // What Kimi Code writes when the session is revoked: an empty access token.
+    let body = r#"{"access_token":"","refresh_token":"","expires_at":0,"scope":"kimi-code","token_type":"Bearer","expires_in":0}"#;
+    std::fs::write(&path, body).unwrap();
+    let output = fixture.run(false);
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("Kimi Code is signed out. Run /login in Kimi Code."),
+        "{}",
+        stderr
+    );
     assert!(fixture.reports().is_empty());
     assert!(!fixture.dir.join("state").exists());
     assert_eq!(std::fs::read_to_string(path).unwrap(), body);
