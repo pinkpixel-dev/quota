@@ -36,3 +36,6 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 # Lets the Antigravity reader pass an explicit Credential Manager target name,
 # which the `keyring` wrapper does not expose. Same version `keyring` uses.
 keyring-core = "1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt"] }

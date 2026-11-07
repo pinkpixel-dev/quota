@@ -2,7 +2,7 @@
 
 Read your AI usage from the credentials your agent CLIs already stored.
 
-`quota-cli` prints how much quota you have left across Claude, Codex, Cursor, Antigravity, Grok, and Kiro. It reads each provider's token from wherever that provider's own CLI keeps it, so there is no sign-in step, no config file, and no account to connect. If you are logged into Claude Code, you get Claude numbers. If you are not, it says so and moves on.
+`quota-cli` prints how much quota you have left across Claude, Codex, Cursor, Antigravity, Grok, Kiro, and Kimi Code. It reads each provider's token from wherever that provider's own CLI keeps it, so there is no sign-in step, no config file, and no account to connect. If you are logged into Claude Code, you get Claude numbers. If you are not, it says so and moves on.
 
 It is part of [Quota](https://github.com/pinkpixel-dev/quota), a desktop app that does the same thing with a UI. The CLI is standalone and does not need the app installed or running.
 
@@ -27,6 +27,7 @@ cursor       Plan 100% left (resets in 8d 3h)
 antigravity  5h 100% left (resets in 4h 59m) · Wk 97% left (resets in 6d 17h)
 grok         no credit allocation
 kiro         Credits 100% left · Bonus 100% left
+kimi         5h 82% left (resets in 2h) · Wk 64% left (resets in 3d)
 ```
 
 Percentages are what you have left, not what you have used. Reset times show when a provider reports one, and Kiro currently does not.
@@ -67,6 +68,7 @@ A failed cycle is not fatal. If Herdr is not running, or a provider is signed ou
 | Antigravity | OS keyring, falling back to `~/.gemini/oauth_creds.json` |
 | Grok | `~/.grok/auth.json`, honoring `GROK_HOME` |
 | Kiro | `~/.local/share/kiro-cli/data.sqlite3`, falling back to the AWS SSO cache |
+| Kimi Code | `~/.kimi-code/credentials/kimi-code.json`, honoring `KIMI_CODE_HOME` |
 
 Three of these are worth knowing about. Cursor, Kiro, and Antigravity keep separate credentials for their CLI and their IDE, and the two stores can hold different accounts or lapse independently. `quota-cli` reads the CLI store first, because that is the session an agent in a terminal actually uses.
 

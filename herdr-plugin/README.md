@@ -20,6 +20,7 @@ The labels differ by provider, because the providers themselves measure differen
 | `agy`, `antigravity`, `antigravity-cli` | `5h`, `Wk` | the Gemini model windows |
 | `grok` | `Credit` | the credit pool for the billing period |
 | `kiro` | `Credits`, `Bonus` | base credits, and a bonus or free trial pool when you have one |
+| `kimi`, `kimi-code`, `kimi code` | `5h`, `Wk`, `Mo`, `Code` | Kimi Code subscription windows, showing the first two available |
 
 The percentages are how much you have left, not how much you've used.
 
@@ -138,6 +139,8 @@ This plugin reads each agent CLI's locally stored credentials to work out your u
 Antigravity is the one exception, and a narrow one. Google doesn't rotate its refresh token, so a fresh access token is held in memory for a single request and nothing is ever written to disk.
 
 One thing worth knowing: several of these tools keep separate credentials for their CLI and their IDE, and the two can be different accounts. Cursor, Kiro, and Antigravity all do this. The plugin always reads the CLI's store, since that's the thing actually running in your pane.
+
+Kimi Code requires an OAuth login through `/login`. Its credentials are read from `~/.kimi-code/credentials/kimi-code.json`, or `$KIMI_CODE_HOME/credentials/kimi-code.json` when that directory override is set. Quota reads the access token without refreshing or changing it. If it has expired or is rejected, run Kimi Code to refresh it, or use `/login`. This provider supports the current Kimi Code CLI and its official services. `KIMI_CODE_BASE_URL` may point it at the other official endpoint (`https://api.kimi.ai/coding/v1` instead of the default `https://api.kimi.com/coding/v1`), but any other address is rejected with a sanitized error before a request is sent; arbitrary custom service addresses and gateways are not supported. An unset or blank value uses the default endpoint, and an explicit `:443` port is accepted. Legacy `~/.kimi` credentials and API key logins are not supported either.
 
 ## When the sidebar shows nothing
 

@@ -4,7 +4,7 @@ Provider logic behind [Quota](https://github.com/pinkpixel-dev/quota): read AI u
 
 This is the shared crate that the Quota desktop app and [`quota-cli`](https://crates.io/crates/quota-cli) both build on. If you want the tool rather than the library, install `quota-cli`.
 
-Six providers are supported: Claude, Codex, Cursor, Antigravity, Grok, and Kiro. Each one is a module with the same two halves. `local.rs` finds and parses the credentials, and `local_usage.rs` fetches usage and normalizes it into a `ProviderUsage`.
+Seven providers are supported: Claude, Codex, Cursor, Antigravity, Grok, Kiro, and Kimi Code (`kimi`). Each one is a module with the same two halves. `local.rs` finds and parses the credentials, and `local_usage.rs` fetches usage and normalizes it into a `ProviderUsage`.
 
 ```rust
 let reports = quota_core::providers::fetch_all().await;

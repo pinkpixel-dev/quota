@@ -61,11 +61,11 @@ fn agent_pane_from(entry: &Value) -> Option<AgentPane> {
 
 /// Map a Herdr agent kind onto a Quota provider.
 ///
-/// Herdr names some agents more than one way, so the aliases matter: an
-/// unmatched kind is silently skipped, which looks identical to a broken
-/// provider. `gemini` is deliberately absent. It is the Gemini Code Assist CLI,
-/// a different OAuth client from Antigravity's, and the Antigravity provider
-/// only handles its own.
+/// An unmatched kind is silently skipped, which looks identical to a broken
+/// provider. Herdr reports the canonical kimi kind, but Quota also accepts its
+/// input aliases so hand-written or older agent lists still match. `gemini` is
+/// deliberately absent. It is the Gemini Code Assist CLI, a different OAuth
+/// client from Antigravity's, and the Antigravity provider only handles its own.
 pub fn provider_for_agent_kind(kind: &str) -> Option<&'static str> {
     match kind.trim().to_ascii_lowercase().as_str() {
         "claude" | "claude-code" | "anthropic" => Some("claude"),
@@ -74,6 +74,7 @@ pub fn provider_for_agent_kind(kind: &str) -> Option<&'static str> {
         "agy" | "antigravity" | "antigravity-cli" => Some("antigravity"),
         "grok" => Some("grok"),
         "kiro" => Some("kiro"),
+        "kimi" | "kimi-code" | "kimi code" => Some("kimi"),
         _ => None,
     }
 }

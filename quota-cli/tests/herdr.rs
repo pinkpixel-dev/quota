@@ -38,6 +38,7 @@ fn maps_every_agent_kind_that_has_a_provider() {
     assert_eq!(provider_for_agent_kind("grok"), Some("grok"));
     assert_eq!(provider_for_agent_kind("agy"), Some("antigravity"));
     assert_eq!(provider_for_agent_kind("kiro"), Some("kiro"));
+    assert_eq!(provider_for_agent_kind("kimi"), Some("kimi"));
 }
 
 #[test]
@@ -45,7 +46,12 @@ fn maps_the_aliases_herdr_also_uses_for_the_same_agent() {
     // Herdr names some agents more than one way. An unmatched kind is skipped
     // silently, which on screen is indistinguishable from a broken provider.
     for kind in ["claude", "claude-code", "anthropic", "  Claude  ", "CLAUDE"] {
-        assert_eq!(provider_for_agent_kind(kind), Some("claude"), "kind {}", kind);
+        assert_eq!(
+            provider_for_agent_kind(kind),
+            Some("claude"),
+            "kind {}",
+            kind
+        );
     }
     for kind in ["agy", "antigravity", "antigravity-cli"] {
         assert_eq!(
@@ -54,6 +60,17 @@ fn maps_the_aliases_herdr_also_uses_for_the_same_agent() {
             "kind {}",
             kind
         );
+    }
+}
+
+#[test]
+fn kimi_maps_from_the_canonical_name_and_its_aliases() {
+    // Herdr reports the canonical kimi kind; Quota also accepts its input
+    // aliases so hand-written or older agent lists still match.
+    for kind in [
+        "kimi", "KIMI", "  Kimi  ", "kimi-code", "KIMI-CODE", " kimi-code ", "kimi code", "Kimi Code",
+    ] {
+        assert_eq!(provider_for_agent_kind(kind), Some("kimi"), "kind {}", kind);
     }
 }
 
