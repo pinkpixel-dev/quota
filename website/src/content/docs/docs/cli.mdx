@@ -6,7 +6,7 @@ description: Print your AI usage in the terminal from the credentials your agent
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { cli } from '../../../data/site';
 
-`quota-cli` prints how much quota you have left across Claude, Codex, Cursor, Antigravity, Grok and Kiro. It reads each provider's token from wherever that provider's own CLI keeps it, so there's no sign-in step, no config file and no account to connect. If you're logged into Claude Code, you get Claude numbers. If you're not, it says so and moves on.
+`quota-cli` prints how much quota you have left across Claude, Codex, Cursor, Antigravity, Grok, Kiro and Kimi Code. It reads each provider's token from wherever that provider's own CLI keeps it, so there's no sign-in step, no config file and no account to connect. If you're logged into Claude Code, you get Claude numbers. If you're not, it says so and moves on.
 
 It doesn't need the desktop app installed or running.
 
@@ -71,6 +71,7 @@ Providers you're not signed into go to stderr instead of the JSON. The command o
 | Antigravity | OS keyring, falling back to `~/.gemini/oauth_creds.json` |
 | Grok | `~/.grok/auth.json`, honoring `GROK_HOME` |
 | Kiro | `~/.local/share/kiro-cli/data.sqlite3`, falling back to the AWS SSO cache |
+| Kimi Code | `~/.kimi-code/credentials/kimi-code.json`, honoring `KIMI_CODE_HOME` |
 
 Cursor, Kiro and Antigravity keep separate credentials for their CLI and their IDE, and the two can be different accounts. `quota-cli` reads the CLI's store first, because that's the session an agent in your terminal actually uses.
 

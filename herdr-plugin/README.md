@@ -140,7 +140,9 @@ Antigravity is the one exception, and a narrow one. Google doesn't rotate its re
 
 One thing worth knowing: several of these tools keep separate credentials for their CLI and their IDE, and the two can be different accounts. Cursor, Kiro, and Antigravity all do this. The plugin always reads the CLI's store, since that's the thing actually running in your pane.
 
-Kimi Code requires an OAuth login through `/login`. Its credentials are read from `~/.kimi-code/credentials/kimi-code.json`, or `$KIMI_CODE_HOME/credentials/kimi-code.json` when that directory override is set. Quota reads the access token without refreshing or changing it. If it has expired or is rejected, run Kimi Code to refresh it, or use `/login`. This provider supports the current Kimi Code CLI and its official services. `KIMI_CODE_BASE_URL` may point it at the other official endpoint (`https://api.kimi.ai/coding/v1` instead of the default `https://api.kimi.com/coding/v1`), but any other address is rejected with a sanitized error before a request is sent; arbitrary custom service addresses and gateways are not supported. An unset or blank value uses the default endpoint, and an explicit `:443` port is accepted. Legacy `~/.kimi` credentials and API key logins are not supported either.
+Kimi Code needs you to have signed in with `/login`. The plugin reads the token from `~/.kimi-code/credentials/kimi-code.json`, or from `$KIMI_CODE_HOME/credentials/kimi-code.json` if you've set that. Like the others, it's never refreshed or changed, so if it has expired or gets rejected, run Kimi Code to refresh it, or use `/login` again.
+
+By default usage comes from `https://api.kimi.com/coding/v1`. You can set `KIMI_CODE_BASE_URL` to the other official endpoint, `https://api.kimi.ai/coding/v1`, but that's the only alternative. Any other address is rejected before the token is sent, so custom gateways won't work. This only supports the current [kimi-code](https://github.com/MoonshotAI/kimi-code) CLI, not the archived `kimi-cli` and its `~/.kimi` folder, and API key logins aren't supported.
 
 ## When the sidebar shows nothing
 

@@ -1,6 +1,6 @@
 [package]
 name = "quota-core"
-version = "0.1.3"
+version = "0.2.0"
 description = "Shared AI usage provider logic for Quota."
 authors = ["Pink Pixel <admin@pinkpixel.dev>"]
 license = "Apache-2.0"

@@ -8,10 +8,25 @@ All notable changes to this project will be documented here.
 
 - Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
 
+## quota-cli 0.3.0 - November 7, 2026
+
+Adds Kimi Code and fixes two Antigravity problems.
+
+### ✨ Kimi Code
+
+- `quota-cli` and the Herdr plugin now show Kimi Code subscription usage. The credentials come from `~/.kimi-code/credentials/kimi-code.json`, honoring `KIMI_CODE_HOME`, and the four windows show up as `5h`, `Wk`, `Mo`, and `Code`. Like every other reader, it never refreshes or rewrites the token. Thanks to @YeKc1M. ([#18](https://github.com/pinkpixel-dev/quota/issues/18), [#23](https://github.com/pinkpixel-dev/quota/pull/23))
+- `KIMI_CODE_BASE_URL` can switch between the two official endpoints, `https://api.kimi.com/coding/v1` and `https://api.kimi.ai/coding/v1`. Any other address is rejected before the token is sent anywhere.
+- A signed-out Kimi Code (the empty token file it leaves behind after a rejected refresh) says to run `/login` instead of reporting a malformed file.
+- The Herdr plugin maps the `kimi` agent kind, plus the `kimi-code` and `kimi code` aliases Herdr also accepts.
+
 ### 🐛 Fixes
 
-- Antigravity now reports a disabled quota bucket as `0` instead of its stale fraction. The vendor disables the 5-hour bucket once the paired weekly limit is exhausted, and the old fraction read as if quota were still available.
-- Antigravity can read the CLI's current keyring payload, which names the account in `id_token_email` and carries no id token, and attributes a CLI-owned token to Antigravity's registered OAuth client. On macOS the keyring item is read through `/usr/bin/security`, the tool the CLI wrote it with, so no keychain prompt appears.
+- Antigravity now reports a disabled quota bucket as `0` instead of its stale fraction. Google disables the 5-hour bucket once the paired weekly limit is used up, and the old fraction read as if quota were still available. ([#25](https://github.com/pinkpixel-dev/quota/pull/25))
+- Antigravity can read the CLI's current keyring payload, which names the account in `id_token_email` and carries no id token, and attributes a CLI-owned token to Antigravity's registered OAuth client. On macOS the keyring item is read through `/usr/bin/security`, the tool the CLI wrote it with, so no keychain prompt appears. Thanks to @ernestas-poskus. ([#25](https://github.com/pinkpixel-dev/quota/pull/25))
+
+### 🏷️ Versioning
+
+- Bumped `quota-cli` to `0.3.0` and `quota-core` to `0.2.0`. The desktop app and the VS Code extension keep their current versions, and Kimi Code isn't in either one yet.
 
 ## 1.7.1 and quota-vscode 1.5.2 - October 29, 2026
 

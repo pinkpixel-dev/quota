@@ -132,7 +132,7 @@ kiro         Credits 100% left · Bonus 100% left
 
 Percentages are what you have left. Reset times show when a provider reports one. Anything you're not signed into says so instead of showing a number. Add `--json` for scripting.
 
-It covers Claude, Codex, Cursor, Antigravity, Grok, and Kiro. GitHub Copilot is desktop-only for now. Every reader is strictly read-only: nothing is refreshed, rewritten, or rotated, because those tokens back your own agent sessions.
+It covers Claude, Codex, Cursor, Antigravity, Grok, Kiro, and Kimi Code. GitHub Copilot and OpenCode Go aren't in the CLI yet, but the desktop app and the VS Code extension cover both. Every reader is strictly read-only: nothing is refreshed, rewritten, or rotated, because those tokens back your own agent sessions.
 
 See [`quota-cli/README.md`](quota-cli/README.md) for the full command reference and where each provider's credentials come from. The shared provider logic is published separately as [`quota-core`](https://crates.io/crates/quota-core).
 

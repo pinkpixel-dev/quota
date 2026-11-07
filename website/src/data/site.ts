@@ -63,7 +63,7 @@ export const vscode = {
 };
 
 export const cli = {
-  version: '0.2.4',
+  version: '0.3.0',
   crate: 'https://crates.io/crates/quota-cli',
   get tag() {
     return `quota-cli-v${this.version}`;
