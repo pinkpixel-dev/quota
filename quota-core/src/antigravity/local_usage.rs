@@ -89,13 +89,25 @@ pub fn normalize_quota_response(raw: &Value, account_label: Option<String>) -> P
 
 fn window_from(raw: &Value, bucket_id: &str, label: &str) -> UsageWindow {
     let bucket = find_bucket(raw, bucket_id);
+    // A disabled bucket is not usable quota: Antigravity disables the 5-hour
+    // bucket once the paired weekly limit is exhausted, and the raw fraction
+    // can still read 1. Reporting 0 is the honest answer.
+    let disabled = bucket
+        .as_ref()
+        .and_then(|item| item.get("disabled"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     UsageWindow {
         label: label.to_string(),
-        remaining_percent: bucket
-            .as_ref()
-            .and_then(|item| item.get("remainingFraction"))
-            .and_then(as_number)
-            .map(|fraction| (fraction * 100.0).round().clamp(0.0, 100.0) as i32),
+        remaining_percent: if disabled {
+            Some(0)
+        } else {
+            bucket
+                .as_ref()
+                .and_then(|item| item.get("remainingFraction"))
+                .and_then(as_number)
+                .map(|fraction| (fraction * 100.0).round().clamp(0.0, 100.0) as i32)
+        },
         reset_at: bucket
             .as_ref()
             .and_then(|item| item.get("resetTime"))
@@ -204,9 +216,18 @@ pub async fn fetch_local_usage() -> Result<ProviderUsage, LocalUsageError> {
     let credentials = read_any_credentials().map_err(LocalUsageError::Credentials)?;
     let client = reqwest::Client::new();
 
-    let oauth = oauth_client_for(credentials.issued_to_client_id.as_deref()).ok_or_else(|| {
-        LocalUsageError::UnknownOauthClient(credentials.issued_to_client_id.clone())
-    })?;
+    // The CLI's current keyring payload names the account but carries no id
+    // token, so it cannot name its OAuth client. A CLI-owned token can safely
+    // use Antigravity's single registered client; the shared Gemini file still
+    // has to prove which client issued it.
+    let oauth = oauth_client_for(credentials.issued_to_client_id.as_deref())
+        .or_else(|| {
+            (credentials.cli_owned && credentials.issued_to_client_id.is_none())
+                .then(|| OAUTH_CLIENTS[0])
+        })
+        .ok_or_else(|| {
+            LocalUsageError::UnknownOauthClient(credentials.issued_to_client_id.clone())
+        })?;
 
     let access_token = resolve_access_token(&client, &credentials, &oauth).await?;
 

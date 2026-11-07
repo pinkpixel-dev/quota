@@ -65,6 +65,12 @@ pub struct LocalAntigravityCredentials {
     /// `unauthorized_client`. Antigravity and the Gemini CLI use different
     /// clients and both write this same file.
     pub issued_to_client_id: Option<String>,
+    /// True when the token came from Antigravity's own CLI (its keyring entry
+    /// or the token file it falls back to) rather than the shared Gemini file.
+    /// The current keyring payload names the account but carries no id token,
+    /// so it cannot name its OAuth client; a CLI-owned token can safely be
+    /// attributed to Antigravity's single registered client.
+    pub cli_owned: bool,
 }
 
 impl LocalAntigravityCredentials {
@@ -92,6 +98,7 @@ impl fmt::Debug for LocalAntigravityCredentials {
             .field("expiry_date_ms", &self.expiry_date_ms)
             .field("email", &self.email)
             .field("issued_to_client_id", &self.issued_to_client_id)
+            .field("cli_owned", &self.cli_owned)
             .finish()
     }
 }
@@ -173,6 +180,7 @@ pub fn read_local_credentials_in(
             .id_token
             .as_deref()
             .and_then(|token| id_token_claim(token, "aud")),
+        cli_owned: false,
     })
 }
 
@@ -242,7 +250,11 @@ pub fn parse_keyring_secret(
 ) -> Result<LocalAntigravityCredentials, LocalCredentialError> {
     #[derive(Deserialize)]
     struct KeyringSecret {
+        /// Older payloads carry the id token, which names the account and the
+        /// OAuth client.
         id_token: Option<String>,
+        /// The current payload carries the address on its own and no id token.
+        id_token_email: Option<String>,
         token: Option<KeyringToken>,
     }
 
@@ -299,11 +311,20 @@ pub fn parse_keyring_secret(
         email: secret
             .id_token
             .as_deref()
-            .and_then(|token| id_token_claim(token, "email")),
+            .and_then(|token| id_token_claim(token, "email"))
+            .or_else(|| {
+                secret
+                    .id_token_email
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                    .map(str::to_string)
+            }),
         issued_to_client_id: secret
             .id_token
             .as_deref()
             .and_then(|token| id_token_claim(token, "aud")),
+        cli_owned: true,
     })
 }
 
@@ -316,16 +337,58 @@ fn parse_rfc3339_ms(value: &str) -> Option<i64> {
 /// Read the Antigravity CLI's credentials out of the OS keyring. Read-only:
 /// nothing is ever stored or deleted.
 pub fn read_keyring_credentials() -> Result<LocalAntigravityCredentials, LocalCredentialError> {
+    read_keyring_secret().and_then(|secret| parse_keyring_secret(&secret))
+}
+
+/// Read the raw keyring payload on macOS through `/usr/bin/security`.
+///
+/// The CLI writes the entry with that same tool (macOS go-keyring shells out to
+/// `security`), so the item's access list already allows this read and no
+/// unlock prompt appears. The `keyring` crate talks to the Security framework
+/// as a different client and does prompt, so macOS does not use it here.
+#[cfg(target_os = "macos")]
+fn read_keyring_secret() -> Result<String, LocalCredentialError> {
+    // `security` exits with 44 when no item matches the service.
+    const ITEM_NOT_FOUND: i32 = 44;
+
+    let output = std::process::Command::new("/usr/bin/security")
+        .args([
+            "find-generic-password",
+            "-s",
+            KEYRING_SERVICE,
+            "-a",
+            KEYRING_USER,
+            "-w",
+        ])
+        .output()
+        .map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
+
+    if !output.status.success() {
+        return Err(match output.status.code() {
+            Some(ITEM_NOT_FOUND) => LocalCredentialError::NotFound,
+            _ => {
+                LocalCredentialError::Unreadable(format!("security exited with {}", output.status))
+            }
+        });
+    }
+
+    let raw = String::from_utf8(output.stdout)
+        .map_err(|_| LocalCredentialError::Malformed("Keychain item is not UTF-8".to_string()))?;
+    Ok(raw.trim_end_matches(['\r', '\n']).to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn read_keyring_secret() -> Result<String, LocalCredentialError> {
     let entry = keyring_entry().map_err(|err| LocalCredentialError::Unreadable(err.to_string()))?;
 
     match read_keyring_text(&entry) {
-        Ok(secret) => parse_keyring_secret(&secret),
+        Ok(secret) => Ok(secret),
         Err(keyring::Error::NoEntry) => Err(LocalCredentialError::NotFound),
         Err(err) => Err(LocalCredentialError::Unreadable(err.to_string())),
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 fn read_keyring_text(entry: &keyring::Entry) -> keyring::Result<String> {
     entry.get_password()
 }
@@ -343,7 +406,7 @@ pub fn decode_keyring_blob(blob: Vec<u8>) -> keyring::Result<String> {
     String::from_utf8(blob).map_err(|_| keyring::Error::BadEncoding(Vec::new()))
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 fn keyring_entry() -> keyring::Result<keyring::Entry> {
     keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
 }

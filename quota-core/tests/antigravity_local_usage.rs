@@ -169,3 +169,32 @@ fn the_other_code_assist_calls_keep_the_ide_user_agent() {
     let load = user_agent("v1internal:loadCodeAssist");
     assert!(load.starts_with("antigravity/1.") && load.contains("google-api-nodejs-client/"));
 }
+
+#[test]
+fn a_disabled_bucket_reports_zero_rather_than_a_stale_fraction() {
+    // Once the paired weekly limit is exhausted Antigravity disables the
+    // 5-hour bucket, but the raw fraction can still read 1.
+    let raw = json!({
+        "groups": [{
+            "buckets": [
+                { "bucketId": "gemini-5h", "remainingFraction": 1, "disabled": true, "resetTime": "2027-01-01T00:00:00Z" },
+                { "bucketId": "gemini-weekly", "remainingFraction": 0.74 }
+            ]
+        }]
+    });
+
+    let usage = normalize_quota_response(&raw, None);
+
+    assert_eq!(usage.windows[0].label, "5h");
+    assert_eq!(usage.windows[0].remaining_percent, Some(0));
+    assert_eq!(usage.windows[0].reset_at, Some(1_798_761_600));
+    assert_eq!(usage.windows[1].remaining_percent, Some(74));
+}
+
+#[test]
+fn a_bucket_without_the_disabled_flag_keeps_its_fraction() {
+    // A payload from before the flag existed must read exactly as it did.
+    let usage = normalize_quota_response(&quota_payload(), None);
+
+    assert_eq!(usage.windows[0].remaining_percent, Some(88));
+}

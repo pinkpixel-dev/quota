@@ -8,6 +8,11 @@ All notable changes to this project will be documented here.
 
 - Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
 
+### 🐛 Fixes
+
+- Antigravity now reports a disabled quota bucket as `0` instead of its stale fraction. The vendor disables the 5-hour bucket once the paired weekly limit is exhausted, and the old fraction read as if quota were still available.
+- Antigravity can read the CLI's current keyring payload, which names the account in `id_token_email` and carries no id token, and attributes a CLI-owned token to Antigravity's registered OAuth client. On macOS the keyring item is read through `/usr/bin/security`, the tool the CLI wrote it with, so no keychain prompt appears.
+
 ## 1.7.1 and quota-vscode 1.5.2 - October 29, 2026
 
 Brings the Antigravity Gemini fix from `quota-cli` 0.2.4 to the desktop app and the VS Code extension.
