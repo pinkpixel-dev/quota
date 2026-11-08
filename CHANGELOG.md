@@ -8,10 +8,22 @@ All notable changes to this project will be documented here.
 
 - Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
 
+## quota-cli 0.4.0 - November 8, 2026
+
+Antigravity now shows both of its shared pools and the separate Argon allowance, not just the Gemini pair.
+
 ### ✨ Antigravity model groups
 
 - Antigravity now reports both shared pools instead of only the Gemini pair: `5h` and `Wk` keep their labels, `Claude/GPT 5h` and `Claude/GPT Wk` name the Claude and GPT-OSS pool, and the separate `Gemini 4 Argon` allowance shows up as `Argon Wk` when the account has it. All of the windows come from the quota summary `quota-cli` already reads, so no extra request or subprocess is involved, and renamed bucket ids are routed by group name plus the `window` field.
-- When the compact Herdr token falls back to the Claude/GPT pair it uses `Claude 5h` / `Claude Wk`, so the line stays short.
+- When the compact Herdr token falls back to the Claude/GPT pair it uses `Claude 5h` / `Claude Wk`, so the line stays short. Thanks to @ernestas-poskus. ([#24](https://github.com/pinkpixel-dev/quota/pull/24))
+
+### 🧩 quota-core
+
+- `UsageWindow` has a new optional `short_label` field that `compact_token()` uses when it's set. It's skipped in the JSON when empty, so the output for every other provider stays the same. Code that builds a `UsageWindow` by hand needs to add the field, which is why `quota-core` gets a minor bump.
+
+### 🏷️ Versioning
+
+- Bumped `quota-cli` to `0.4.0` and `quota-core` to `0.3.0`. The desktop app and the VS Code extension keep their current versions. They have their own Antigravity readers, so this release doesn't change them.
 
 ## quota-cli 0.3.0 - November 7, 2026
 

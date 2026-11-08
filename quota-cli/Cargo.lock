@@ -1350,7 +1350,7 @@ dependencies = [
 
 [[package]]
 name = "quota-cli"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "quota-core",
  "serde",
@@ -1360,7 +1360,7 @@ dependencies = [
 
 [[package]]
 name = "quota-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "base64",
  "chrono",
