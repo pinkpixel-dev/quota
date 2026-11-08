@@ -24,13 +24,15 @@ quota-cli usage
 claude       5h 98% left (resets in 4h 58m) · Wk 35% left (resets in 3d 9h)
 codex        5h 100% left (resets in 4h 59m) · Wk 95% left (resets in 4d 6h)
 cursor       Plan 100% left (resets in 8d 3h)
-antigravity  5h 100% left (resets in 4h 59m) · Wk 97% left (resets in 6d 17h)
+antigravity  5h 100% left (resets in 4h 59m) · Wk 97% left (resets in 6d 17h) · Claude/GPT 5h 100% left · Claude/GPT Wk 100% left · Argon Wk 100% left
 grok         no credit allocation
 kiro         Credits 100% left · Bonus 100% left
 kimi         5h 82% left (resets in 2h) · Wk 64% left (resets in 3d)
 ```
 
 Percentages are what you have left, not what you have used. Reset times show when a provider reports one, and Kiro currently does not.
+
+Antigravity reports two shared pools, not per-model quotas: **Gemini** and **Claude/GPT** (Claude Opus, Claude Sonnet, and GPT-OSS share it). The Gemini pair keeps the `5h` / `Wk` labels, the other pool is `Claude/GPT 5h` / `Claude/GPT Wk`, and the separate `Gemini 4 Argon` allowance appears as `Argon Wk` when the account has it. All of it comes from the quota summary Quota already reads, so there is no extra request or subprocess, and renamed bucket ids are routed by group name plus the window field.
 
 For scripting, `--json` prints the same data as an array:
 
@@ -65,7 +67,7 @@ A failed cycle is not fatal. If Herdr is not running, or a provider is signed ou
 | Claude | `~/.claude/.credentials.json`, or the macOS Keychain when that file is missing |
 | Codex | `~/.codex/auth.json`, honoring `CODEX_HOME` |
 | Cursor | `~/.config/cursor/auth.json` |
-| Antigravity | OS keyring, falling back to `~/.gemini/oauth_creds.json` |
+| Antigravity | CLI token file `~/.gemini/antigravity-cli/antigravity-oauth-token` while its token is fresh, then the OS keyring (read through `/usr/bin/security` on macOS), then `~/.gemini/oauth_creds.json` |
 | Grok | `~/.grok/auth.json`, honoring `GROK_HOME` |
 | Kiro | `~/.local/share/kiro-cli/data.sqlite3`, falling back to the AWS SSO cache |
 | Kimi Code | `~/.kimi-code/credentials/kimi-code.json`, honoring `KIMI_CODE_HOME` |

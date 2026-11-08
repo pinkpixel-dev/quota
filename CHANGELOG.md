@@ -8,6 +8,11 @@ All notable changes to this project will be documented here.
 
 - Added `website/`, a homepage and docs site built with Astro and Starlight. It covers the desktop app, the VS Code extension, `quota-cli`, and the Herdr plugin, with screenshots, install steps, and direct download links for each release.
 
+### ✨ Antigravity model groups
+
+- Antigravity now reports both shared pools instead of only the Gemini pair: `5h` and `Wk` keep their labels, `Claude/GPT 5h` and `Claude/GPT Wk` name the Claude and GPT-OSS pool, and the separate `Gemini 4 Argon` allowance shows up as `Argon Wk` when the account has it. All of the windows come from the quota summary `quota-cli` already reads, so no extra request or subprocess is involved, and renamed bucket ids are routed by group name plus the `window` field.
+- When the compact Herdr token falls back to the Claude/GPT pair it uses `Claude 5h` / `Claude Wk`, so the line stays short.
+
 ## quota-cli 0.3.0 - November 7, 2026
 
 Adds Kimi Code and fixes two Antigravity problems.

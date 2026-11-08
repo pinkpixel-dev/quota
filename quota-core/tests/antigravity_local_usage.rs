@@ -45,16 +45,18 @@ fn the_third_party_windows_are_still_carried_in_full() {
     let usage = normalize_quota_response(&quota_payload(), None);
 
     assert_eq!(usage.windows.len(), 4);
-    assert_eq!(usage.windows[2].label, "3p 5h");
+    assert_eq!(usage.windows[2].label, "Claude/GPT 5h");
+    assert_eq!(usage.windows[2].short_label.as_deref(), Some("Claude 5h"));
     assert_eq!(usage.windows[2].remaining_percent, Some(50));
-    assert_eq!(usage.windows[3].label, "3p Wk");
+    assert_eq!(usage.windows[3].label, "Claude/GPT Wk");
+    assert_eq!(usage.windows[3].short_label.as_deref(), Some("Claude Wk"));
     assert_eq!(usage.windows[3].remaining_percent, Some(31));
 }
 
 #[test]
-fn buckets_are_found_regardless_of_which_group_holds_them() {
-    // The grouping carries no meaning Quota needs, so a payload that puts every
-    // bucket in one group must read the same.
+fn a_group_with_no_name_still_routes_by_bucket_id() {
+    // Group names are the primary key, but old payloads and tests may carry
+    // none, so the bucket id stays as the fallback.
     let raw = json!({
         "groups": [{
             "buckets": [
@@ -70,6 +72,93 @@ fn buckets_are_found_regardless_of_which_group_holds_them() {
     assert_eq!(usage.windows[0].remaining_percent, Some(88));
     assert_eq!(usage.windows[1].remaining_percent, Some(74));
     assert_eq!(usage.windows[3].remaining_percent, Some(31));
+}
+
+#[test]
+fn renamed_buckets_are_routed_by_group_name_and_window() {
+    // The vendor has renamed bucket ids before. The group name plus the window
+    // field must keep the pair on the right line.
+    let raw = json!({
+        "groups": [
+            {
+                "displayName": "Gemini Models",
+                "buckets": [
+                    { "bucketId": "a-new-gemini-id", "window": "weekly", "remainingFraction": 0.74 },
+                    { "bucketId": "another-gemini-id", "window": "5h", "remainingFraction": 0.88 }
+                ]
+            },
+            {
+                "displayName": "Claude and GPT models",
+                "buckets": [
+                    { "bucketId": "renamed-3p", "remainingFraction": 0.31 }
+                ]
+            }
+        ]
+    });
+
+    let usage = normalize_quota_response(&raw, None);
+
+    assert_eq!(usage.windows[0].remaining_percent, Some(88));
+    assert_eq!(usage.windows[1].remaining_percent, Some(74));
+    // No window field and no id suffix, so this one is skipped.
+    assert_eq!(usage.windows[3].remaining_percent, None);
+}
+
+#[test]
+fn the_argon_allowance_is_read_from_its_own_group() {
+    let raw = json!({
+        "groups": [
+            {
+                "displayName": "Gemini Models",
+                "buckets": [
+                    { "bucketId": "gemini-5h", "remainingFraction": 0.88 },
+                    { "bucketId": "gemini-weekly", "remainingFraction": 0.74 }
+                ]
+            },
+            {
+                "displayName": "Gemini 4 Argon",
+                "buckets": [
+                    { "bucketId": "gemini-argon-wtu-weekly", "window": "weekly", "remainingFraction": 0 }
+                ]
+            }
+        ]
+    });
+
+    let usage = normalize_quota_response(&raw, None);
+
+    assert_eq!(usage.windows.len(), 5);
+    assert_eq!(usage.windows[4].label, "Argon Wk");
+    assert_eq!(usage.windows[4].remaining_percent, Some(0));
+}
+
+#[test]
+fn the_argon_windows_are_left_out_when_the_account_has_none() {
+    let usage = normalize_quota_response(&quota_payload(), None);
+
+    assert_eq!(usage.windows.len(), 4);
+    assert!(!usage.windows.iter().any(|w| w.label.starts_with("Argon")));
+}
+
+#[test]
+fn the_compact_token_shortens_the_third_party_pair() {
+    // When the Gemini pair has no numbers the token falls back to Claude/GPT;
+    // the full labels would make the Herdr line run long.
+    let raw = json!({
+        "groups": [{
+            "displayName": "Claude and GPT models",
+            "buckets": [
+                { "bucketId": "3p-5h", "remainingFraction": 0.5 },
+                { "bucketId": "3p-weekly", "remainingFraction": 0.31 }
+            ]
+        }]
+    });
+
+    let usage = normalize_quota_response(&raw, None);
+
+    assert_eq!(
+        usage.compact_token().as_deref(),
+        Some("Claude 5h 50% · Claude Wk 31%")
+    );
 }
 
 #[test]
