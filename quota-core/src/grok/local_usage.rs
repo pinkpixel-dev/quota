@@ -49,6 +49,7 @@ pub fn normalize_billing_response(raw: &Value, account_label: Option<String>) ->
         account_label: label,
         windows: vec![UsageWindow {
             label: "Credit".to_string(),
+            short_label: None,
             remaining_percent: used_percent
                 .map(|used| (100.0 - used.round()).clamp(0.0, 100.0) as i32),
             reset_at: period_end(config),

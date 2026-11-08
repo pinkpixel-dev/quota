@@ -83,6 +83,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
 
     let mut windows = vec![UsageWindow {
         label: "Credits".to_string(),
+        short_label: None,
         remaining_percent: remaining_percent(credits_total, credits_used),
         reset_at: None,
     }];
@@ -92,6 +93,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
     if bonus_total.is_some_and(|total| total > 0.0) {
         windows.push(UsageWindow {
             label: "Bonus".to_string(),
+            short_label: None,
             remaining_percent: remaining_percent(bonus_total, bonus_used),
             reset_at: None,
         });

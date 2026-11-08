@@ -31,6 +31,7 @@ pub fn normalize_usage_response(raw: &Value) -> ProviderUsage {
             .map(|value| value.timestamp());
         Some(UsageWindow {
             label: label.to_string(),
+            short_label: None,
             remaining_percent: Some(((1.0 - used) * 100.0).round().clamp(0.0, 100.0) as i32),
             reset_at,
         })

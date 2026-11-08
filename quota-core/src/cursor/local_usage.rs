@@ -31,6 +31,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
         account_label,
         windows: vec![UsageWindow {
             label: WINDOW_LABEL.to_string(),
+            short_label: None,
             remaining_percent,
             reset_at: billing_cycle_end(raw),
         }],

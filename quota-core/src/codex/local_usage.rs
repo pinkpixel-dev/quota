@@ -48,6 +48,7 @@ fn window_from(block: Option<&Value>, fallback_label: &str) -> UsageWindow {
         label: minutes
             .and_then(label_for_minutes)
             .unwrap_or_else(|| fallback_label.to_string()),
+        short_label: None,
         remaining_percent: block
             .and_then(|item| item.get("used_percent"))
             .and_then(Value::as_f64)
