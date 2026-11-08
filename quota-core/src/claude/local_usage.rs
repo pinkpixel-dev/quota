@@ -26,6 +26,7 @@ pub fn normalize_usage_response(raw: &Value, account_label: Option<String>) -> P
 fn window_from(label: &str, block: Option<&Value>) -> UsageWindow {
     UsageWindow {
         label: label.to_string(),
+        short_label: None,
         remaining_percent: block
             .and_then(|item| item.get("utilization"))
             .and_then(Value::as_f64)

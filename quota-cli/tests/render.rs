@@ -9,6 +9,7 @@ const NOW: i64 = 1_757_500_000;
 fn window(label: &str, percent: Option<i32>, reset_at: Option<i64>) -> UsageWindow {
     UsageWindow {
         label: label.to_string(),
+        short_label: None,
         remaining_percent: percent,
         reset_at,
     }

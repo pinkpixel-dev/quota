@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UsageWindow {
     pub label: String,
+    /// Compact form for `compact_token()` when the full label would run long,
+    /// such as a shared pool whose name only matters in the full view.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub short_label: Option<String>,
     pub remaining_percent: Option<i32>,
     pub reset_at: Option<i64>,
 }
@@ -34,9 +38,10 @@ impl ProviderUsage {
             .windows
             .iter()
             .filter_map(|window| {
+                let label = window.short_label.as_deref().unwrap_or(&window.label);
                 window
                     .remaining_percent
-                    .map(|percent| format!("{} {}%", window.label, percent))
+                    .map(|percent| format!("{} {}%", label, percent))
             })
             .take(2)
             .collect();
