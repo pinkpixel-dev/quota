@@ -134,7 +134,7 @@ Percentages are what you have left. Reset times show when a provider reports one
 
 Antigravity reports two shared pools, not per-model quotas: **Gemini** and **Claude/GPT** (Claude Opus, Claude Sonnet, and GPT-OSS share it). The Gemini pair keeps the `5h` / `Wk` labels, the other pool is `Claude/GPT 5h` / `Claude/GPT Wk`, and the separate `Gemini 4 Argon` allowance appears as `Argon Wk` when the account has it. All of it comes from the quota summary Quota already reads, so there is no extra request or subprocess, and renamed bucket ids are routed by group name plus the window field.
 
-It covers Claude, Codex, Cursor, Antigravity, Grok, Kiro, and Kimi Code. GitHub Copilot and OpenCode Go aren't in the CLI yet, but the desktop app and the VS Code extension cover both. Every reader is strictly read-only: nothing is refreshed, rewritten, or rotated, because those tokens back your own agent sessions.
+It covers Claude, Codex, Cursor, Antigravity, Grok, Kiro, Kimi Code, and OpenCode Go. GitHub Copilot isn't in the CLI yet, but the desktop app and the VS Code extension cover it. Every reader is strictly read-only: nothing is refreshed, rewritten, or rotated, because those tokens back your own agent sessions.
 
 See [`quota-cli/README.md`](quota-cli/README.md) for the full command reference and where each provider's credentials come from. The shared provider logic is published separately as [`quota-core`](https://crates.io/crates/quota-core).
 

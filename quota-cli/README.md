@@ -2,7 +2,7 @@
 
 Read your AI usage from the credentials your agent CLIs already stored.
 
-`quota-cli` prints how much quota you have left across Claude, Codex, Cursor, Antigravity, Grok, Kiro, and Kimi Code. It reads each provider's token from wherever that provider's own CLI keeps it, so there is no sign-in step, no config file, and no account to connect. If you are logged into Claude Code, you get Claude numbers. If you are not, it says so and moves on.
+`quota-cli` prints how much quota you have left across Claude, Codex, Cursor, Antigravity, Grok, Kiro, Kimi Code, and OpenCode Go. It reads each provider's token from wherever that provider's own CLI keeps it, so there is no sign-in step, no config file, and no account to connect. If you are logged into Claude Code, you get Claude numbers. If you are not, it says so and moves on.
 
 It is part of [Quota](https://github.com/pinkpixel-dev/quota), a desktop app that does the same thing with a UI. The CLI is standalone and does not need the app installed or running.
 
@@ -71,6 +71,7 @@ A failed cycle is not fatal. If Herdr is not running, or a provider is signed ou
 | Grok | `~/.grok/auth.json`, honoring `GROK_HOME` |
 | Kiro | `~/.local/share/kiro-cli/data.sqlite3`, falling back to the AWS SSO cache |
 | Kimi Code | `~/.kimi-code/credentials/kimi-code.json`, honoring `KIMI_CODE_HOME` |
+| OpenCode Go | `~/.local/share/opencode-console/credential.json`, the OpenCode console's own sign-in (`npx @opencode/console login`), honoring `XDG_DATA_HOME` |
 
 Three of these are worth knowing about. Cursor, Kiro, and Antigravity keep separate credentials for their CLI and their IDE, and the two stores can hold different accounts or lapse independently. `quota-cli` reads the CLI store first, because that is the session an agent in a terminal actually uses.
 
