@@ -18,6 +18,7 @@ pub const PROVIDERS: &[&str] = &[
     "grok",
     "kiro",
     "kimi",
+    "opencode-go",
 ];
 
 /// Fetch usage for one provider. `None` when the name is not a known provider,
@@ -43,6 +44,9 @@ pub async fn fetch_provider(name: &str) -> Option<Result<ProviderUsage, String>>
             .await
             .map_err(|err| err.to_string()),
         "kimi" => crate::kimi::local_usage::fetch_local_usage()
+            .await
+            .map_err(|err| err.to_string()),
+        "opencode-go" => crate::opencode_go::local_usage::fetch_local_usage()
             .await
             .map_err(|err| err.to_string()),
         _ => return None,

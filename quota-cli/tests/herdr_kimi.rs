@@ -246,7 +246,7 @@ fn unsupported_panes_do_not_read_kimi_credentials_or_touch_the_cache() {
     let fixture = Fixture::new(
         "unsupported",
         json!([
-            {"agent": "opencode", "pane_id": "w1:p1", "workspace_id": "w1"}
+            {"agent": "qwen", "pane_id": "w1:p1", "workspace_id": "w1"}
         ]),
     );
     let output = fixture.run(true);

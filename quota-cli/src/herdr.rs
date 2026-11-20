@@ -74,6 +74,7 @@ pub fn provider_for_agent_kind(kind: &str) -> Option<&'static str> {
         "agy" | "antigravity" | "antigravity-cli" => Some("antigravity"),
         "grok" => Some("grok"),
         "kiro" => Some("kiro"),
+        "opencode" => Some("opencode-go"),
         "kimi" | "kimi-code" | "kimi code" => Some("kimi"),
         _ => None,
     }

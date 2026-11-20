@@ -39,6 +39,7 @@ fn maps_every_agent_kind_that_has_a_provider() {
     assert_eq!(provider_for_agent_kind("agy"), Some("antigravity"));
     assert_eq!(provider_for_agent_kind("kiro"), Some("kiro"));
     assert_eq!(provider_for_agent_kind("kimi"), Some("kimi"));
+    assert_eq!(provider_for_agent_kind("opencode"), Some("opencode-go"));
 }
 
 #[test]
@@ -84,7 +85,9 @@ fn gemini_is_not_treated_as_antigravity() {
 
 #[test]
 fn unmapped_agent_kinds_report_no_provider() {
-    assert_eq!(provider_for_agent_kind("opencode"), None);
+    // OpenCode is mapped now, but a kind that is genuinely unknown must stay
+    // unmapped rather than silently borrow another account's usage.
+    assert_eq!(provider_for_agent_kind("opencode-cli-extra"), None);
     assert_eq!(provider_for_agent_kind("nonsense"), None);
 }
 
